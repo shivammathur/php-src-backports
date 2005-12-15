@@ -436,6 +436,18 @@ static void php_apache_request_dtor(request_rec *r TSRMLS_DC)
 	php_request_shutdown(NULL);
 }
 
+static void php_apache_ini_dtor(request_rec *r, request_rec *p TSRMLS_DC)
+{
+	if (strcmp(r->protocol, "INCLUDED")) {
+		zend_try { zend_ini_deactivate(TSRMLS_C); } zend_end_try();
+	}
+	if (p) {
+		((php_struct *)SG(server_context))->r = p;
+	} else {
+		apr_pool_cleanup_run(r->pool, (void *)&SG(server_context), php_server_context_cleanup);
+	}
+}
+
 static int php_handler(request_rec *r)
 {
 	php_struct *ctx;
@@ -446,15 +458,32 @@ static int php_handler(request_rec *r)
 	request_rec *parent_req = NULL;
 	TSRMLS_FETCH();
 
+#define PHPAP_INI_OFF php_apache_ini_dtor(r, parent_req TSRMLS_CC);
+
 	conf = ap_get_module_config(r->per_dir_config, &php5_module);
+
+	/* apply_config() needs r in some cases, so allocate server_context early */
+	ctx = SG(server_context);
+	if (ctx == NULL || (ctx && ctx->request_processed && !strcmp(r->protocol, "INCLUDED"))) {
+normal:
+		ctx = SG(server_context) = apr_pcalloc(r->pool, sizeof(*ctx));
+		/* register a cleanup so we clear out the SG(server_context)
+		 * after each request. Note: We pass in the pointer to the
+		 * server_context in case this is handled by a different thread.
+		 */
+		apr_pool_cleanup_register(r->pool, (void *)&SG(server_context), php_server_context_cleanup, apr_pool_cleanup_null);
+		ctx->r = r;
+		ctx = NULL; /* May look weird to null it here, but it is to catch the right case in the first_try later on */
+	} else {
+		parent_req = ctx->r;
+		ctx->r = r;
+	}
 	apply_config(conf);
 
 	if (strcmp(r->handler, PHP_MAGIC_TYPE) && strcmp(r->handler, PHP_SOURCE_MAGIC_TYPE) && strcmp(r->handler, PHP_SCRIPT)) {
 		/* Check for xbithack in this case. */
 		if (!AP2(xbithack) || strcmp(r->handler, "text/html") || !(r->finfo.protection & APR_UEXECUTE)) {
-			zend_try {
-				zend_ini_deactivate(TSRMLS_C);
-			} zend_end_try();
+			PHPAP_INI_OFF;
 			return DECLINED;
 		}
 	}
@@ -463,32 +492,24 @@ static int php_handler(request_rec *r)
 	 * the configuration; default behaviour is to accept. */ 
 	if (r->used_path_info == AP_REQ_REJECT_PATH_INFO
 		&& r->path_info && r->path_info[0]) {
-		zend_try {
-			zend_ini_deactivate(TSRMLS_C);
-		} zend_end_try();
+		PHPAP_INI_OFF;
 		return HTTP_NOT_FOUND;
 	}
 
 	/* handle situations where user turns the engine off */
 	if (!AP2(engine)) {
-		zend_try {
-			zend_ini_deactivate(TSRMLS_C);
-		} zend_end_try();
+		PHPAP_INI_OFF;
 		return DECLINED;
 	}
 
 	if (r->finfo.filetype == 0) {
 		php_apache_sapi_log_message_ex("script '%s' not found or unable to stat", r);
-		zend_try {
-				zend_ini_deactivate(TSRMLS_C);
-		} zend_end_try();
+		PHPAP_INI_OFF;
 		return HTTP_NOT_FOUND;
 	}
 	if (r->finfo.filetype == APR_DIR) {
 		php_apache_sapi_log_message_ex("attempt to invoke directory '%s' as script", r);
-		zend_try {
-			zend_ini_deactivate(TSRMLS_C);
-		} zend_end_try();
+		PHPAP_INI_OFF;
 		return HTTP_FORBIDDEN;
 	}
 
@@ -504,25 +525,27 @@ static int php_handler(request_rec *r)
 
 zend_first_try {
 
-	ctx = SG(server_context);
 	if (ctx == NULL) {
-normal:
-		ctx = SG(server_context) = apr_pcalloc(r->pool, sizeof(*ctx));
-		/* register a cleanup so we clear out the SG(server_context)
-		 * after each request. Note: We pass in the pointer to the
-		 * server_context in case this is handled by a different thread.
-		 */
-		apr_pool_cleanup_register(r->pool, (void *)&SG(server_context), php_server_context_cleanup, apr_pool_cleanup_null);
-
-		ctx->r = r;
 		brigade = apr_brigade_create(r->pool, r->connection->bucket_alloc);
+		ctx = SG(server_context);
 		ctx->brigade = brigade;
 
 		if (php_apache_request_ctor(r, ctx TSRMLS_CC)!=SUCCESS) {
 			zend_bailout();
 		}
 	} else {
-		parent_req = ctx->r;
+		if (!parent_req) {
+			parent_req = ctx->r;
+		}
+		if (parent_req && parent_req->handler && 
+				strcmp(parent_req->handler, PHP_MAGIC_TYPE) && 
+				strcmp(parent_req->handler, PHP_SOURCE_MAGIC_TYPE) && 
+				strcmp(parent_req->handler, PHP_SCRIPT)) {
+			if (php_apache_request_ctor(r, ctx TSRMLS_CC)!=SUCCESS) {
+				zend_bailout();
+			}
+		}
+		
 		/* check if comming due to ErrorDocument */
 		if (parent_req && parent_req->status != HTTP_OK) {
 			parent_req = NULL;
