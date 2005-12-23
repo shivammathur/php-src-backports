@@ -62,7 +62,7 @@ static void _php_curl_close(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 #define CAAZ(s, v) add_assoc_zval_ex(return_value, s, sizeof(s), (zval *) v);
 
 #define PHP_CURL_CHECK_OPEN_BASEDIR(str, len)													\
-	if (PG(open_basedir) && *PG(open_basedir) &&                                                \
+	if (((PG(open_basedir) && *PG(open_basedir)) || PG(safe_mode)) &&                                                \
 	    strncasecmp(str, "file://", sizeof("file://") - 1) == 0)								\
 	{ 																							\
 		php_url *tmp_url; 																		\
@@ -72,7 +72,7 @@ static void _php_curl_close(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 			RETURN_FALSE; 																		\
 		} 																						\
 																								\
-		if (php_check_open_basedir(tmp_url->path TSRMLS_CC) || 									\
+		if (tmp_url->query || tmp_url->fragment || php_check_open_basedir(tmp_url->path TSRMLS_CC) || 									\
 			(PG(safe_mode) && !php_checkuid(tmp_url->path, "rb+", CHECKUID_CHECK_MODE_PARAM))	\
 		) { 																					\
 			php_url_free(tmp_url); 																\
@@ -1128,10 +1128,15 @@ PHP_FUNCTION(curl_setopt)
 					 * must be explicitly cast to long in curl_formadd
 					 * use since curl needs a long not an int. */
 					if (*postval == '@') {
+						++postval;
+						/* safe_mode / open_basedir check */
+						if (php_check_open_basedir(postval TSRMLS_CC) || (PG(safe_mode) && !php_checkuid(postval, "rb+", CHECKUID_CHECK_MODE_PARAM))) {
+							RETURN_FALSE;
+						}
 						error = curl_formadd(&first, &last, 
 											 CURLFORM_COPYNAME, string_key,
 											 CURLFORM_NAMELENGTH, (long)string_key_len - 1,
-											 CURLFORM_FILE, ++postval, 
+											 CURLFORM_FILE, postval, 
 											 CURLFORM_END);
 					} else {
 						error = curl_formadd(&first, &last, 
