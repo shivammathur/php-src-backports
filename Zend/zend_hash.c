@@ -455,14 +455,17 @@ ZEND_API int zend_hash_del_key_or_index(HashTable *ht, char *arKey, uint nKeyLen
 	IS_CONSISTENT(ht);
 
 	if (flag == HASH_DEL_KEY) {
+ 		HANDLE_NUMERIC(arKey, nKeyLength, zend_hash_del_key_or_index(ht, NULL, 0, idx, HASH_DEL_INDEX));
 		h = zend_inline_hash_func(arKey, nKeyLength);
 	}
 	nIndex = h & ht->nTableMask;
 
 	p = ht->arBuckets[nIndex];
 	while (p != NULL) {
-		if ((p->h == h) && ((p->nKeyLength == 0) || /* Numeric index */
-			((p->nKeyLength == nKeyLength) && (!memcmp(p->arKey, arKey, nKeyLength))))) {
+		if ((p->h == h) 
+			 && (p->nKeyLength == nKeyLength)
+			 && ((p->nKeyLength == 0) /* Numeric index (short circuits the memcmp() check) */
+				 || !memcmp(p->arKey, arKey, nKeyLength))) { /* String index */
 			HANDLE_BLOCK_INTERRUPTIONS();
 			if (p == ht->arBuckets[nIndex]) {
 				ht->arBuckets[nIndex] = p->pNext;
