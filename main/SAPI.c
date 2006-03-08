@@ -529,6 +529,10 @@ SAPI_API int sapi_header_op(sapi_header_op_enum op, void *arg TSRMLS_DC)
 	case SAPI_HEADER_REPLACE:
 	case SAPI_HEADER_ADD: {
 		sapi_header_line *p = arg;
+		
+		if (!p->line || !p->line_len) {
+			return FAILURE;
+		}
 		header_line = p->line;
 		header_line_len = p->line_len;
 		http_response_code = p->response_code;
@@ -546,6 +550,19 @@ SAPI_API int sapi_header_op(sapi_header_op_enum op, void *arg TSRMLS_DC)
 	while(isspace(header_line[header_line_len-1])) 
 		  header_line[--header_line_len]='\0';
 	
+	/* new line safety check */
+	{
+		char *s = header_line, *e = header_line + header_line_len, *p;
+		while (s < e && (p = memchr(s, '\n', (e - s)))) {
+			if (*(p + 1) == ' ' || *(p + 1) == '\t') {
+				s = p + 1;
+				continue;
+			}
+			efree(header_line);
+			sapi_module.sapi_error(E_WARNING, "Header may not contain more than a single header, new line detected.");
+			return FAILURE;
+		}
+	}
 
 	sapi_header.header = header_line;
 	sapi_header.header_len = header_line_len;
