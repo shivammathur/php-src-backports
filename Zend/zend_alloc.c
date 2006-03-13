@@ -127,8 +127,8 @@ static long mem_block_end_magic = MEM_BLOCK_END_MAGIC;
 #endif
 
 #define DECLARE_CACHE_VARS()	\
-	unsigned int real_size;		\
-	unsigned int cache_index
+	size_t real_size;		\
+	size_t cache_index
 
 #define REAL_SIZE(size) ((size+7) & ~0x7)
 
