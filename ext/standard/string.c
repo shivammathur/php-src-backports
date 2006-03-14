@@ -4812,9 +4812,13 @@ PHP_FUNCTION(substr_compare)
 		RETURN_FALSE;
 	}
 
-	if (len && offset >= s1_len) {
+	if ((offset + len) > s1_len) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The start position cannot exceed initial string length.");
 		RETURN_FALSE;
+	}
+
+	if (offset < 0) {
+		offset = s1_len + offset;
 	}
 
 	cmp_len = (uint) (len ? len : MAX(s2_len, (s1_len - offset)));
