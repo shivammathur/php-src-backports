@@ -878,7 +878,7 @@ PHPAPI char *php_unescape_html_entities(unsigned char *old, int oldlen, int *new
 	unsigned char replacement[15];
 	int replacement_len;
 
-	ret = estrdup(old);
+	ret = estrndup(old, oldlen);
 	retlen = oldlen;
 	if (!retlen) {
 		goto empty_source;
