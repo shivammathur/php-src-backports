@@ -611,9 +611,13 @@ PHPAPI void php_stat(const char *filename, php_stat_len filename_length, int typ
 		/* root has special perms on plain_wrapper 
 		   But we don't know about root under Netware */
 		php_stream_wrapper *wrapper;
+		char* local;
 
-		wrapper = php_stream_locate_url_wrapper(filename, NULL, 0 TSRMLS_CC);
+		wrapper = php_stream_locate_url_wrapper(filename, &local, 0 TSRMLS_CC);
 		if (wrapper && wrapper->wops && wrapper->wops->label && strcmp(wrapper->wops->label, "plainfile") == 0) {
+			if (php_check_open_basedir(local TSRMLS_CC) || (PG(safe_mode) && !php_checkuid_ex(filename, NULL, CHECKUID_ALLOW_FILE_NOT_EXISTS, CHECKUID_NO_ERRORS))) {
+				RETURN_FALSE;
+			}
 			if (type == FS_IS_X) {
 				xmask = S_IXROOT;
 			} else {
