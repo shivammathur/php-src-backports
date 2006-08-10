@@ -918,7 +918,6 @@ PHP_FUNCTION(curl_setopt)
 		case CURLOPT_FTPLISTONLY:
 		case CURLOPT_FTPAPPEND:
 		case CURLOPT_NETRC:
-		case CURLOPT_FOLLOWLOCATION:
 		case CURLOPT_PUT:
 #if CURLOPT_MUTE != 0
 		 case CURLOPT_MUTE:
@@ -963,6 +962,16 @@ PHP_FUNCTION(curl_setopt)
 			convert_to_long_ex(zvalue);
 			error = curl_easy_setopt(ch->cp, option, Z_LVAL_PP(zvalue));
 			break;
+		case CURLOPT_FOLLOWLOCATION:
+			convert_to_long_ex(zvalue);
+			if ((PG(open_basedir) && *PG(open_basedir)) || PG(safe_mode)) {
+				if (Z_LVAL_PP(zvalue) != 0) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "CURLOPT_FOLLOWLOCATION cannot be activated when in safe_mode or an open_basedir is set");
+					RETURN_FALSE;
+				}
+			}
+ 			error = curl_easy_setopt(ch->cp, option, Z_LVAL_PP(zvalue));
+ 			break;
 		case CURLOPT_URL:
 		case CURLOPT_PROXY:
 		case CURLOPT_USERPWD:
