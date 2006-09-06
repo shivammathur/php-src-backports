@@ -732,7 +732,7 @@ PHPAPI int php_sscanf_internal(	char *string, char *format,
 			if (*end == '$') {
 				format = end+1;
 				ch = format++;
-				objIndex = varStart + value;
+                    objIndex = varStart + value - 1;
 			}
 		}
 
@@ -762,6 +762,9 @@ PHPAPI int php_sscanf_internal(	char *string, char *format,
 		switch (*ch) {
 			case 'n':
 				if (!(flags & SCAN_SUPPRESS)) {
+                    if (numVars && objIndex >= argCount) {
+                        break;
+                    } else
 					if (numVars) {
 						zend_uint refcount;
 
@@ -888,6 +891,9 @@ PHPAPI int php_sscanf_internal(	char *string, char *format,
 					}
 				}
 				if (!(flags & SCAN_SUPPRESS)) {
+                    if (numVars && objIndex >= argCount) {
+                        break;
+                    } else
 					if (numVars) {
 						zend_uint refcount;
 
@@ -932,8 +938,10 @@ PHPAPI int php_sscanf_internal(	char *string, char *format,
 					goto done;
 				}
 				if (!(flags & SCAN_SUPPRESS)) {
-					if (numVars) {
-						current = args[objIndex++];
+                    if (numVars && objIndex >= argCount) {
+                        break;
+                    } else if (numVars) {
+                        current = args[objIndex++];
 						zval_dtor( *current );
 						ZVAL_STRINGL( *current, string, end-string, 1);
 					} else {
@@ -1089,8 +1097,10 @@ PHPAPI int php_sscanf_internal(	char *string, char *format,
 					value = (int) (*fn)(buf, NULL, base);
 					if ((flags & SCAN_UNSIGNED) && (value < 0)) {
 						sprintf(buf, "%u", value); /* INTL: ISO digit */
-						if (numVars) {
-						  /* change passed value type to string */
+                if (numVars && objIndex >= argCount) {
+                   break;
+                } else if (numVars) {
+                   /* change passed value type to string */
 						   current = args[objIndex++];
 						   convert_to_string( *current );
 						   ZVAL_STRING( *current, buf, 1 );
@@ -1098,7 +1108,9 @@ PHPAPI int php_sscanf_internal(	char *string, char *format,
 							add_index_string(*return_value, objIndex++, buf, 1);
 						}
 					} else {
-						if (numVars) {
+                if (numVars && objIndex >= argCount) {
+                    break;
+                } else if (numVars) {
 							current = args[objIndex++];
 							convert_to_long( *current );
 							Z_LVAL(**current) = value;
@@ -1206,7 +1218,9 @@ PHPAPI int php_sscanf_internal(	char *string, char *format,
 					double dvalue;
 					*end = '\0';
 					dvalue = zend_strtod(buf, NULL);
-					if (numVars) {
+            if (numVars && objIndex >= argCount) {
+                break;
+            } else if (numVars) {
 						current = args[objIndex++];
 						convert_to_double( *current );
 						Z_DVAL_PP( current ) = dvalue;
