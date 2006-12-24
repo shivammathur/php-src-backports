@@ -62,6 +62,9 @@ MAILSTREAM DEFAULTPROTO;
 #define CRLF_LEN sizeof("\015\012") - 1
 #define PHP_EXPUNGE 32768
 #define PHP_IMAP_ADDRESS_SIZE_BUF 10
+#ifndef SENDBUFLEN
+#define SENDBUFLEN 16385
+#endif
 
 static void _php_make_header_object(zval *myzvalue, ENVELOPE *en TSRMLS_DC);
 static void _php_imap_add_body(zval *arg, BODY *body TSRMLS_DC);
@@ -2915,7 +2918,7 @@ PHP_FUNCTION(imap_mail_compose)
 	BODY *bod=NULL, *topbod=NULL;
 	PART *mypart=NULL, *part;
 	PARAMETER *param, *disp_param = NULL, *custom_headers_param = NULL, *tmp_param = NULL;
-	char tmp[8 * MAILTMPLEN], *mystring=NULL, *t=NULL, *tempstring=NULL;
+	char tmp[SENDBUFLEN + 1], *mystring=NULL, *t=NULL, *tempstring=NULL;
 	int toppart = 0;
 
 	if (ZEND_NUM_ARGS() != 2 || zend_get_parameters_ex(2, &envelope, &body) == FAILURE) {
@@ -3266,6 +3269,10 @@ PHP_FUNCTION(imap_mail_compose)
 		/* yucky default */
 			if (!cookie) {
 				cookie = "-";  
+			} else if (strlen(cookie) > (sizeof(tmp) - 2 - 2)) {  /* validate cookie length -- + CRLF */
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "The boundary should be no longer then 4kb");
+				RETVAL_FALSE;
+				return;	
 			}
 
 		/* for each part */
