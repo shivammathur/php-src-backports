@@ -279,7 +279,7 @@ PS_SERIALIZER_DECODE_FUNC(wddx)
 
 			switch (hash_type) {
 				case HASH_KEY_IS_LONG:
-					sprintf(tmp, "%ld", idx);
+					key_length = sprintf(tmp, "%ld", idx) + 1;
 					key = tmp;
 					/* fallthru */
 				case HASH_KEY_IS_STRING:
@@ -474,7 +474,7 @@ static void php_wddx_serialize_object(wddx_packet *packet, zval *obj)
 			PHP_SET_CLASS_ATTRIBUTES(obj);
 
 			php_wddx_add_chunk_static(packet, WDDX_STRUCT_S);
-			sprintf(tmp_buf, WDDX_VAR_S, PHP_CLASS_NAME_VAR);
+			snprintf(tmp_buf, WDDX_BUF_LEN, WDDX_VAR_S, PHP_CLASS_NAME_VAR);
 			php_wddx_add_chunk(packet, tmp_buf);
 			php_wddx_add_chunk_static(packet, WDDX_STRING_S);
 			php_wddx_add_chunk_ex(packet, class_name, name_len);
@@ -506,7 +506,7 @@ static void php_wddx_serialize_object(wddx_packet *packet, zval *obj)
 		PHP_SET_CLASS_ATTRIBUTES(obj);
 
 		php_wddx_add_chunk_static(packet, WDDX_STRUCT_S);
-		sprintf(tmp_buf, WDDX_VAR_S, PHP_CLASS_NAME_VAR);
+		snprintf(tmp_buf, WDDX_BUF_LEN, WDDX_VAR_S, PHP_CLASS_NAME_VAR);
 		php_wddx_add_chunk(packet, tmp_buf);
 		php_wddx_add_chunk_static(packet, WDDX_STRING_S);
 		php_wddx_add_chunk_ex(packet, class_name, name_len);
