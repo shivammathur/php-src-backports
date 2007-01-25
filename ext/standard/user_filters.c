@@ -238,6 +238,7 @@ static php_stream_filter *user_filter_factory_create(const char *filtername,
 	zval *obj, *zfilter;
 	zval func_name;
 	zval *retval = NULL;
+	int len;
 	
 	/* some sanity checks */
 	if (persistent) {
@@ -246,9 +247,10 @@ static php_stream_filter *user_filter_factory_create(const char *filtername,
 		return NULL;
 	}
 
+	len = strlen(filtername);
+
 	/* determine the classname/class entry */
-	if (FAILURE == zend_hash_find(BG(user_filter_map), (char*)filtername,
-				strlen(filtername), (void**)&fdat)) {
+	if (FAILURE == zend_hash_find(BG(user_filter_map), (char*)filtername, len, (void**)&fdat)) {
 		char *period;
 
 		/* Userspace Filters using ambiguous wildcards could cause problems.
@@ -257,10 +259,10 @@ static php_stream_filter *user_filter_factory_create(const char *filtername,
            TODO: Allow failed userfilter creations to continue
                  scanning through the list */
 		if ((period = strrchr(filtername, '.'))) {
-			char *wildcard;
+			char *wildcard = emalloc(len + 3);
 
 			/* Search for wildcard matches instead */
-			wildcard = estrdup(filtername);
+			memcpy(wildcard, filtername, len + 1); /* copy \0 */
 			period = wildcard + (period - filtername);
 			while (period) {
 				*period = '\0';
