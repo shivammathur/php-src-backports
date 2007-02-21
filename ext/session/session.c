@@ -720,7 +720,7 @@ PHPAPI char *php_session_create_id(PS_CREATE_SID_ARGS)
 	buf = emalloc(100);
 
 	/* maximum 15+19+19+10 bytes */	
-	sprintf(buf, "%.15s%ld%ld%0.8f", remote_addr ? remote_addr : "", 
+	sprintf(buf, "%.15s%ld%ld%0.8F", remote_addr ? remote_addr : "", 
 			tv.tv_sec, tv.tv_usec, php_combined_lcg(TSRMLS_C) * 10);
 
 	switch (PS(hash_func)) {
@@ -1495,6 +1495,11 @@ PHP_FUNCTION(session_save_path)
 
 	if (ac == 1) {
 		convert_to_string_ex(p_name);
+		if (memchr(Z_STRVAL_PP(p_name), '\0', Z_STRLEN_PP(p_name)) != NULL) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "The save_path cannot contain NULL characters.");
+			efree(old);
+			RETURN_FALSE;
+		}
 		zend_alter_ini_entry("session.save_path", sizeof("session.save_path"), Z_STRVAL_PP(p_name), Z_STRLEN_PP(p_name), PHP_INI_USER, PHP_INI_STAGE_RUNTIME);
 	}
 	
