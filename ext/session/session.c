@@ -444,7 +444,7 @@ PS_SERIALIZER_DECODE_FUNC(php_binary)
 		skip = 0;
 		namelen = *p & (~PS_BIN_UNDEF);
 
-		if (namelen > PS_BIN_MAX || (p + namelen) >= endptr) {
+		if (namelen < 0 || namelen > PS_BIN_MAX || (p + namelen) >= endptr) {
 			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 			return FAILURE;
 		}
