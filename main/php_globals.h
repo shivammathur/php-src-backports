@@ -150,6 +150,8 @@ struct _php_core_globals {
 
 	char *disable_functions;
 	char *disable_classes;
+
+	long max_input_nesting_level;
 };
 
 
