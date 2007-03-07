@@ -1429,12 +1429,12 @@ PHPAPI int php_register_url_stream_wrapper(char *protocol, php_stream_wrapper *w
 		}
 	}
 
-	return zend_hash_add(&url_stream_wrappers_hash, protocol, protocol_len, wrapper, sizeof(*wrapper), NULL);
+	return zend_hash_add(&url_stream_wrappers_hash, protocol, protocol_len + 1, wrapper, sizeof(*wrapper), NULL);
 }
 
 PHPAPI int php_unregister_url_stream_wrapper(char *protocol TSRMLS_DC)
 {
-	return zend_hash_del(&url_stream_wrappers_hash, protocol, strlen(protocol));
+	return zend_hash_del(&url_stream_wrappers_hash, protocol, strlen(protocol) + 1);
 }
 
 /* API for registering VOLATILE wrappers */
@@ -1459,7 +1459,7 @@ PHPAPI int php_register_url_stream_wrapper_volatile(char *protocol, php_stream_w
 		zend_hash_copy(FG(stream_wrappers), &url_stream_wrappers_hash, NULL, &tmpwrapper, sizeof(php_stream_wrapper));
 	}
 
-	return zend_hash_add(FG(stream_wrappers), protocol, protocol_len, wrapper, sizeof(*wrapper), NULL);
+	return zend_hash_add(FG(stream_wrappers), protocol, protocol_len + 1, wrapper, sizeof(*wrapper), NULL);
 }
 
 /* }}} */
@@ -1494,7 +1494,8 @@ PHPAPI php_stream_wrapper *php_stream_locate_url_wrapper(const char *path, char 
 	}
 
 	if (protocol)	{
-		if (FAILURE == zend_hash_find(wrapper_hash, (char*)protocol, n, (void**)&wrapper))	{
+		char *tmp = estrndup(protocol, n);
+		if (FAILURE == zend_hash_find(wrapper_hash, (char*)tmp, n + 1, (void**)&wrapper))	{
 			char wrapper_name[32];
 
 			if (n >= sizeof(wrapper_name))
@@ -1507,6 +1508,7 @@ PHPAPI php_stream_wrapper *php_stream_locate_url_wrapper(const char *path, char 
 			wrapper = NULL;
 			protocol = NULL;
 		}
+		efree(tmp);
 	}
 	/* TODO: curl based streams probably support file:// properly */
 	if (!protocol || !strncasecmp(protocol, "file", n))	{

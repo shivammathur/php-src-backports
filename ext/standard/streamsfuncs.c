@@ -325,7 +325,7 @@ PHP_FUNCTION(stream_socket_recvfrom)
 		RETURN_FALSE;
 	}
 	
-	read_buf = emalloc(to_read + 1);
+	read_buf = safe_emalloc(1, to_read, 1);
 	
 	recvd = php_stream_xport_recvfrom(stream, read_buf, to_read, flags, NULL, NULL,
 			zremote ? &Z_STRVAL_P(zremote) : NULL,
@@ -484,7 +484,7 @@ PHP_FUNCTION(stream_get_transports)
 		while (zend_hash_get_current_key_ex(stream_xport_hash,
 					&stream_xport, &stream_xport_len,
 					&num_key, 0, NULL) == HASH_KEY_IS_STRING) {
-			add_next_index_stringl(return_value, stream_xport, stream_xport_len, 1);
+			add_next_index_stringl(return_value, stream_xport, stream_xport_len - 1, 1);
 			zend_hash_move_forward(stream_xport_hash);
 		}
 	} else {
@@ -512,7 +512,7 @@ PHP_FUNCTION(stream_get_wrappers)
 			(key_flags = zend_hash_get_current_key_ex(url_stream_wrappers_hash, &stream_protocol, &stream_protocol_len, &num_key, 0, NULL)) != HASH_KEY_NON_EXISTANT;
 			zend_hash_move_forward(url_stream_wrappers_hash)) {
 				if (key_flags == HASH_KEY_IS_STRING) {
-					add_next_index_stringl(return_value, stream_protocol, stream_protocol_len, 1);
+					add_next_index_stringl(return_value, stream_protocol, stream_protocol_len - 1, 1);
 				}
 		}
 	} else {
