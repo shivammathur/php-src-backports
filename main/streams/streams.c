@@ -1457,12 +1457,12 @@ PHPAPI int php_register_url_stream_wrapper(char *protocol, php_stream_wrapper *w
 		return FAILURE;
 	}
 
-	return zend_hash_add(&url_stream_wrappers_hash, protocol, protocol_len, &wrapper, sizeof(wrapper), NULL);
+	return zend_hash_add(&url_stream_wrappers_hash, protocol, protocol_len + 1, &wrapper, sizeof(wrapper), NULL);
 }
 
 PHPAPI int php_unregister_url_stream_wrapper(char *protocol TSRMLS_DC)
 {
-	return zend_hash_del(&url_stream_wrappers_hash, protocol, strlen(protocol));
+	return zend_hash_del(&url_stream_wrappers_hash, protocol, strlen(protocol) + 1);
 }
 
 static void clone_wrapper_hash(TSRMLS_D)
@@ -1487,7 +1487,7 @@ PHPAPI int php_register_url_stream_wrapper_volatile(char *protocol, php_stream_w
 		clone_wrapper_hash(TSRMLS_C);
 	}
 
-	return zend_hash_add(FG(stream_wrappers), protocol, protocol_len, &wrapper, sizeof(wrapper), NULL);
+	return zend_hash_add(FG(stream_wrappers), protocol, protocol_len + 1, &wrapper, sizeof(wrapper), NULL);
 }
 
 PHPAPI int php_unregister_url_stream_wrapper_volatile(char *protocol TSRMLS_DC)
@@ -1496,7 +1496,7 @@ PHPAPI int php_unregister_url_stream_wrapper_volatile(char *protocol TSRMLS_DC)
 		clone_wrapper_hash(TSRMLS_C);
 	}
 
-	return zend_hash_del(FG(stream_wrappers), protocol, strlen(protocol));
+	return zend_hash_del(FG(stream_wrappers), protocol, strlen(protocol) + 1);
 }
 /* }}} */
 
@@ -1530,7 +1530,8 @@ PHPAPI php_stream_wrapper *php_stream_locate_url_wrapper(const char *path, char 
 	}
 
 	if (protocol)	{
-		if (FAILURE == zend_hash_find(wrapper_hash, (char*)protocol, n, (void**)&wrapperpp))	{
+		char *tmp = estrndup(protocol, n);
+		if (FAILURE == zend_hash_find(wrapper_hash, (char*)tmp, n + 1, (void**)&wrapperpp))	{
 			char wrapper_name[32];
 
 			if (n >= sizeof(wrapper_name))
@@ -1543,6 +1544,7 @@ PHPAPI php_stream_wrapper *php_stream_locate_url_wrapper(const char *path, char 
 			wrapperpp = NULL;
 			protocol = NULL;
 		}
+		efree(tmp);
 	}
 	/* TODO: curl based streams probably support file:// properly */
 	if (!protocol || !strncasecmp(protocol, "file", n))	{
@@ -1591,7 +1593,7 @@ PHPAPI php_stream_wrapper *php_stream_locate_url_wrapper(const char *path, char 
 			}
 			
 			/* Check again, the original check might have not known the protocol name */
-			if (zend_hash_find(wrapper_hash, "file", sizeof("file")-1, (void**)&wrapperpp) == SUCCESS) {
+			if (zend_hash_find(wrapper_hash, "file", sizeof("file"), (void**)&wrapperpp) == SUCCESS) {
 				return *wrapperpp;
 			}
 
