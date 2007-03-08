@@ -4555,18 +4555,20 @@ PHP_FUNCTION(substr_count)
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Offset should be greater than or equal to 0.");
 			RETURN_FALSE;		
 		}
-		p += Z_LVAL_PP(offset);
-		if (p > endp) {
+
+		if (Z_LVAL_PP(offset) > Z_STRLEN_PP(haystack)) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Offset value %ld exceeds string length.", Z_LVAL_PP(offset));
 			RETURN_FALSE;		
 		}
+		p += Z_LVAL_PP(offset);
+
 		if (ac == 4) {
 			convert_to_long_ex(length);
 			if (Z_LVAL_PP(length) <= 0) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Length should be greater than 0.");
 				RETURN_FALSE;		
 			}
-			if ((p + Z_LVAL_PP(length)) > endp) {
+			if (Z_LVAL_PP(length) > (Z_STRLEN_PP(haystack) - Z_LVAL_PP(offset))) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Length value %ld exceeds string length.", Z_LVAL_PP(length));
 				RETURN_FALSE;
 			}
@@ -4987,8 +4989,13 @@ PHP_FUNCTION(substr_compare)
 		offset = (offset < 0) ? 0 : offset;
 	}
 
-	if ((offset + len) > s1_len) {
+	if(offset > s1_len) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The start position cannot exceed initial string length");
+		RETURN_FALSE;
+	}
+
+	if(len > s1_len - offset) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The length cannot exceed initial string length");
 		RETURN_FALSE;
 	}
 
