@@ -102,6 +102,8 @@ skipheader (int (*getin) (void *in), void *in)
   return (0);
 }
 
+#define SAFE_MULTIPLE(x,y) (x == 0 || y == 0 || (x > 0 && y > 0 && (x < INT_MAX / y)))
+
 /* create wbmp
    ** -----------
    ** create an empty wbmp
@@ -115,6 +117,12 @@ createwbmp (int width, int height, int color)
   Wbmp *wbmp;
   if ((wbmp = (Wbmp *) gdMalloc (sizeof (Wbmp))) == NULL)
     return (NULL);
+
+  if (!SAFE_MULTIPLE(width, height)) {
+      php_gd_error("createwbmp: Integer overflow from WBMP image height/width (%d x %d)\n", width, height);
+      gdFree(wbmp);
+      return NULL;
+  }
 
   if ((wbmp->bitmap = (int *) safe_emalloc(sizeof(int), width * height, 0)) == NULL)
     {
@@ -175,6 +183,13 @@ readwbmp (int (*getin) (void *in), void *in, Wbmp ** return_wbmp)
 #ifdef __DEBUG
   printf ("W: %d, H: %d\n", wbmp->width, wbmp->height);
 #endif
+
+  if (!SAFE_MULTIPLE(wbmp->width, wbmp->height)) {
+      php_gd_error("readwbmp: Integer overflow from WBMP image height/width (%d x %d)\n", 
+                   wbmp->width, wbmp->height);
+      gdFree(wbmp);
+      return (-1);
+  }
 
   if ((wbmp->bitmap = (int *) safe_emalloc(wbmp->width * wbmp->height, sizeof(int), 0)) == NULL)
     {
