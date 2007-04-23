@@ -1546,6 +1546,7 @@ PHP_FUNCTION(session_regenerate_id)
 				RETURN_FALSE;
 			}
 			efree(PS(id));
+			PS(id) = NULL;
 		}
 	
 		PS(id) = PS(mod)->s_create_sid(&PS(mod_data), NULL TSRMLS_CC);
