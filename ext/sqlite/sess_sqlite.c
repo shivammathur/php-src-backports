@@ -31,6 +31,11 @@
 extern int sqlite_encode_binary(const unsigned char *in, int n, unsigned char *out);
 extern int sqlite_decode_binary(const unsigned char *in, unsigned char *out);
 
+#define php_sqlite_decode_binary(in, out)    (	\
+	(!in || !*in) ? 0 : \
+		sqlite_decode_binary((const unsigned char *)in, (unsigned char *)out) \
+)
+
 PS_FUNCS(sqlite);
 
 ps_module ps_mod_sqlite = {
@@ -111,7 +116,7 @@ PS_READ_FUNC(sqlite)
 			if (rowdata[0] != NULL) {
 				*vallen = strlen(rowdata[0]);
 				*val = emalloc(*vallen);
-				*vallen = sqlite_decode_binary(rowdata[0], *val);
+				*vallen = php_sqlite_decode_binary(rowdata[0], *val);
 				(*val)[*vallen] = '\0';
 			}
 			break;

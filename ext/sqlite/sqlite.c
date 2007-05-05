@@ -72,7 +72,10 @@ extern int sqlite_encode_binary(const unsigned char *in, int n, unsigned char *o
 extern int sqlite_decode_binary(const unsigned char *in, unsigned char *out);
 
 #define php_sqlite_encode_binary(in, n, out) sqlite_encode_binary((const unsigned char *)in, n, (unsigned char *)out)
-#define php_sqlite_decode_binary(in, out)    sqlite_decode_binary((const unsigned char *)in, (unsigned char *)out)
+#define php_sqlite_decode_binary(in, out)    (	\
+	(!in || !*in) ? 0 : \
+		sqlite_decode_binary((const unsigned char *)in, (unsigned char *)out) \
+)
 
 static int sqlite_count_elements(zval *object, long *count TSRMLS_DC);
 
