@@ -237,8 +237,12 @@ static void php_spn_common_handler(INTERNAL_FUNCTION_PARAMETERS, int behavior)
 		}
 	}
 	
-	if ((start + len) > len1) {
+	if (len > len1 - start) {
 		len = len1 - start;
+	}
+
+    if (len == 0) {
+		RETURN_LONG(0);
 	}
 
 	if (behavior == STR_STRSPN) {
