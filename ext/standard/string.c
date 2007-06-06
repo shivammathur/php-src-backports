@@ -4804,11 +4804,26 @@ PHP_FUNCTION(str_word_count)
 PHP_FUNCTION(money_format)
 {
 	int format_len = 0, str_len;
-	char *format, *str;
+	char *format, *str, *p, *e;
 	double value;
+	zend_bool check = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sd", &format, &format_len, &value) == FAILURE) {
 		return;
+	}
+
+	p = format;
+	e = p + format_len;
+	while ((p = memchr(p, '%', (e - p)))) {
+		if (*(p + 1) == '%') {
+			p += 2;	
+		} else if (!check) {
+			check = 1;
+			p++;
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Only a single %%i or %%n token can be used");
+			RETURN_FALSE;
+		}
 	}
 
 	str_len = format_len + 1024;
