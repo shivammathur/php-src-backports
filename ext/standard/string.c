@@ -1856,11 +1856,25 @@ static char *php_chunk_split(char *src, int srclen, char *end, int endlen, int c
 	char *p, *q;
 	int chunks; /* complete chunks! */
 	int restlen;
+	int out_len; 
 
 	chunks = srclen / chunklen;
 	restlen = srclen - chunks * chunklen; /* srclen % chunklen */
 
-	dest = safe_emalloc((srclen + (chunks + 1) * endlen + 1), sizeof(char), 0);
+	if(chunks > INT_MAX - 1) {
+		return NULL;
+	}
+	out_len = chunks + 1;
+	if(endlen !=0 && out_len > INT_MAX/endlen) {
+		return NULL;
+	}
+	out_len *= endlen;
+	if(out_len > INT_MAX - srclen - 1) {
+		return NULL;
+	}
+	out_len += srclen + 1;
+
+	dest = safe_emalloc((int)out_len, sizeof(char), 0);
 
 	for (p = src, q = dest; p < (src + srclen - chunklen + 1); ) {
 		memcpy(q, p, chunklen);
