@@ -933,7 +933,9 @@ static void define_command_line_ini_entry(char *arg)
 	} else {
 		value = "1";
 	}
-	zend_alter_ini_entry(name, strlen(name) + 1, value, strlen(value), PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
+	/* Use the force flag, and don't use PHP_INI_SYSTEM so we don't update ini_entry->modifiable.
+           This is necessary because of the security backport for CVE-2007-5900. */
+	zend_alter_ini_entry_ex(name, strlen(name) + 1, value, strlen(value), PHP_INI_PERDIR, PHP_INI_STAGE_ACTIVATE, 1);
 }
 
 

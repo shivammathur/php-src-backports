@@ -337,7 +337,7 @@ static int php_cli_startup(sapi_module_struct *sapi_module)
 
 /* hard coded ini settings must be set in main() */
 #define INI_HARDCODED(name,value)\
-		zend_alter_ini_entry(name, sizeof(name), value, strlen(value), PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
+		zend_alter_ini_entry_ex(name, sizeof(name), value, strlen(value), PHP_INI_PERDIR, PHP_INI_STAGE_ACTIVATE, 1);
 
 static void sapi_cli_ini_defaults(HashTable *configuration_hash)
 {
@@ -462,7 +462,9 @@ static void define_command_line_ini_entry(char *arg TSRMLS_DC)
 		ZVAL_STRING(&extension, value, 0);
 		php_dl(&extension, MODULE_PERSISTENT, &zval, 1 TSRMLS_CC);
 	} else {
-		zend_alter_ini_entry(name, strlen(name)+1, value, strlen(value), PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
+		/* Use the force flag, and don't use PHP_INI_SYSTEM so we don't update ini_entry->modifiable.
+	           This is necessary because of the security backport for CVE-2007-5900. */
+		zend_alter_ini_entry_ex(name, strlen(name)+1, value, strlen(value), PHP_INI_PERDIR, PHP_INI_STAGE_ACTIVATE, 1);
 	}
 }
 

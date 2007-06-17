@@ -60,12 +60,17 @@ static int zend_restore_ini_entry_cb(zend_ini_entry *ini_entry, int stage TSRMLS
 			/* runtime failure is OK */
 			return 1;
 		}
-		efree(ini_entry->value);
+		if (ini_entry->value != ini_entry->orig_value) {
+			efree(ini_entry->value);
+		}
 		ini_entry->value = ini_entry->orig_value;
 		ini_entry->value_length = ini_entry->orig_value_length;
 		ini_entry->modified = 0;
 		ini_entry->orig_value = NULL;
 		ini_entry->orig_value_length = 0;
+		if (ini_entry->modifiable >= (1 << 3)) {
+			ini_entry->modifiable >>= 3;
+		}
 	}
 	return 0;
 }
@@ -223,31 +228,52 @@ ZEND_API void zend_ini_refresh_caches(int stage TSRMLS_DC)
 
 ZEND_API int zend_alter_ini_entry(char *name, uint name_length, char *new_value, uint new_value_length, int modify_type, int stage)
 {
+	return zend_alter_ini_entry_ex(name, name_length, new_value, new_value_length, modify_type, stage, 0);
+}
+
+ZEND_API int zend_alter_ini_entry_ex(char *name, uint name_length, char *new_value, uint new_value_length, int modify_type, int stage, int force_change) /* {{{ */
+{
 	zend_ini_entry *ini_entry;
 	char *duplicate;
+	zend_bool modifiable;
+	zend_bool modified;
 	TSRMLS_FETCH();
 
 	if (zend_hash_find(EG(ini_directives), name, name_length, (void **) &ini_entry)==FAILURE) {
 		return FAILURE;
 	}
 
-	if (!(ini_entry->modifiable & modify_type)) {
-		return FAILURE;
+	modifiable = ini_entry->modifiable;
+	modified = ini_entry->modified;
+
+	if (stage == ZEND_INI_STAGE_ACTIVATE && modify_type == ZEND_INI_SYSTEM) {
+		/* only touch lower bits */
+		ini_entry->modifiable = (ini_entry->modifiable & (ZEND_INI_ALL << 3)) | ZEND_INI_SYSTEM;
+	}
+
+	if (!force_change) {
+		if (!(ini_entry->modifiable & modify_type)) {
+			return FAILURE;
+		}
+	}
+
+	if (!modified) {
+		ini_entry->orig_value = ini_entry->value;
+		ini_entry->orig_value_length = ini_entry->value_length;
+		/* store orginial value in the upper bits */
+		ini_entry->modifiable = (modifiable << 3) | ini_entry->modifiable;
+		ini_entry->modified = 1;
 	}
 
 	duplicate = estrndup(new_value, new_value_length);
 	
 	if (!ini_entry->on_modify
 		|| ini_entry->on_modify(ini_entry, duplicate, new_value_length, ini_entry->mh_arg1, ini_entry->mh_arg2, ini_entry->mh_arg3, stage TSRMLS_CC)==SUCCESS) {
-		if (!ini_entry->modified) {
-			ini_entry->orig_value = ini_entry->value;
-			ini_entry->orig_value_length = ini_entry->value_length;
-		} else { /* we already changed the value, free the changed value */
+		if (modified && ini_entry->orig_value != ini_entry->value) { /* we already changed the value, free the changed value */
 			efree(ini_entry->value);
 		}
 		ini_entry->value = duplicate;
 		ini_entry->value_length = new_value_length;
-		ini_entry->modified = 1;
 	} else {
 		efree(duplicate);
 	}
