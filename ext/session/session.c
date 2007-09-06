@@ -46,6 +46,7 @@
 #include "ext/standard/php_rand.h"                   /* for RAND_MAX */
 #include "ext/standard/info.h"
 #include "ext/standard/php_smart_str.h"
+#include "ext/standard/url.h"
 
 #include "mod_files.h"
 #include "mod_user.h"
@@ -1028,6 +1029,7 @@ static void php_session_send_cookie(TSRMLS_D)
 {
 	smart_str ncookie = {0};
 	char *date_fmt = NULL;
+	char *e_session_name, *e_id;
 
 	if (SG(headers_sent)) {
 		char *output_start_filename = php_get_output_start_filename(TSRMLS_C);
@@ -1041,11 +1043,18 @@ static void php_session_send_cookie(TSRMLS_D)
 		}	
 		return;
 	}
+	
+	/* URL encode session_name and id because they might be user supplied */
+	e_session_name = php_url_encode(PS(session_name), strlen(PS(session_name)), NULL);
+	e_id = php_url_encode(PS(id), strlen(PS(id)), NULL);
 
 	smart_str_appends(&ncookie, COOKIE_SET_COOKIE);
-	smart_str_appends(&ncookie, PS(session_name));
+	smart_str_appends(&ncookie, e_session_name);
 	smart_str_appendc(&ncookie, '=');
-	smart_str_appends(&ncookie, PS(id));
+	smart_str_appends(&ncookie, e_id);
+	
+	efree(e_session_name);
+	efree(e_id);
 	
 	if (PS(cookie_lifetime) > 0) {
 		struct timeval tv;
@@ -1230,8 +1239,11 @@ PHPAPI void php_session_start(TSRMLS_D)
 		char *q;
 
 		p += lensess + 1;
-		if ((q = strpbrk(p, "/?\\")))
+		if ((q = strpbrk(p, "/?\\"))) {
 			PS(id) = estrndup(p, q - p);
+			PS(send_cookie) = 0;
+		}
+
 	}
 
 	/* check whether the current request was referred to by
