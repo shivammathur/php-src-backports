@@ -883,6 +883,10 @@ PHP_FUNCTION(imagecreatetruecolor)
 
 	im = gdImageCreateTrueColor(Z_LVAL_PP(x_size), Z_LVAL_PP(y_size));
 
+	if (!im) {
+		RETURN_FALSE;
+	}
+
 	ZEND_REGISTER_RESOURCE(return_value, im, le_gd);
 }
 /* }}} */
@@ -1341,6 +1345,10 @@ PHP_FUNCTION(imagecreate)
 	}
 
 	im = gdImageCreate(Z_LVAL_PP(x_size), Z_LVAL_PP(y_size));
+
+	if (!im) {
+		RETURN_FALSE;
+	}
 
 	ZEND_REGISTER_RESOURCE(return_value, im, le_gd);
 }

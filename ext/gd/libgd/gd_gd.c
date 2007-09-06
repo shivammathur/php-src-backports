@@ -122,7 +122,7 @@ static gdImagePtr _gdCreateFromFile (gdIOCtx * in, int *sx, int *sy)
 	} else {
 		im = gdImageCreate(*sx, *sy);
 	}
-	if (!_gdGetColors(in, im, gd2xFlag)) {
+	if (im && !_gdGetColors(in, im, gd2xFlag)) {
 		goto fail2;
 	}
 
