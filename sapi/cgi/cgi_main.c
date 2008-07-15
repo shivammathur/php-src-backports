@@ -599,6 +599,39 @@ static void php_cgi_usage(char *argv0)
 }
 /* }}} */
 
+/* {{{ is_valid_path
+ *
+ * some server configurations allow '..' to slip through in the
+ * translated path.   We'll just refuse to handle such a path.
+ */
+static int is_valid_path(const char *path)
+{
+	const char *p;
+
+	if (!path) {
+		return 0;
+	}
+	p = strstr(path, "..");
+	if (p) {
+		if ((p == path || IS_SLASH(*(p-1))) &&
+		    (*(p+2) == 0 || IS_SLASH(*(p+2)))) {
+			return 0;
+		}
+		while (1) {
+			p = strstr(p+1, "..");
+			if (!p) {
+				break;
+			}
+			if (IS_SLASH(*(p-1)) &&
+			    (*(p+2) == 0 || IS_SLASH(*(p+2)))) {
+					return 0;
+			}
+		}
+	}
+	return 1;
+}
+/* }}} */
+
 /* {{{ init_request_info
 
   initializes request_info structure
@@ -874,7 +907,7 @@ static void init_request_info(TSRMLS_D)
 		SG(request_info).query_string = sapi_cgibin_getenv("QUERY_STRING", 0 TSRMLS_CC);
 		/* some server configurations allow '..' to slip through in the
 		   translated path.   We'll just refuse to handle such a path. */
-		if (script_path_translated && !strstr(script_path_translated, "..")) {
+		if (is_valid_path(script_path_translated)) {
 			SG(request_info).path_translated = estrdup(script_path_translated);
 		}
 		SG(request_info).content_type = (content_type ? content_type : "" );
