@@ -151,11 +151,20 @@ static const char rcsid[] = "#(@) $Id$";
 * Begin Time Functions *
 ***********************/
 
+static time_t mkgmtime(struct tm *tm)
+{
+    static const int mdays[12] = {0,31,59,90,120,151,181,212,243,273,304,334};
+
+    return ((((((tm->tm_year - 70) * 365) + mdays[tm->tm_mon] + tm->tm_mday-1 +
+                  (tm->tm_year-68-1+(tm->tm_mon>=2))/4) * 24) + tm->tm_hour) * 60 +
+        tm->tm_min) * 60 + tm->tm_sec;
+}
+
 static int date_from_ISO8601 (const char *text, time_t * value) {
    struct tm tm;
    int n;
    int i;
-	char buf[18];
+   char buf[30];
 
 	if (strchr (text, '-')) {
 		char *p = (char *) text, *p2 = buf;
@@ -163,6 +172,9 @@ static int date_from_ISO8601 (const char *text, time_t * value) {
 			if (*p != '-') {
 				*p2 = *p;
 				p2++;
+				if (p2-buf >= sizeof(buf)) {
+					return -1;
+				}
 			}
 			p++;
 		}
@@ -171,10 +183,6 @@ static int date_from_ISO8601 (const char *text, time_t * value) {
 
 
    tm.tm_isdst = -1;
-
-   if(strlen(text) < 17) {
-      return -1;
-   }
 
    n = 1000;
    tm.tm_year = 0;
@@ -220,7 +228,7 @@ static int date_from_ISO8601 (const char *text, time_t * value) {
 
    tm.tm_year -= 1900;
 
-   *value = mktime(&tm);
+   *value = mkgmtime(&tm);
 
    return 0;
 
@@ -1680,8 +1688,12 @@ void XMLRPC_SetValueDateTime_ISO8601(XMLRPC_VALUE value, const char* s) {
    if(value) {
       time_t time_val = 0;
       if(s) {
+         value->type = xmlrpc_datetime;
          date_from_ISO8601(s, &time_val);
          XMLRPC_SetValueDateTime(value, time_val);
+         value->i = time_val;
+         simplestring_clear(&value->str);
+         simplestring_add(&value->str, s);
       }
    }
 }
