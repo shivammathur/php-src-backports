@@ -70,6 +70,7 @@ static void _php_make_header_object(zval *myzvalue, ENVELOPE *en TSRMLS_DC);
 static void _php_imap_add_body(zval *arg, BODY *body TSRMLS_DC);
 static void _php_imap_parse_address(ADDRESS *addresslist, char **fulladdress, zval *paddress TSRMLS_DC);
 static int _php_imap_address_size(ADDRESS *addresslist);
+static void _php_rfc822_write_address_len (char *dest, ADDRESS *adr, int len);
 
 /* the gets we use */
 static char *php_mail_gets(readfn_t f, void *stream, unsigned long size, GETS_DATA *md);
@@ -2114,7 +2115,7 @@ PHP_FUNCTION(imap_rfc822_write_address)
 	}
 
 	string[0]='\0';
-	rfc822_write_address(string, addr);
+	_php_rfc822_write_address_len(string, addr, sizeof(string));
 	RETVAL_STRING(string, 1);
 }
 /* }}} */
@@ -2872,13 +2873,13 @@ PHP_FUNCTION(imap_fetch_overview)
 				if (env->from && _php_imap_address_size(env->from) < MAILTMPLEN) {
 					env->from->next=NULL;
 					address[0] = '\0';
-					rfc822_write_address(address, env->from);
+					_php_rfc822_write_address_len(address, env->from, sizeof(address));
 					add_property_string(myoverview, "from", address, 1);
 				}
 				if (env->to && _php_imap_address_size(env->to) < MAILTMPLEN) {
 					env->to->next = NULL;
 					address[0] = '\0';
-					rfc822_write_address(address, env->to);
+					_php_rfc822_write_address_len(address, env->to, sizeof(address));
 					add_property_string(myoverview, "to", address, 1);
 				}
 				if (env->date) {
@@ -3829,6 +3830,34 @@ static int _php_imap_address_size (ADDRESS *addresslist)
 /* }}} */
 
 
+/* {{{ _php_rfc822_soutr
+ */
+static long _php_rfc822_soutr (void *stream,char *string)
+{
+ return NIL;
+}
+
+/* }}} */
+
+
+/* {{{ _php_rfc822_write_address_len
+ */
+static void _php_rfc822_write_address_len ( char *dest, ADDRESS *adr, int len)
+{
+ RFC822BUFFER buf;
+
+ buf.beg = dest;
+ buf.cur = buf.beg;
+ buf.end = buf.beg + len - 1;
+ buf.s = NIL;
+ buf.f = _php_rfc822_soutr;
+ rfc822_output_address_list (&buf, adr, 0, NIL);
+ *buf.cur = '\0';
+}
+ 
+/* }}} */
+
+
 /* {{{ _php_imap_parse_address
  */
 static void _php_imap_parse_address (ADDRESS *addresslist, char **fulladdress, zval *paddress TSRMLS_DC)
@@ -3843,7 +3872,7 @@ static void _php_imap_parse_address (ADDRESS *addresslist, char **fulladdress, z
 	if ((len = _php_imap_address_size(addresstmp))) {
 		tmpstr = (char *) malloc(len + 1);
 		tmpstr[0] = '\0';
-		rfc822_write_address(tmpstr, addresstmp);
+		_php_rfc822_write_address_len(tmpstr, addresstmp, len + 1);
 		*fulladdress = tmpstr;
 	} else {
 		*fulladdress = NULL;
