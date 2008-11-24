@@ -341,7 +341,7 @@ static int php_apache_sapi_activate(TSRMLS_D)
 	 * For the Apache module version, this bit of code registers a cleanup
 	 * function that gets triggered when our request pool is destroyed.
 	 * We need this because at any point in our code we can be interrupted
-	 * and that may happen before we have had time to free our memory.
+	 * and that may happen before we havehad time to free our memory.
 	 * The php_request_shutdown function needs to free all outstanding allocated
 	 * memory.  
 	 */
@@ -733,11 +733,11 @@ static zend_bool should_overwrite_per_dir_entry(HashTable *target_ht, php_per_di
 		return 1; /* does not exist in dest, copy from source */
 	}
 
-	if (new_per_dir_entry->type==PHP_INI_SYSTEM
-		&& orig_per_dir_entry->type!=PHP_INI_SYSTEM) {
-		return 1;
+	if (orig_per_dir_entry->type==PHP_INI_SYSTEM
+		&& new_per_dir_entry->type!=PHP_INI_SYSTEM) {
+ 		return 0;
 	} else {
-		return 0;
+		return 1;
 	}
 }
 /* }}} */
