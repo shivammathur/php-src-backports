@@ -268,6 +268,14 @@ PHP_FUNCTION(shm_put_var)
 	PHP_VAR_SERIALIZE_INIT(var_hash);
 	php_var_serialize(&shm_var, arg_var, &var_hash TSRMLS_CC);
 	PHP_VAR_SERIALIZE_DESTROY(var_hash);
+	
+	shm_list_ptr = (sysvshm_shm *) zend_list_find(id, &type);
+	if (!shm_list_ptr || type != php_sysvshm.le_shm) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "%ld is not a SysV shared memory index", id);
+		smart_str_free(&shm_var);
+		RETURN_FALSE;
+	}
+	
 	/* insert serialized variable into shared memory */
 	ret = php_put_shm_data(shm_list_ptr->ptr, key, shm_var.c, shm_var.len);
 
