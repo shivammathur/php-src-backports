@@ -130,6 +130,9 @@ PHP_FUNCTION(pack)
 		WRONG_PARAM_COUNT;
 	}
 
+	if ((*argv[0])->is_ref) {
+		SEPARATE_ZVAL(argv[0]);
+	}
 	convert_to_string_ex(argv[0]);
 	format = Z_STRVAL_PP(argv[0]);
 	formatlen = Z_STRLEN_PP(argv[0]);
@@ -187,6 +190,9 @@ PHP_FUNCTION(pack)
 				}
 
 				if (arg < 0) {
+					if ((*argv[currentarg])->is_ref) {
+						SEPARATE_ZVAL(argv[currentarg]);
+					}
 					convert_to_string_ex(argv[currentarg]);
 					arg = Z_STRLEN_PP(argv[currentarg]);
 				}
@@ -320,6 +326,9 @@ PHP_FUNCTION(pack)
 			case 'A': 
 				memset(&output[outputpos], (code == 'a') ? '\0' : ' ', arg);
 				val = argv[currentarg++];
+				if ((*val)->is_ref) {
+					SEPARATE_ZVAL(val);
+				}
 				convert_to_string_ex(val);
 				memcpy(&output[outputpos], Z_STRVAL_PP(val),
 					   (Z_STRLEN_PP(val) < arg) ? Z_STRLEN_PP(val) : arg);
@@ -333,6 +342,9 @@ PHP_FUNCTION(pack)
 				char *v;
 
 				val = argv[currentarg++];
+				if ((*val)->is_ref) {
+					SEPARATE_ZVAL(val);
+				}
 				convert_to_string_ex(val);
 				v = Z_STRVAL_PP(val);
 				outputpos--;
