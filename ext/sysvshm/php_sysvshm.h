@@ -30,6 +30,10 @@ extern zend_module_entry sysvshm_module_entry;
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+#ifndef PHP_SHM_RSRC_NAME
+#define PHP_SHM_RSRC_NAME "sysvshm"
+#endif
+
 typedef struct {
 	int le_shm;
 	long init_mem;

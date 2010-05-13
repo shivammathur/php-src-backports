@@ -262,6 +262,12 @@ PHP_FUNCTION(shm_put_var)
 	PHP_VAR_SERIALIZE_INIT(var_hash);
 	php_var_serialize(&shm_var, arg_var, &var_hash TSRMLS_CC);
 	PHP_VAR_SERIALIZE_DESTROY(var_hash);
+
+	shm_list_ptr = zend_fetch_resource(&arg_id TSRMLS_CC, -1, PHP_SHM_RSRC_NAME, NULL, 1, php_sysvshm.le_shm);
+	if (!shm_list_ptr) {
+		smart_str_free(&shm_var);
+		RETURN_FALSE;
+	}
 	/* insert serialized variable into shared memory */
 	ret = php_put_shm_data(shm_list_ptr->ptr, key, shm_var.c, shm_var.len);
 
