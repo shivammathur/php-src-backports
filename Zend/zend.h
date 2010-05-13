@@ -302,6 +302,31 @@ struct _zval_struct {
 };
 
 
+#define Z_ISREF_PP(ppz)			Z_ISREF_P(*(ppz))
+#define Z_ISREF_P(pz)			zval_isref_p(pz)
+#define Z_SET_ISREF_TO_P(pz, isref)	zval_set_isref_to_p(pz, isref)
+
+#if defined(__GNUC__)
+#if __GNUC__ >= 3
+#define zend_always_inline inline __attribute__((always_inline))
+#else
+#define zend_always_inline inline
+#endif
+
+#elif defined(_MSC_VER)
+#define zend_always_inline __forceinline
+#else
+#define zend_always_inline inline
+#endif
+
+static zend_always_inline zend_bool zval_isref_p(zval* pz) {
+	return pz->is_ref;
+}
+
+static zend_always_inline zend_bool zval_set_isref_to_p(zval* pz, zend_bool isref) {
+	return pz->is_ref = isref;
+}
+
 /* excpt.h on Digital Unix 4.0 defines function_table */
 #undef function_table
 
