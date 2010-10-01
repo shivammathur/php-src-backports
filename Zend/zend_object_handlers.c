@@ -327,12 +327,14 @@ zval *zend_std_read_property(zval *object, zval *member, int type TSRMLS_DC)
 		    zend_get_property_guard(zobj, property_info, member, &guard) == SUCCESS &&
 		    !guard->in_get) {
 			/* have getter - try with it! */
+			object->refcount++;
 			if (PZVAL_IS_REF(object)) {
 				SEPARATE_ZVAL(&object);
 			}
 			guard->in_get = 1; /* prevent circular getting */
 			rv = zend_std_call_getter(object, member TSRMLS_CC);
 			guard->in_get = 0;
+			zval_ptr_dtor(&object);
 
 			if (rv) {
 				retval = &rv;
@@ -402,6 +404,7 @@ static void zend_std_write_property(zval *object, zval *member, zval *value TSRM
 		if (zobj->ce->__set &&
 		    zend_get_property_guard(zobj, property_info, member, &guard) == SUCCESS &&
 		    !guard->in_set) {
+			object->refcount++;
 			if (PZVAL_IS_REF(object)) {
 				SEPARATE_ZVAL(&object);
 			}
@@ -411,6 +414,7 @@ static void zend_std_write_property(zval *object, zval *member, zval *value TSRM
 			}
 			setter_done = 1;
 			guard->in_set = 0;
+			zval_ptr_dtor(&object);
 		}
 	}
 
@@ -585,12 +589,14 @@ static void zend_std_unset_property(zval *object, zval *member TSRMLS_DC)
 		    zend_get_property_guard(zobj, property_info, member, &guard) == SUCCESS &&
 		    !guard->in_unset) {
 			/* have unseter - try with it! */
+			object->refcount++;
 			if (PZVAL_IS_REF(object)) {
 				SEPARATE_ZVAL(&object);
 			}
 			guard->in_unset = 1; /* prevent circular setting */
 			zend_std_call_unsetter(object, member TSRMLS_CC);
 			guard->in_unset = 0;
+			zval_ptr_dtor(&object);
 		}
 	}
 
@@ -966,6 +972,7 @@ static int zend_std_has_property(zval *object, zval *member, int has_set_exists 
 			zval *rv;
 
 			/* have issetter - try with it! */
+			object->refcount++;
 			if (PZVAL_IS_REF(object)) {
 				SEPARATE_ZVAL(&object);
 			}
@@ -986,6 +993,7 @@ static int zend_std_has_property(zval *object, zval *member, int has_set_exists 
 				}
 			}
 			guard->in_isset = 0;
+			zval_ptr_dtor(&object);
 		}
 	} else {
 		switch (has_set_exists) {
