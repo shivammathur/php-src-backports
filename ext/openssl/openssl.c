@@ -923,6 +923,10 @@ PHP_FUNCTION(openssl_x509_export_to_file)
 	}
 	RETVAL_FALSE;
 
+	if (strlen(filename) != filename_len) {
+		return;
+	}
+
 	cert = php_openssl_x509_from_zval(zcert, 0, &certresource TSRMLS_CC);
 	if (cert == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "cannot get cert from parameter 1");
@@ -2004,6 +2008,10 @@ PHP_FUNCTION(openssl_csr_export_to_file)
 	}
 	RETVAL_FALSE;
 
+	if (strlen(filename) != filename_len) {
+		return;
+	}
+
 	csr = php_openssl_csr_from_zval(&zcsr, 0, &csr_resource TSRMLS_CC);
 	if (csr == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "cannot get CSR from parameter 1");
@@ -2670,6 +2678,10 @@ PHP_FUNCTION(openssl_pkey_export_to_file)
 	}
 	RETVAL_FALSE;
 
+	if (strlen(filename) != filename_len) {
+		return;
+	}
+
 	key = php_openssl_evp_from_zval(zpkey, 0, passphrase, 0, &key_resource TSRMLS_CC);
 
 	if (key == NULL) {
@@ -3018,6 +3030,14 @@ PHP_FUNCTION(openssl_pkcs7_encrypt)
 				&outfilename, &outfilename_len, &zrecipcerts, &zheaders, &flags, &cipherid) == FAILURE)
 		return;
 
+	if (strlen(infilename) != infilename_len) {
+		return;
+	}
+
+	if (strlen(outfilename) != outfilename_len) {
+		return;
+	}
+
 	
 	if (php_openssl_safe_mode_chk(infilename TSRMLS_CC) || php_openssl_safe_mode_chk(outfilename TSRMLS_CC)) {
 		return;
@@ -3174,14 +3194,23 @@ PHP_FUNCTION(openssl_pkcs7_sign)
 	char * outfilename;	int outfilename_len;
 	char * extracertsfilename = NULL; int extracertsfilename_len;
 
+	RETVAL_FALSE;
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssZZa!|ls",
 				&infilename, &infilename_len, &outfilename, &outfilename_len,
 				&zcert, &zprivkey, &zheaders, &flags, &extracertsfilename,
 				&extracertsfilename_len) == FAILURE) {
 		return;
 	}
-	
-	RETVAL_FALSE;
+
+
+	if (strlen(infilename) != infilename_len) {
+		return;
+	}
+
+	if (strlen(outfilename) != outfilename_len) {
+		return;
+	}
 
 	if (extracertsfilename) {
 		others = load_all_certs_from_file(extracertsfilename);
@@ -3277,12 +3306,20 @@ PHP_FUNCTION(openssl_pkcs7_decrypt)
 	char * infilename;	int infilename_len;
 	char * outfilename;	int outfilename_len;
 
+	RETVAL_FALSE;
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssZ|Z", &infilename, &infilename_len,
 				&outfilename, &outfilename_len, &recipcert, &recipkey) == FAILURE) {
 		return;
 	}
 
-	RETVAL_FALSE;
+	if (strlen(infilename) != infilename_len) {
+		return;
+	}
+
+	if (strlen(outfilename) != outfilename_len) {
+		return;
+	}
 
 	cert = php_openssl_x509_from_zval(recipcert, 0, &certresval TSRMLS_CC);
 	if (cert == NULL) {

@@ -375,6 +375,10 @@ PHP_FUNCTION(get_meta_tags)
 		return;
 	}
 
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+
 	md.stream = php_stream_open_wrapper(filename, "rb",
 			(use_include_path ? USE_PATH : 0) | ENFORCE_SAFE_MODE | REPORT_ERRORS,
 			NULL);
@@ -531,6 +535,10 @@ PHP_FUNCTION(file_get_contents)
 		return;
 	}
 
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+
 	if (ZEND_NUM_ARGS() == 5 && maxlen < 0) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "length must be greater than or equal to zero");
 		RETURN_FALSE;
@@ -589,6 +597,10 @@ PHP_FUNCTION(file_put_contents)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz/|lr!", &filename, &filename_len, 
 				&data, &flags, &zcontext) == FAILURE) {
 		return;
+	}
+
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
 	}
 
 	if (Z_TYPE_P(data) == IS_RESOURCE) {
@@ -728,6 +740,11 @@ PHP_FUNCTION(file)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lr!", &filename, &filename_len, &flags, &zcontext) == FAILURE) {
 		return;
 	}
+
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+
 	if (flags < 0 || flags > (PHP_FILE_USE_INCLUDE_PATH | PHP_FILE_IGNORE_NEW_LINES | PHP_FILE_SKIP_EMPTY_LINES | PHP_FILE_NO_DEFAULT_CONTEXT)) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "'%ld' flag is not supported", flags);
 		RETURN_FALSE;
@@ -893,6 +910,10 @@ PHP_NAMED_FUNCTION(php_if_fopen)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|br", &filename, &filename_len,
 				&mode, &mode_len, &use_include_path, &zcontext) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(filename) != filename_len) {
 		RETURN_FALSE;
 	}
 
@@ -1459,6 +1480,10 @@ PHP_FUNCTION(mkdir)
 		RETURN_FALSE;
 	}
 
+	if (strlen(dir) != dir_len) {
+		RETURN_FALSE;
+	}
+
 	context = php_stream_context_from_zval(zcontext, 0);
 
 	RETURN_BOOL(php_stream_mkdir(dir, mode, (recursive ? PHP_STREAM_MKDIR_RECURSIVE : 0) | REPORT_ERRORS, context));
@@ -1571,6 +1596,14 @@ PHP_FUNCTION(rename)
 	php_stream_context *context;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|r", &old_name, &old_name_len, &new_name, &new_name_len, &zcontext) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(old_name) != old_name_len) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(new_name) != new_name_len) {
 		RETURN_FALSE;
 	}
 

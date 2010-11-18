@@ -379,6 +379,10 @@ PHP_FUNCTION(disk_free_space)
 		RETURN_FALSE;
 	}
 
+	if (strlen(path) != path_len) {
+		RETURN_FALSE;
+	}
+
 	if (php_disk_free_space(path, &bytesfree TSRMLS_CC) == SUCCESS) {
 		RETURN_DOUBLE(bytesfree);
 	}
@@ -746,6 +750,10 @@ PHPAPI void php_stat(const char *filename, php_stat_len filename_length, int typ
 	char safe_mode_buf[MAXPATHLEN];
 
 	if (!filename_length) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(filename) != filename_length) {
 		RETURN_FALSE;
 	}
 

@@ -1062,6 +1062,9 @@ PHP_FUNCTION(odbc_execute)
 			if (Z_STRLEN_PP(tmp) > 2 &&
 				Z_STRVAL_PP(tmp)[0] == '\'' &&
 				Z_STRVAL_PP(tmp)[Z_STRLEN_PP(tmp) - 1] == '\'') {
+				if (strlen(Z_STRVAL_PP(tmp)) != Z_STRLEN_PP(tmp)) {
+					RETURN_FALSE;
+				}
 				filename = estrndup(&Z_STRVAL_PP(tmp)[1], Z_STRLEN_PP(tmp) - 2);
 				filename[strlen(filename)] = '\0';
 
