@@ -207,7 +207,11 @@ PHP_FUNCTION(iptcembed)
         WRONG_PARAM_COUNT;
         break;
     }
-
+    
+    if (strlen(Z_STRVAL_PP(jpeg_file)) != Z_STRLEN_PP(jpeg_file)) {
+	RETURN_FALSE;
+    }
+    
     if (PG(safe_mode) && (!php_checkuid(Z_STRVAL_PP(jpeg_file), NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
 		RETURN_FALSE;
 	}

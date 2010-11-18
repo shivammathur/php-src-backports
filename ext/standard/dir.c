@@ -285,6 +285,9 @@ PHP_FUNCTION(chdir)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &str, &str_len) == FAILURE) {
 		RETURN_FALSE;
 	}
+	if (strlen(str) != str_len) {
+		RETURN_FALSE;
+	}
 
 	if (PG(safe_mode) && !php_checkuid(str, NULL, CHECKUID_CHECK_FILE_AND_DIR)) {
 		RETURN_FALSE;
@@ -375,7 +378,11 @@ PHP_FUNCTION(glob)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &pattern, &pattern_len, &flags) == FAILURE) 
 		return;
-
+	
+	if (strlen(pattern) != pattern_len) {
+		RETURN_FALSE;
+	}
+	
 #ifdef ZTS 
 	if (!IS_ABSOLUTE_PATH(pattern, pattern_len)) {
 		result = VCWD_GETCWD(cwd, MAXPATHLEN);	
@@ -473,7 +480,11 @@ PHP_FUNCTION(scandir)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lr", &dirn, &dirn_len, &flags, &zcontext) == FAILURE) {
 		return;
 	}
-
+	
+	if (strlen(dirn) != dirn_len) {
+		RETURN_FALSE;
+	}
+	
 	if (zcontext) {
 		context = php_stream_context_from_zval(zcontext, 0);
 	}

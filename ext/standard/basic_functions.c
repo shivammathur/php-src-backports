@@ -2458,6 +2458,10 @@ PHP_FUNCTION(highlight_file)
 		RETURN_FALSE;
 	}
 
+	if (strlen(Z_STRVAL_P(filename)) != Z_STRLEN_P(filename)) {
+		RETURN_FALSE;
+	}
+
 	if (i) {
 		php_start_ob_buffer (NULL, 0, 1 TSRMLS_CC);
 	}
@@ -2491,6 +2495,10 @@ PHP_FUNCTION(php_strip_whitespace)
 	}
 
 	php_start_ob_buffer(NULL, 0, 1 TSRMLS_CC);
+
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
 
 	file_handle.type = ZEND_HANDLE_FILENAME;
 	file_handle.filename = filename;
@@ -2741,6 +2749,11 @@ PHP_FUNCTION(set_include_path)
 	if (ZEND_NUM_ARGS() != 1 || zend_get_parameters_ex(1, &new_value) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
+	/* No nulls allowed in paths */
+	if (strlen(Z_STRVAL_PP(new_value)) != Z_STRLEN_PP(new_value)) {
+		RETURN_FALSE;
+	}
+	
 	convert_to_string_ex(new_value);
 	old_value = zend_ini_string("include_path", sizeof("include_path"), 0);
 	/* copy to return here, because alter might free it! */
@@ -3050,7 +3063,11 @@ PHP_FUNCTION(is_uploaded_file)
 	if (ZEND_NUM_ARGS() != 1 || zend_get_parameters_ex(1, &path) != SUCCESS) {
 		ZEND_WRONG_PARAM_COUNT();
 	}
-
+	
+	if (strlen(Z_STRVAL_PP(path)) != Z_STRLEN_PP(path)) {
+		RETURN_FALSE;
+	}
+	
 	convert_to_string_ex(path);
 
 	if (zend_hash_exists(SG(rfc1867_uploaded_files), Z_STRVAL_PP(path), Z_STRLEN_PP(path)+1)) {
@@ -3089,7 +3106,15 @@ PHP_FUNCTION(move_uploaded_file)
 	if (php_check_open_basedir(Z_STRVAL_PP(new_path) TSRMLS_CC)) {
 		RETURN_FALSE;
 	}
-
+	
+	if (strlen(Z_STRVAL_PP(path)) != Z_STRLEN_PP(path)) {
+		RETURN_FALSE;
+	}
+	
+	if (strlen(Z_STRVAL_PP(new_path)) != Z_STRLEN_PP(new_path)) {
+		RETURN_FALSE;
+	}
+	
 	VCWD_UNLINK(Z_STRVAL_PP(new_path));
 	if (rename(Z_STRVAL_PP(path), Z_STRVAL_PP(new_path)) == 0) {
 		successful = 1;
@@ -3225,9 +3250,13 @@ PHP_FUNCTION(parse_ini_file)
 			if (zend_get_parameters_ex(2, &filename, &process_sections) == FAILURE) {
 				RETURN_FALSE;
 			}
-	
+			
+			if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
+				RETURN_FALSE;
+			}
+			
 			convert_to_boolean_ex(process_sections);
-		
+			
 			if (Z_BVAL_PP(process_sections)) {
 				BG(active_ini_file_section) = NULL;
 				ini_parser_cb = (zend_ini_parser_cb_t) php_ini_parser_cb_with_sections;

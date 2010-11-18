@@ -256,6 +256,10 @@ PHP_FUNCTION(disk_free_space)
 
 	convert_to_string_ex(path);
 
+	if (strlen(Z_STRVAL_PP(path)) != Z_STRLEN_PP(path)) {
+		RETURN_FALSE;
+	}
+
 	if (php_check_open_basedir(Z_STRVAL_PP(path) TSRMLS_CC)) {
 		RETURN_FALSE;
 	}
@@ -335,6 +339,11 @@ static void php_do_chgrp(INTERNAL_FUNCTION_PARAMETERS, int do_lchgrp)
 		WRONG_PARAM_COUNT;
 	}
 	convert_to_string_ex(filename);
+	
+	if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
+		RETURN_FALSE;
+	}
+	
 	if (Z_TYPE_PP(group) == IS_STRING) {
 		gr = getgrnam(Z_STRVAL_PP(group));
 		if (!gr) {
@@ -411,6 +420,11 @@ static void php_do_chown(INTERNAL_FUNCTION_PARAMETERS, int do_lchown)
 		WRONG_PARAM_COUNT;
 	}
 	convert_to_string_ex(filename);
+	
+	if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
+		RETURN_FALSE;
+	}
+
 	if (Z_TYPE_PP(user) == IS_STRING) {
 		pw = getpwnam(Z_STRVAL_PP(user));
 		if (!pw) {
@@ -489,7 +503,11 @@ PHP_FUNCTION(chmod)
 	}
 	convert_to_string_ex(filename);
 	convert_to_long_ex(mode);
-
+	
+	if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
+		RETURN_FALSE;
+	}
+	
 	if (PG(safe_mode) &&(!php_checkuid(Z_STRVAL_PP(filename), NULL, CHECKUID_ALLOW_FILE_NOT_EXISTS))) {
 		RETURN_FALSE;
 	}
@@ -564,8 +582,12 @@ PHP_FUNCTION(touch)
 		WRONG_PARAM_COUNT;
 	}
 	convert_to_string_ex(filename);
-
+	
 	if (PG(safe_mode) &&(!php_checkuid(Z_STRVAL_PP(filename), NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
 		RETURN_FALSE;
 	}
 
@@ -630,6 +652,10 @@ PHPAPI void php_stat(const char *filename, php_stat_len filename_length, int typ
 	php_stream_wrapper *wrapper;
 
 	if (!filename_length) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(filename) != filename_length) {
 		RETURN_FALSE;
 	}
 

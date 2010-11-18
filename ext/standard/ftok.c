@@ -40,7 +40,11 @@ PHP_FUNCTION(ftok)
 
 	convert_to_string_ex(pathname);
 	convert_to_string_ex(proj);
-
+	
+	if (strlen(Z_STRVAL_PP(pathname)) != Z_STRLEN_PP(pathname)) {
+		RETURN_FALSE;
+	}
+	
 	if (Z_STRLEN_PP(pathname)==0){
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Pathname is invalid");
 		RETURN_LONG(-1);

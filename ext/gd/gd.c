@@ -1811,6 +1811,10 @@ static void _php_image_output(INTERNAL_FUNCTION_PARAMETERS, int image_type, char
 	}
 
 	if ((argc == 2) || (argc > 2 && Z_STRLEN_PP(file))) {
+		if (strlen(Z_STRVAL_PP(file)) != Z_STRLEN_PP(file)) {
+			RETURN_FALSE;
+		}
+		
 		PHP_GD_CHECK_OPEN_BASEDIR(fn, "Invalid filename");
 
 		fp = VCWD_FOPEN(fn, "wb");
@@ -3906,6 +3910,14 @@ static void _php_image_convert(INTERNAL_FUNCTION_PARAMETERS, int image_type )
 	dest_height = Z_LVAL_PP(height);
 	dest_width = Z_LVAL_PP(width);
 	int_threshold = Z_LVAL_PP(threshold);
+
+	if (strlen(fn_org) != Z_STRLEN_PP(f_org)) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(fn_dest) != Z_STRLEN_PP(f_dest)) {
+		RETURN_FALSE;
+	}
 
 	/* Check threshold value */
 	if (int_threshold < 0 || int_threshold > 8) {

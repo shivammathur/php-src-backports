@@ -324,6 +324,10 @@ PHP_FUNCTION(bzopen)
 	/* If it's not a resource its a string containing the filename to open */
 	if (Z_TYPE_PP(file) != IS_RESOURCE) {
 		convert_to_string_ex(file);
+
+		if (strlen(Z_STRVAL_PP(file)) != Z_STRLEN_PP(file)) {
+			RETURN_FALSE;
+		}
 		stream = php_stream_bz2open(NULL,
 									Z_STRVAL_PP(file), 
 									Z_STRVAL_PP(mode), 

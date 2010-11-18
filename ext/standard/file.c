@@ -376,6 +376,10 @@ PHP_FUNCTION(get_meta_tags)
 		return;
 	}
 
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+
 	md.stream = php_stream_open_wrapper(filename, "rb",
 			(use_include_path ? USE_PATH : 0) | ENFORCE_SAFE_MODE | REPORT_ERRORS,
 			NULL);
@@ -524,7 +528,11 @@ PHP_FUNCTION(file_get_contents)
 				  &filename, &filename_len, &use_include_path, &zcontext, &offset, &maxlen) == FAILURE) {
 		return;
 	}
-
+	
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+	
 	context = php_stream_context_from_zval(zcontext, 0);
 
 	stream = php_stream_open_wrapper_ex(filename, "rb", 
@@ -575,6 +583,10 @@ PHP_FUNCTION(file_put_contents)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz/|lr!", &filename, &filename_len, 
 				&data, &flags, &zcontext) == FAILURE) {
 		return;
+	}
+
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
 	}
 
 	context = php_stream_context_from_zval(zcontext, flags & PHP_FILE_NO_DEFAULT_CONTEXT);
@@ -687,6 +699,11 @@ PHP_FUNCTION(file)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lr!", &filename, &filename_len, &flags, &zcontext) == FAILURE) {
 		return;
 	}
+
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+
 	if (flags < 0 || flags > (PHP_FILE_USE_INCLUDE_PATH | PHP_FILE_IGNORE_NEW_LINES | PHP_FILE_SKIP_EMPTY_LINES | PHP_FILE_NO_DEFAULT_CONTEXT)) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "'%ld' flag is not supported", flags);
 		RETURN_FALSE;
@@ -780,8 +797,17 @@ PHP_FUNCTION(tempnam)
 	if (ZEND_NUM_ARGS() != 2 || zend_get_parameters_ex(2, &arg1, &arg2) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
+
 	convert_to_string_ex(arg1);
 	convert_to_string_ex(arg2);
+
+	if (strlen(Z_STRVAL_PP(arg1)) != Z_STRLEN_PP(arg1)) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(Z_STRVAL_PP(arg2)) != Z_STRLEN_PP(arg2)) {
+		RETURN_FALSE;
+	}
 
 	if (PG(safe_mode) &&(!php_checkuid(Z_STRVAL_PP(arg1), NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
 		RETURN_FALSE;
@@ -842,6 +868,14 @@ PHP_NAMED_FUNCTION(php_if_fopen)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|br", &filename, &filename_len,
 				&mode, &mode_len, &use_include_path, &zcontext) == FAILURE) {
+		RETURN_FALSE;
+	}
+	
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(mode) != mode_len) {
 		RETURN_FALSE;
 	}
 
@@ -1405,6 +1439,10 @@ PHP_FUNCTION(mkdir)
 		RETURN_FALSE;
 	}
 
+	if (strlen(dir) != dir_len) {
+		RETURN_FALSE;
+	}
+
 	context = php_stream_context_from_zval(zcontext, 0);
 
 	RETURN_BOOL(php_stream_mkdir(dir, mode, (recursive ? PHP_STREAM_MKDIR_RECURSIVE : 0) | REPORT_ERRORS, context));
@@ -1421,6 +1459,10 @@ PHP_FUNCTION(rmdir)
 	int dir_len;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p|r", &dir, &dir_len, &zcontext) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(dir) != dir_len) {
 		RETURN_FALSE;
 	}
 
@@ -1443,6 +1485,10 @@ PHP_FUNCTION(readfile)
 	php_stream_context *context = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|br!", &filename, &filename_len, &use_include_path, &zcontext) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(filename) != filename_len) {
 		RETURN_FALSE;
 	}
 
@@ -1518,6 +1564,14 @@ PHP_FUNCTION(rename)
 		RETURN_FALSE;
 	}
 
+	if (strlen(old_name) != old_name_len) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(new_name) != new_name_len) {
+		RETURN_FALSE;
+	}
+
 	wrapper = php_stream_locate_url_wrapper(old_name, NULL, 0 TSRMLS_CC);
 
 	if (!wrapper || !wrapper->wops) {
@@ -1552,6 +1606,10 @@ PHP_FUNCTION(unlink)
 	php_stream_context *context = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|r", &filename, &filename_len, &zcontext) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(filename) != filename_len) {
 		RETURN_FALSE;
 	}
 
@@ -1697,6 +1755,14 @@ PHP_FUNCTION(copy)
 
 	convert_to_string_ex(source);
 	convert_to_string_ex(target);
+
+	if (strlen(Z_STRVAL_PP(source)) != Z_STRLEN_PP(source)) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(Z_STRVAL_PP(target)) != Z_STRLEN_PP(target)) {
+		RETURN_FALSE;
+	}
 
 	if (PG(safe_mode) &&(!php_checkuid(Z_STRVAL_PP(source), NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
 		RETURN_FALSE;
@@ -2314,8 +2380,12 @@ PHP_FUNCTION(realpath)
 	if (ZEND_NUM_ARGS() != 1 || zend_get_parameters_ex(ZEND_NUM_ARGS(), &path) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
-
+	
 	convert_to_string_ex(path);
+
+	if (strlen(Z_STRVAL_PP(path)) != Z_STRLEN_PP(path)) {
+		RETURN_FALSE;
+	}
 
 	if (VCWD_REALPATH(Z_STRVAL_PP(path), resolved_path_buff)) {
 #ifdef ZTS
@@ -2455,6 +2525,14 @@ PHP_FUNCTION(fnmatch)
 		== FAILURE) 
 		return;
 	
+	if (strlen(pattern) != pattern_len) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(filename) != filename_len) {
+		RETURN_FALSE;
+	}
+
 	if (filename_len >= MAXPATHLEN) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Filename exceeds the maximum allowed length of %d characters", MAXPATHLEN);
 		RETURN_FALSE;

@@ -279,6 +279,10 @@ PHP_FUNCTION(pspell_new_personal)
 	}
 #endif
 
+	if (strlen(Z_STRVAL_PP(personal)) != Z_STRLEN_PP(personal)) {
+		RETURN_FALSE;
+	}
+
 	convert_to_string_ex(personal);
 
 	if (PG(safe_mode) && (!php_checkuid(Z_STRVAL_PP(personal), NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
@@ -778,6 +782,10 @@ static void pspell_config_path(INTERNAL_FUNCTION_PARAMETERS, char *option)
 		WRONG_PARAM_COUNT;
 	}
 
+	if (strlen(value) != Z_STRVAL_PP(value)) {
+		RETURN_FALSE;
+	}
+
 	PSPELL_FETCH_CONFIG;
 
 	convert_to_string_ex(value);
@@ -834,9 +842,14 @@ PHP_FUNCTION(pspell_config_repl)
 		WRONG_PARAM_COUNT;
 	}
 
+
 	PSPELL_FETCH_CONFIG;
 
 	pspell_config_replace(config, "save-repl", "true");
+
+	if (strlen(Z_STRVAL_PP(repl)) != Z_STRLEN_PP(repl)) {
+		RETURN_FALSE;
+	}
 
 	convert_to_string_ex(repl);
 

@@ -63,6 +63,10 @@ PHP_FUNCTION(readlink)
 	}
 	convert_to_string_ex(filename);
 
+	if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
+		RETURN_FALSE;
+	}
+
 	if (PG(safe_mode) && !php_checkuid(Z_STRVAL_PP(filename), NULL, CHECKUID_CHECK_FILE_AND_DIR)) {
 		RETURN_FALSE;
 	}
@@ -122,6 +126,14 @@ PHP_FUNCTION(symlink)
 	convert_to_string_ex(topath);
 	convert_to_string_ex(frompath);
 
+	if (strlen(Z_STRVAL_PP(topath)) != Z_STRLEN_PP(topath)) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(Z_STRVAL_PP(frompath)) != Z_STRLEN_PP(frompath)) {
+		RETURN_FALSE;
+	}
+
 	expand_filepath(Z_STRVAL_PP(frompath), source_p TSRMLS_CC);
 	expand_filepath(Z_STRVAL_PP(topath), dest_p TSRMLS_CC);
 
@@ -176,6 +188,14 @@ PHP_FUNCTION(link)
 	}
 	convert_to_string_ex(topath);
 	convert_to_string_ex(frompath);
+
+	if (strlen(Z_STRVAL_PP(topath)) != Z_STRLEN_PP(topath)) {
+		RETURN_FALSE;
+	}
+
+	if (strlen(Z_STRVAL_PP(frompath)) != Z_STRLEN_PP(frompath)) {
+		RETURN_FALSE;
+	}
 
 	expand_filepath(Z_STRVAL_PP(frompath), source_p TSRMLS_CC);
 	expand_filepath(Z_STRVAL_PP(topath), dest_p TSRMLS_CC);
