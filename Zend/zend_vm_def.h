@@ -2705,6 +2705,15 @@ ZEND_VM_HANDLER(73, ZEND_INCLUDE_OR_EVAL, CONST|TMP|VAR|CV, ANY)
 
 	return_value_used = RETURN_VALUE_USED(opline);
 
+	if (Z_LVAL(opline->op2.u.constant) != ZEND_EVAL && strlen(Z_STRVAL_P(inc_filename)) != Z_STRLEN_P(inc_filename)) {
+		if (Z_LVAL(opline->op2.u.constant)==ZEND_INCLUDE_ONCE || Z_LVAL(opline->op2.u.constant)==ZEND_INCLUDE) {
+			zend_message_dispatcher(ZMSG_FAILED_INCLUDE_FOPEN, Z_STRVAL_P(inc_filename) TSRMLS_CC);
+		} else {
+			zend_message_dispatcher(ZMSG_FAILED_REQUIRE_FOPEN, Z_STRVAL_P(inc_filename) TSRMLS_CC);
+		}
+		goto done;
+	}
+
 	switch (opline->op2.u.constant.value.lval) {
 		case ZEND_INCLUDE_ONCE:
 		case ZEND_REQUIRE_ONCE: {
@@ -2747,6 +2756,7 @@ ZEND_VM_HANDLER(73, ZEND_INCLUDE_OR_EVAL, CONST|TMP|VAR|CV, ANY)
 			break;
 		EMPTY_SWITCH_DEFAULT_CASE()
 	}
+done:
 	if (inc_filename==&tmp_inc_filename) {
 		zval_dtor(&tmp_inc_filename);
 	}

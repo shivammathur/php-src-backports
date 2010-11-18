@@ -2004,6 +2004,12 @@ PHP_FUNCTION(error_log)
 		headers = Z_STRVAL_PP(emailhead);
 	}
 
+	if (opt_err == 3 && opt != NULL) {
+		if (strlen(opt) != Z_STRLEN_PP(option)) {
+			RETURN_FALSE;
+		}
+	}
+
 	if (_php_error_log(opt_err, message, opt, headers TSRMLS_CC) == FAILURE) {
 		RETURN_FALSE;
 	}

@@ -818,6 +818,10 @@ PHP_FUNCTION(openssl_x509_export_to_file)
 		return;
 	}
 
+	if (strlen(filename) != filename_len) {
+		return;
+	}
+
 	if (php_openssl_safe_mode_chk(filename TSRMLS_CC)) {
 		return;
 	}

@@ -782,7 +782,7 @@ static void pspell_config_path(INTERNAL_FUNCTION_PARAMETERS, char *option)
 		WRONG_PARAM_COUNT;
 	}
 
-	if (strlen(value) != Z_STRVAL_PP(value)) {
+	if (strlen(Z_STRVAL_PP(value)) != Z_STRLEN_PP(value)) {
 		RETURN_FALSE;
 	}
 
