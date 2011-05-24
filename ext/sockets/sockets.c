@@ -1137,6 +1137,11 @@ PHP_FUNCTION(socket_connect)
 			break;
 
 		case AF_UNIX:
+ 			if (addr_len >= sizeof(s_un.sun_path)) {
+ 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Path too long", php_sock->type);
+ 				RETURN_FALSE;
+ 			}
+
 			s_un.sun_family = AF_UNIX;
 			snprintf(s_un.sun_path, 108, "%s", addr);
 			retval = connect(php_sock->bsd_socket, (struct sockaddr *) &s_un, SUN_LEN(&s_un));
