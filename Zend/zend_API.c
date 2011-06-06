@@ -397,6 +397,7 @@ static char *zend_parse_arg_impl(int arg_num, zval **arg, va_list *va, char **sp
 			}
 			break;
 
+		case 'p':
 		case 's':
 			{
 				char **p = va_arg(*va, char **);
@@ -423,13 +424,16 @@ static char *zend_parse_arg_impl(int arg_num, zval **arg, va_list *va, char **sp
 						}
 						*p = Z_STRVAL_PP(arg);
 						*pl = Z_STRLEN_PP(arg);
+						if (c == 'p' && CHECK_ZVAL_NULL_PATH(*arg)) {
+							return "valid path";
+						}
 						break;
 
 					case IS_OBJECT:
 					case IS_ARRAY:
 					case IS_RESOURCE:
 					default:
-						return "string";
+						return c == 's' ? "string" : "valid path";
 				}
 			}
 			break;
@@ -697,7 +701,7 @@ static int zend_parse_va_args(int num_args, char *type_spec, va_list *va, int fl
 				}
 				/* break missing intentionally */
 			case 'l': case 'd':
-			case 'H': case 'b':
+			case 'H': case 'b': case 'p':
 			case 'r': case 'a':
 			case 'o': case 'O':
 			case 'z': case 'Z':
