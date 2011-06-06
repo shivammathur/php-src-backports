@@ -405,6 +405,9 @@ END_EXTERN_C()
 #define CHECK_ZVAL_STRING_REL(z)
 #endif
 
+#define CHECK_ZVAL_NULL_PATH(p) (Z_STRLEN_P(p) != strlen(Z_STRVAL_P(p)))
+#define CHECK_NULL_PATH(p, l) (strlen(p) != l)
+
 #define ZVAL_RESOURCE(z, l) {			\
 		(z)->type = IS_RESOURCE;        \
 		(z)->value.lval = l;	        \
