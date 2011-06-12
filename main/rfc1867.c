@@ -1133,7 +1133,7 @@ filedone:
 #endif
 			
 			if (!is_anonymous) {
-				if (s && s > filename) {
+				if (s && s >= filename) {
 					safe_php_register_variable(lbuf, s+1, NULL, 0 TSRMLS_CC);
 				} else {
 					safe_php_register_variable(lbuf, filename, NULL, 0 TSRMLS_CC);
@@ -1146,7 +1146,7 @@ filedone:
 			} else {
 				sprintf(lbuf, "%s[name]", param);
 			}
-			if (s && s > filename) {
+			if (s && s >= filename) {
 				register_http_post_files_variable(lbuf, s+1, http_post_files, 0 TSRMLS_CC);
 			} else {
 				register_http_post_files_variable(lbuf, filename, http_post_files, 0 TSRMLS_CC);
