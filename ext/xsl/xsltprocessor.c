@@ -27,6 +27,8 @@
 #include "php_xsl.h"
 #include "ext/libxml/php_libxml.h"
 
+#include "zend_ini.h"
+
 /*
 * class xsl_xsltprocessor 
 *
@@ -415,13 +417,16 @@ PHP_FUNCTION(xsl_xsltprocessor_import_stylesheet)
 
 static xmlDocPtr php_xsl_apply_stylesheet(xsl_object *intern, xsltStylesheetPtr style, zval *docp TSRMLS_DC)
 {
-	xmlDocPtr newdocp;
+	xmlDocPtr newdocp = NULL;
 	xmlDocPtr doc = NULL;
 	xmlNodePtr node = NULL;
 	xsltTransformContextPtr ctxt;
 	php_libxml_node_object *object;
 	char **params = NULL;
 	int clone;
+	int secPrefsError = 0;
+	int secPrefsValue;
+	xsltSecurityPrefsPtr secPrefs = NULL;
 
 	node = php_libxml_import_node(docp TSRMLS_CC);
 	
@@ -455,10 +460,53 @@ static xmlDocPtr php_xsl_apply_stylesheet(xsl_object *intern, xsltStylesheetPtr 
 
 	ctxt = xsltNewTransformContext(style, doc);
 	ctxt->_private = (void *) intern;
+
+	secPrefsValue = INI_INT("xsl.security_prefs");
 	
-	newdocp = xsltApplyStylesheetUser(style, doc, (const char**) params, NULL, NULL, ctxt);
+	/* if securityPrefs is set to NONE, we don't have to do any checks, but otherwise... */
+	if (secPrefsValue != XSL_SECPREF_NONE) {
+		secPrefs = xsltNewSecurityPrefs(); 
+		if (secPrefsValue & XSL_SECPREF_READ_FILE ) { 
+			if (0 != xsltSetSecurityPrefs(secPrefs, XSLT_SECPREF_READ_FILE, xsltSecurityForbid)) { 
+				secPrefsError = 1;
+			}
+		}
+		if (secPrefsValue & XSL_SECPREF_WRITE_FILE ) { 
+			if (0 != xsltSetSecurityPrefs(secPrefs, XSLT_SECPREF_WRITE_FILE, xsltSecurityForbid)) { 
+				secPrefsError = 1;
+			}
+		}
+		if (secPrefsValue & XSL_SECPREF_CREATE_DIRECTORY ) { 
+			if (0 != xsltSetSecurityPrefs(secPrefs, XSLT_SECPREF_CREATE_DIRECTORY, xsltSecurityForbid)) { 
+				secPrefsError = 1;
+			}
+		}
+		if (secPrefsValue & XSL_SECPREF_READ_NETWORK) { 
+			if (0 != xsltSetSecurityPrefs(secPrefs, XSLT_SECPREF_READ_NETWORK, xsltSecurityForbid)) { 
+				secPrefsError = 1;
+			}
+		}
+		if (secPrefsValue & XSL_SECPREF_WRITE_NETWORK) { 
+			if (0 != xsltSetSecurityPrefs(secPrefs, XSLT_SECPREF_WRITE_NETWORK, xsltSecurityForbid)) { 
+				secPrefsError = 1;
+			}
+		}
+	
+		if (0 != xsltSetCtxtSecurityPrefs(secPrefs, ctxt)) { 
+			secPrefsError = 1;
+		}
+	}
+	
+	if (secPrefsError == 1) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can't set libxslt security properties, not doing transformation for security reasons");
+	} else {
+		newdocp = xsltApplyStylesheetUser(style, doc, (const char**) params,  NULL, NULL, ctxt);
+	}
 
 	xsltFreeTransformContext(ctxt);
+	if (secPrefs) {
+		xsltFreeSecurityPrefs(secPrefs);
+	}
 
 	if (intern->node_list != NULL) {
 		zend_hash_destroy(intern->node_list);
