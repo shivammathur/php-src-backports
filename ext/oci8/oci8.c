@@ -1187,7 +1187,14 @@ open:
 			connection->is_persistent = 0;
 		} else {
 			connection = (php_oci_connection *) calloc(1, sizeof(php_oci_connection));
+			if (connection == NULL) {
+				return NULL;
+			}
 			connection->hash_key = zend_strndup(hashed_details.c, hashed_details.len);
+			if (connection->hash_key == NULL) {
+				free(connection);
+				return NULL;
+			}
 			connection->is_persistent = 1;
 		}
 	} else {
