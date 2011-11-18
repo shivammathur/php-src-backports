@@ -683,6 +683,9 @@ repeat:
 	}
 	c.flags = case_sensitive; /* non persistent */
 	c.name = zend_strndup(name, name_len);
+	if (c.name == NULL) {
+		RETURN_FALSE;
+	}
 	c.name_len = name_len+1;
 	c.module_number = PHP_USER_CONSTANT;
 	if (zend_register_constant(&c TSRMLS_CC) == SUCCESS) {
