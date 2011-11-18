@@ -498,6 +498,9 @@ ZEND_FUNCTION(define)
 	zval_copy_ctor(&c.value);
 	c.flags = case_sensitive; /* non persistent */
 	c.name = zend_strndup((*var)->value.str.val, (*var)->value.str.len);
+	if (c.name == NULL) {
+		RETURN_FALSE;
+	}
 	c.name_len = (*var)->value.str.len+1;
 	c.module_number = PHP_USER_CONSTANT;
 	if (zend_register_constant(&c TSRMLS_CC) == SUCCESS) {
