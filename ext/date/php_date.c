@@ -576,6 +576,12 @@ static timelib_tzinfo *php_date_parse_tzfile(char *formal_tzname, const timelib_
 	}
 	return tzi;
 }
+
+timelib_tzinfo *php_date_parse_tzfile_wrapper(char *formal_tzname, const timelib_tzdb *tzdb)
+{
+	TSRMLS_FETCH();
+	return php_date_parse_tzfile(formal_tzname, tzdb TSRMLS_CC);
+}
 /* }}} */
 
 /* {{{ Helper functions */
@@ -1108,7 +1114,7 @@ PHPAPI signed long php_parse_date(char *string, signed long *now)
 	int           error2;
 	signed long   retval;
 
-	parsed_time = timelib_strtotime(string, strlen(string), NULL, DATE_TIMEZONEDB);
+	parsed_time = timelib_strtotime(string, strlen(string), NULL, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
 	timelib_update_ts(parsed_time, NULL);
 	retval = timelib_date_to_int(parsed_time, &error2);
 	timelib_time_dtor(parsed_time);
@@ -1140,7 +1146,7 @@ PHP_FUNCTION(strtotime)
 
 		initial_ts = emalloc(25);
 		snprintf(initial_ts, 24, "@%ld UTC", preset_ts);
-		t = timelib_strtotime(initial_ts, strlen(initial_ts), NULL, DATE_TIMEZONEDB); /* we ignore the error here, as this should never fail */
+		t = timelib_strtotime(initial_ts, strlen(initial_ts), NULL, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper); /* we ignore the error here, as this should never fail */
 		timelib_update_ts(t, tzi);
 		now->tz_info = tzi;
 		now->zone_type = TIMELIB_ZONETYPE_ID;
@@ -1162,7 +1168,7 @@ PHP_FUNCTION(strtotime)
 		RETURN_FALSE;
 	}
 	
-	t = timelib_strtotime(times, time_len, &error, DATE_TIMEZONEDB);
+	t = timelib_strtotime(times, time_len, &error, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
 	error1 = error->error_count;
 	timelib_error_container_dtor(error);
 	timelib_fill_holes(t, now, TIMELIB_NO_CLONE);
@@ -1703,7 +1709,7 @@ static int date_initialize(php_date_obj *dateobj, /*const*/ char *time_str, int 
 	if (dateobj->time) {
 		timelib_time_dtor(dateobj->time);
 	}
-	dateobj->time = timelib_strtotime(time_str_len ? time_str : "now", time_str_len ? time_str_len : sizeof("now") -1, &err, DATE_TIMEZONEDB);
+	dateobj->time = timelib_strtotime(time_str_len ? time_str : "now", time_str_len ? time_str_len : sizeof("now") -1, &err, DATE_TIMEZONEDB,php_date_parse_tzfile_wrapper);
 
 	if (err && err->error_count) {
 		if (ctor) {
@@ -1821,7 +1827,7 @@ PHP_FUNCTION(date_parse)
 		RETURN_FALSE;
 	}
 
-	parsed_time = timelib_strtotime(date, date_len, &error, DATE_TIMEZONEDB);
+	parsed_time = timelib_strtotime(date, date_len, &error, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
 	array_init(return_value);
 #define PHP_DATE_PARSE_DATE_SET_TIME_ELEMENT(name, elem) \
 	if (parsed_time->elem == -99999) {               \
@@ -1942,7 +1948,7 @@ PHP_FUNCTION(date_modify)
 	dateobj = (php_date_obj *) zend_object_store_get_object(object TSRMLS_CC);
 	DATE_CHECK_INITIALIZED(dateobj->time, DateTime);
 
-	tmp_time = timelib_strtotime(modify, modify_len, &err, DATE_TIMEZONEDB);
+	tmp_time = timelib_strtotime(modify, modify_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
 
 	if (err && err->error_count) {
 		/* spit out the first library error message, at least */
