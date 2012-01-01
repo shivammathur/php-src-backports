@@ -979,6 +979,10 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler)
 					}
 					tmp++;				
 				}
+				/* Brackets should always be closed */
+				if(c != 0) {
+					skip_upload = 1;
+				}
 			}
 
 			total_bytes = cancel_upload = 0;
