@@ -186,6 +186,12 @@ PHPAPI void php_register_variable_ex(char *var, zval *val, zval *track_vars_arra
 						MAKE_STD_ZVAL(gpc_element);
 						array_init(gpc_element);
 						zend_symtable_update(symtable1, escaped_index, index_len + 1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p);
+					} else {
+						if (index != escaped_index) {
+							efree(escaped_index);
+						}
+						zval_dtor(val);
+						return;
 					}
 				}
 				if (index != escaped_index) {
