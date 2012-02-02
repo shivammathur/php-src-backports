@@ -29,6 +29,7 @@
 #include "SAPI.h"
 #include "php_logos.h"
 #include "zend_globals.h"
+#include "php_ini.h"
 
 /* for systems that need to override reading of environment variables */
 void _php_import_environment_variables(zval *array_ptr TSRMLS_DC);
@@ -472,7 +473,10 @@ void _php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 
 	/* turn off magic_quotes while importing environment variables */
 	int magic_quotes_gpc = PG(magic_quotes_gpc);
-	PG(magic_quotes_gpc) = 0;
+
+	if (PG(magic_quotes_gpc)) {
+		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+	}
 
 	for (env = environ; env != NULL && *env != NULL; env++) {
 		p = strchr(*env, '=');
@@ -615,7 +619,9 @@ static inline void php_register_server_variables(TSRMLS_D)
 		zval_ptr_dtor(&PG(http_globals)[TRACK_VARS_SERVER]);
 	}
 	PG(http_globals)[TRACK_VARS_SERVER] = array_ptr;
-	PG(magic_quotes_gpc) = 0;
+	if (PG(magic_quotes_gpc)) {
+		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+	}
 
 	/* Server variables */
 	if (sapi_module.register_server_variables) {
