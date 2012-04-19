@@ -32,12 +32,12 @@
 
 #define YYCTYPE         unsigned char
 #define YYCURSOR        cursor
-#define YYLIMIT         cursor
+#define YYLIMIT         s->end
 #define YYMARKER        s->ptr
-#define YYFILL(n)
+#define YYFILL(n)		{ RET(PDO_PARSER_EOI); }
 
 typedef struct Scanner {
-	char 	*ptr, *cur, *tok;
+	char 	*ptr, *cur, *tok, *end;
 } Scanner;
 
 static int scan(Scanner *s) 
@@ -50,7 +50,6 @@ static int scan(Scanner *s)
 	QUESTION	= [?];
 	SPECIALS	= [:?"'];
 	MULTICHAR	= [:?];
-	EOF			= [\000];
 	ANYNOEOF	= [\001-\377];
 	*/
 
@@ -62,7 +61,6 @@ static int scan(Scanner *s)
 		QUESTION								{ RET(PDO_PARSER_BIND_POS); }
 		SPECIALS								{ SKIP_ONE(PDO_PARSER_TEXT); }
 		(ANYNOEOF\SPECIALS)+ 					{ RET(PDO_PARSER_TEXT); }
-		EOF										{ RET(PDO_PARSER_EOI); }
 	*/	
 }
 
@@ -92,6 +90,7 @@ PDO_API int pdo_parse_params(pdo_stmt_t *stmt, char *inquery, int inquery_len,
 
 	ptr = *outquery;
 	s.cur = inquery;
+	s.end = inquery + inquery_len + 1;
 
 	/* phase 1: look for args */
 	while((t = scan(&s)) != PDO_PARSER_EOI) {
