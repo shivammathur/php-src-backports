@@ -734,7 +734,7 @@ static int php_sqlite_authorizer(void *autharg, int access_type, const char *arg
 {
 	switch (access_type) {
 		case SQLITE_COPY:
-			if (strncmp(arg4, ":memory:", sizeof(":memory:") - 1)) {
+			if (memcmp(arg4, ":memory:", sizeof(":memory:"))) {
 				TSRMLS_FETCH();
 				if (PG(safe_mode) && (!php_checkuid(arg4, NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
 					return SQLITE_DENY;
@@ -747,7 +747,7 @@ static int php_sqlite_authorizer(void *autharg, int access_type, const char *arg
 			return SQLITE_OK;
 #ifdef SQLITE_ATTACH
 		case SQLITE_ATTACH:
-			if (strncmp(arg3, ":memory:", sizeof(":memory:") - 1)) {
+			if (memcmp(arg3, ":memory:", sizeof(":memory:"))) {
 				TSRMLS_FETCH();
 				if (PG(safe_mode) && (!php_checkuid(arg3, NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
 					return SQLITE_DENY;
@@ -1230,7 +1230,7 @@ PHP_FUNCTION(sqlite_popen)
 		ZVAL_NULL(errmsg);
 	}
 
-	if (strncmp(filename, ":memory:", sizeof(":memory:") - 1)) {
+	if (memcmp(filename, ":memory:", sizeof(":memory:"))) {
 		/* resolve the fully-qualified path name to use as the hash key */
 		if (!(fullpath = expand_filepath(filename, NULL TSRMLS_CC))) {
 			RETURN_FALSE;
@@ -1306,7 +1306,7 @@ PHP_FUNCTION(sqlite_open)
 		ZVAL_NULL(errmsg);
 	}
 
-	if (strncmp(filename, ":memory:", sizeof(":memory:") - 1)) {
+	if (memcmp(filename, ":memory:", sizeof(":memory:"))) {
 		/* resolve the fully-qualified path name to use as the hash key */
 		if (!(fullpath = expand_filepath(filename, NULL TSRMLS_CC))) {
 			php_std_error_handling();
@@ -1358,7 +1358,7 @@ PHP_FUNCTION(sqlite_factory)
 		ZVAL_NULL(errmsg);
 	}
 
-	if (strncmp(filename, ":memory:", sizeof(":memory:") - 1)) {
+	if (memcmp(filename, ":memory:", sizeof(":memory:"))) {
 		/* resolve the fully-qualified path name to use as the hash key */
 		if (!(fullpath = expand_filepath(filename, NULL TSRMLS_CC))) {
 			php_std_error_handling();
