@@ -243,6 +243,7 @@ static void php_libxml_init_globals(php_libxml_globals *libxml_globals_p TSRMLS_
 	LIBXML(stream_context) = NULL;
 	LIBXML(error_buffer).c = NULL;
 	LIBXML(error_list) = NULL;
+	LIBXML(entity_loader_disabled) = 0;
 }
 #endif
 
@@ -335,11 +336,24 @@ int php_libxml_streams_IO_close(void *context)
 	return php_stream_close((php_stream*)context);
 }
 
+PHP_LIBXML_API zend_bool php_libxml_disable_entity_loader(zend_bool disable TSRMLS_DC)
+{
+	zend_bool old = LIBXML(entity_loader_disabled);
+
+	LIBXML(entity_loader_disabled) = disable;
+	return old;
+}
+
 xmlParserInputBufferPtr
 php_libxml_input_buffer_create_filename(const char *URI, xmlCharEncoding enc)
 {
     xmlParserInputBufferPtr ret;
     void *context = NULL;
+	TSRMLS_FETCH();
+
+	if (LIBXML(entity_loader_disabled)) {
+		return NULL;
+	}
 
     if (URI == NULL)
 		return(NULL);
@@ -588,6 +602,7 @@ PHP_MINIT_FUNCTION(libxml)
 	LIBXML(stream_context) = NULL;
 	LIBXML(error_buffer).c = NULL;
 	LIBXML(error_list) = NULL;
+	LIBXML(entity_loader_disabled) = 0;
 #endif
 
 	REGISTER_LONG_CONSTANT("LIBXML_VERSION",			LIBXML_VERSION,			CONST_CS | CONST_PERSISTENT);
@@ -626,6 +641,7 @@ PHP_MINIT_FUNCTION(libxml)
 
 PHP_RINIT_FUNCTION(libxml)
 {
+	LIBXML(entity_loader_disabled) = 0;
 	/* report errors via handler rather than stderr */
 	xmlSetGenericErrorFunc(NULL, php_libxml_error_handler);
 	xmlParserInputBufferCreateFilenameDefault(php_libxml_input_buffer_create_filename);
