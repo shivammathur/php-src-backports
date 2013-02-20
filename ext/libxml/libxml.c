@@ -654,6 +654,7 @@ static PHP_MINIT_FUNCTION(libxml)
 
 static PHP_RINIT_FUNCTION(libxml)
 {
+	LIBXML(entity_loader_disabled) = 0;
 	/* report errors via handler rather than stderr */
 	xmlSetGenericErrorFunc(NULL, php_libxml_error_handler);
 	xmlParserInputBufferCreateFilenameDefault(php_libxml_input_buffer_create_filename);
