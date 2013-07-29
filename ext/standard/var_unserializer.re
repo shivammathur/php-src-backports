@@ -24,6 +24,7 @@
 
 /* {{{ reference-handling for unserializer: var_* */
 #define VAR_ENTRIES_MAX 1024
+#define VAR_ENTRIES_DBG 0
 
 typedef struct {
 	zval *data[VAR_ENTRIES_MAX];
@@ -75,6 +76,30 @@ PHPAPI void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
 	}
 
 	Z_ADDREF_PP(rval);
+	var_hash->data[var_hash->used_slots++] = *rval;
+}
+
+PHPAPI void var_push_dtor_no_addref(php_unserialize_data_t *var_hashx, zval **rval)
+{
+	var_entries *var_hash = (*var_hashx)->last_dtor;
+#if VAR_ENTRIES_DBG
+	fprintf(stderr, "var_push_dtor_no_addref(%ld): %d (%d)\n", var_hash?var_hash->used_slots:-1L, Z_TYPE_PP(rval), Z_REFCOUNT_PP(rval));
+#endif
+
+	if (!var_hash || var_hash->used_slots == VAR_ENTRIES_MAX) {
+		var_hash = emalloc(sizeof(var_entries));
+		var_hash->used_slots = 0;
+		var_hash->next = 0;
+
+		if (!(*var_hashx)->first_dtor) {
+			(*var_hashx)->first_dtor = var_hash;
+		} else {
+			((var_entries *) (*var_hashx)->last_dtor)->next = var_hash;
+		}
+
+		(*var_hashx)->last_dtor = var_hash;
+	}
+
 	var_hash->data[var_hash->used_slots++] = *rval;
 }
 
@@ -424,7 +449,7 @@ PHPAPI int php_var_unserialize(UNSERIALIZE_PARAMETER)
 	}
 
 	if (*rval != NULL) {
-		zval_ptr_dtor(rval);
+		var_push_dtor_no_addref(var_hash, rval);
 	}
 	*rval = *rval_ref;
 	Z_ADDREF_PP(rval);
@@ -705,7 +730,9 @@ object ":" uiv ":" ["]	{
 	*p = YYCURSOR;
 
 	if (custom_object) {
-		int ret = object_custom(UNSERIALIZE_PASSTHRU, ce);
+		int ret;
+
+		ret = object_custom(UNSERIALIZE_PASSTHRU, ce);
 
 		if (ret && incomplete_class) {
 			php_store_class_name(*rval, class_name, len2);
