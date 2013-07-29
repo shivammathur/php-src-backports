@@ -24,6 +24,7 @@
 
 /* {{{ reference-handling for unserializer: var_* */
 #define VAR_ENTRIES_MAX 1024
+#define VAR_ENTRIES_DBG 0
 
 typedef struct {
 	zval *data[VAR_ENTRIES_MAX];
@@ -75,6 +76,29 @@ static inline void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
 	}
 
 	(*rval)->refcount++;
+	var_hash->data[var_hash->used_slots++] = *rval;
+}
+
+PHPAPI void var_push_dtor_no_addref(php_unserialize_data_t *var_hashx, zval **rval)
+{
+	var_entries *var_hash = var_hashx->first_dtor, *prev = NULL;
+
+	while (var_hash && var_hash->used_slots == VAR_ENTRIES_MAX) {
+		prev = var_hash;
+		var_hash = var_hash->next;
+	}
+
+	if (!var_hash) {
+		var_hash = emalloc(sizeof(var_entries));
+		var_hash->used_slots = 0;
+		var_hash->next = 0;
+
+		if (!var_hashx->first_dtor)
+			var_hashx->first_dtor = var_hash;
+		else
+			prev->next = var_hash;
+	}
+
 	var_hash->data[var_hash->used_slots++] = *rval;
 }
 
@@ -452,12 +476,12 @@ PHPAPI int php_var_unserialize(UNSERIALIZE_PARAMETER)
 	if (*rval == *rval_ref) return 0;
 
 	if (*rval != NULL) {
-		zval_ptr_dtor(rval);
+		var_push_dtor_no_addref(var_hash, rval);
 	}
 	*rval = *rval_ref;
 	(*rval)->refcount++;
 	(*rval)->is_ref = 0;
-	
+
 	return 1;
 }
 
