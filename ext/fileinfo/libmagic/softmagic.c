@@ -65,6 +65,7 @@ private void cvt_16(union VALUETYPE *, const struct magic *);
 private void cvt_32(union VALUETYPE *, const struct magic *);
 private void cvt_64(union VALUETYPE *, const struct magic *);
 
+#define OFFSET_OOB(n, o, i)	((n) < (o) || (i) > ((n) - (o)))
 /*
  * softmagic - lookup one file in parsed, in-memory copy of database
  * Passed the name and FILE * of one file to be typed.
@@ -1009,6 +1010,7 @@ mget(struct magic_set *ms, const unsigned char *s,
 {
 	uint32_t offset = ms->offset;
 	uint32_t count = m->str_range;
+	uint32_t lhs;
 	union VALUETYPE *p = &ms->ms_value;
 
 	if (mcopy(ms, p, m->type, m->flag & INDIR, s, offset, nbytes, count) == -1)
@@ -1057,7 +1059,7 @@ mget(struct magic_set *ms, const unsigned char *s,
 		}
 		switch (m->in_type) {
 		case FILE_BYTE:
-			if (nbytes < (offset + 1))
+			if (OFFSET_OOB(nbytes, offset, 1))
 				return 0;
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
@@ -1092,111 +1094,79 @@ mget(struct magic_set *ms, const unsigned char *s,
 				offset = ~offset;
 			break;
 		case FILE_BESHORT:
-			if (nbytes < (offset + 2))
+			if (OFFSET_OOB(nbytes, offset, 2))
 				return 0;
+			lhs = (p->hs[0] << 8) | p->hs[1];
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
 				case FILE_OPAND:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) &
-						 off;
+					offset = lhs & off;
 					break;
 				case FILE_OPOR:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) |
-						 off;
+					offset = lhs | off;
 					break;
 				case FILE_OPXOR:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) ^
-						 off;
+					offset = lhs ^ off;
 					break;
 				case FILE_OPADD:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) +
-						 off;
+					offset = lhs + off;
 					break;
 				case FILE_OPMINUS:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) -
-						 off;
+					offset = lhs - off;
 					break;
 				case FILE_OPMULTIPLY:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) *
-						 off;
+					offset = lhs * off;
 					break;
 				case FILE_OPDIVIDE:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) /
-						 off;
+					offset = lhs / off;
 					break;
 				case FILE_OPMODULO:
-					offset = (short)((p->hs[0]<<8)|
-							 (p->hs[1])) %
-						 off;
+					offset = lhs % off;
 					break;
 				}
 			} else
-				offset = (short)((p->hs[0]<<8)|
-						 (p->hs[1]));
+				offset = lhs;
 			if (m->in_op & FILE_OPINVERSE)
 				offset = ~offset;
 			break;
 		case FILE_LESHORT:
-			if (nbytes < (offset + 2))
+			if (OFFSET_OOB(nbytes, offset, 2))
 				return 0;
+			lhs = (p->hs[1] << 8) | p->hs[0];
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
 				case FILE_OPAND:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) &
-						 off;
+					offset = lhs & off;
 					break;
 				case FILE_OPOR:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) |
-						 off;
+					offset = lhs | off;
 					break;
 				case FILE_OPXOR:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) ^
-						 off;
+					offset = lhs ^ off;
 					break;
 				case FILE_OPADD:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) +
-						 off;
+					offset = lhs + off;
 					break;
 				case FILE_OPMINUS:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) -
-						 off;
+					offset = lhs - off;
 					break;
 				case FILE_OPMULTIPLY:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) *
-						 off;
+					offset = lhs * off;
 					break;
 				case FILE_OPDIVIDE:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) /
-						 off;
+					offset = lhs / off;
 					break;
 				case FILE_OPMODULO:
-					offset = (short)((p->hs[1]<<8)|
-							 (p->hs[0])) %
-						 off;
+					offset = lhs % off;
 					break;
 				}
 			} else
-				offset = (short)((p->hs[1]<<8)|
-						 (p->hs[0]));
+				offset = lhs;
 			if (m->in_op & FILE_OPINVERSE)
 				offset = ~offset;
 			break;
 		case FILE_SHORT:
-			if (nbytes < (offset + 2))
+			if (OFFSET_OOB(nbytes, offset, 2))
 				return 0;
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
@@ -1233,218 +1203,119 @@ mget(struct magic_set *ms, const unsigned char *s,
 			break;
 		case FILE_BELONG:
 		case FILE_BEID3:
-			if (nbytes < (offset + 4))
+			if (OFFSET_OOB(nbytes, offset, 4))
 				return 0;
+			lhs = (p->hl[0] << 24) | (p->hl[1] << 16) |
+			    (p->hl[2] << 8) | p->hl[3];
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
 				case FILE_OPAND:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) &
-						 off;
+					offset = lhs & off;
 					break;
 				case FILE_OPOR:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) |
-						 off;
+					offset = lhs | off;
 					break;
 				case FILE_OPXOR:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) ^
-						 off;
+					offset = lhs ^ off;
 					break;
 				case FILE_OPADD:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) +
-						 off;
+					offset = lhs + off;
 					break;
 				case FILE_OPMINUS:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) -
-						 off;
+					offset = lhs - off;
 					break;
 				case FILE_OPMULTIPLY:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) *
-						 off;
+					offset = lhs * off;
 					break;
 				case FILE_OPDIVIDE:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) /
-						 off;
+					offset = lhs / off;
 					break;
 				case FILE_OPMODULO:
-					offset = (int32_t)((p->hl[0]<<24)|
-							 (p->hl[1]<<16)|
-							 (p->hl[2]<<8)|
-							 (p->hl[3])) %
-						 off;
+					offset = lhs % off;
 					break;
 				}
 			} else
-				offset = (int32_t)((p->hl[0]<<24)|
-						 (p->hl[1]<<16)|
-						 (p->hl[2]<<8)|
-						 (p->hl[3]));
+				offset = lhs;
 			if (m->in_op & FILE_OPINVERSE)
 				offset = ~offset;
 			break;
 		case FILE_LELONG:
 		case FILE_LEID3:
-			if (nbytes < (offset + 4))
+			if (OFFSET_OOB(nbytes, offset, 4))
 				return 0;
+			lhs = (p->hl[3] << 24) | (p->hl[2] << 16) |
+			    (p->hl[1] << 8) | p->hl[0];
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
 				case FILE_OPAND:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) &
-						 off;
+					offset = lhs & off;
 					break;
 				case FILE_OPOR:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) |
-						 off;
+					offset = lhs | off;
 					break;
 				case FILE_OPXOR:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) ^
-						 off;
+					offset = lhs ^ off;
 					break;
 				case FILE_OPADD:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) +
-						 off;
+					offset = lhs + off;
 					break;
 				case FILE_OPMINUS:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) -
-						 off;
+					offset = lhs - off;
 					break;
 				case FILE_OPMULTIPLY:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) *
-						 off;
+					offset = lhs * off;
 					break;
 				case FILE_OPDIVIDE:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) /
-						 off;
+					offset = lhs / off;
 					break;
 				case FILE_OPMODULO:
-					offset = (int32_t)((p->hl[3]<<24)|
-							 (p->hl[2]<<16)|
-							 (p->hl[1]<<8)|
-							 (p->hl[0])) %
-						 off;
+					offset = lhs % off;
 					break;
 				}
 			} else
-				offset = (int32_t)((p->hl[3]<<24)|
-						 (p->hl[2]<<16)|
-						 (p->hl[1]<<8)|
-						 (p->hl[0]));
+				offset = lhs;
 			if (m->in_op & FILE_OPINVERSE)
 				offset = ~offset;
 			break;
 		case FILE_MELONG:
-			if (nbytes < (offset + 4))
+			if (OFFSET_OOB(nbytes, offset, 4))
 				return 0;
+			lhs = (p->hl[1] << 24) | (p->hl[0] << 16) |
+			    (p->hl[3] << 8) | p->hl[2];
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
 				case FILE_OPAND:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) &
-						 off;
+					offset = lhs & off;
 					break;
 				case FILE_OPOR:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) |
-						 off;
+					offset = lhs | off;
 					break;
 				case FILE_OPXOR:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) ^
-						 off;
+					offset = lhs ^ off;
 					break;
 				case FILE_OPADD:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) +
-						 off;
+					offset = lhs + off;
 					break;
 				case FILE_OPMINUS:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) -
-						 off;
+					offset = lhs - off;
 					break;
 				case FILE_OPMULTIPLY:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) *
-						 off;
+					offset = lhs * off;
 					break;
 				case FILE_OPDIVIDE:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) /
-						 off;
+					offset = lhs / off;
 					break;
 				case FILE_OPMODULO:
-					offset = (int32_t)((p->hl[1]<<24)|
-							 (p->hl[0]<<16)|
-							 (p->hl[3]<<8)|
-							 (p->hl[2])) %
-						 off;
+					offset = lhs % off;
 					break;
 				}
 			} else
-				offset = (int32_t)((p->hl[1]<<24)|
-						 (p->hl[0]<<16)|
-						 (p->hl[3]<<8)|
-						 (p->hl[2]));
+				offset = lhs;
 			if (m->in_op & FILE_OPINVERSE)
 				offset = ~offset;
 			break;
 		case FILE_LONG:
-			if (nbytes < (offset + 4))
+			if (OFFSET_OOB(nbytes, offset, 4))
 				return 0;
 			if (off) {
 				switch (m->in_op & FILE_OPS_MASK) {
@@ -1508,14 +1379,14 @@ mget(struct magic_set *ms, const unsigned char *s,
 	/* Verify we have enough data to match magic type */
 	switch (m->type) {
 	case FILE_BYTE:
-		if (nbytes < (offset + 1)) /* should alway be true */
+		if (OFFSET_OOB(nbytes, offset, 1))
 			return 0;
 		break;
 
 	case FILE_SHORT:
 	case FILE_BESHORT:
 	case FILE_LESHORT:
-		if (nbytes < (offset + 2))
+		if (OFFSET_OOB(nbytes, offset, 2))
 			return 0;
 		break;
 
@@ -1534,21 +1405,21 @@ mget(struct magic_set *ms, const unsigned char *s,
 	case FILE_FLOAT:
 	case FILE_BEFLOAT:
 	case FILE_LEFLOAT:
-		if (nbytes < (offset + 4))
+		if (OFFSET_OOB(nbytes, offset, 4))
 			return 0;
 		break;
 
 	case FILE_DOUBLE:
 	case FILE_BEDOUBLE:
 	case FILE_LEDOUBLE:
-		if (nbytes < (offset + 8))
+		if (OFFSET_OOB(nbytes, offset, 8))
 			return 0;
 		break;
 
 	case FILE_STRING:
 	case FILE_PSTRING:
 	case FILE_SEARCH:
-		if (nbytes < (offset + m->vallen))
+		if (OFFSET_OOB(nbytes, offset, m->vallen))
 			return 0;
 		break;
 
