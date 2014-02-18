@@ -45,12 +45,16 @@ FILE_RCSID("@(#)$File: softmagic.c,v 1.147 2011/11/05 15:44:22 rrt Exp $")
 # define PREG_OFFSET_CAPTURE                 (1<<8)
 #endif
 
+#ifndef MAX_RECURSION_LEVEL
+# define MAX_RECURSION_LEVEL                 20
+#endif
+
 
 
 private int match(struct magic_set *, struct magic *, uint32_t,
-    const unsigned char *, size_t, int, int);
+    const unsigned char *, size_t, size_t, int, int);
 private int mget(struct magic_set *, const unsigned char *,
-    struct magic *, size_t, unsigned int, int);
+    struct magic *, size_t, size_t, unsigned int, int);
 private int magiccheck(struct magic_set *, struct magic *);
 private int32_t mprint(struct magic_set *, struct magic *);
 private int32_t moffset(struct magic_set *, struct magic *);
@@ -73,13 +77,19 @@ private void cvt_64(union VALUETYPE *, const struct magic *);
 /*ARGSUSED1*/		/* nbytes passed for regularity, maybe need later */
 protected int
 file_softmagic(struct magic_set *ms, const unsigned char *buf, size_t nbytes,
-    int mode, int text)
+    size_t level, int mode, int text)
 {
 	struct mlist *ml;
 	int rv;
+
+	if (level > MAX_RECURSION_LEVEL) {
+		file_error(ms, 0, "recursion nesting exceeded");
+		return -1;
+	}
+
 	for (ml = ms->mlist->next; ml != ms->mlist; ml = ml->next)
-		if ((rv = match(ms, ml->magic, ml->nmagic, buf, nbytes, mode,
-		    text)) != 0)
+		if ((rv = match(ms, ml->magic, ml->nmagic, buf, nbytes, level,
+		    mode, text)) != 0)
 			return rv;
 
 	return 0;
@@ -114,7 +124,8 @@ file_softmagic(struct magic_set *ms, const unsigned char *buf, size_t nbytes,
  */
 private int
 match(struct magic_set *ms, struct magic *magic, uint32_t nmagic,
-    const unsigned char *s, size_t nbytes, int mode, int text)
+    const unsigned char *s, size_t nbytes, size_t recursion_level, int mode,
+    int text)
 {
 	uint32_t magindex = 0;
 	unsigned int cont_level = 0;
@@ -146,7 +157,7 @@ match(struct magic_set *ms, struct magic *magic, uint32_t nmagic,
 		ms->line = m->lineno;
 
 		/* if main entry matches, print it... */
-		switch (mget(ms, s, m, nbytes, cont_level, text)) {
+		switch (mget(ms, s, m, nbytes, recursion_level, cont_level, text)) {
 		case -1:
 			return -1;
 		case 0:
@@ -228,7 +239,7 @@ match(struct magic_set *ms, struct magic *magic, uint32_t nmagic,
 					continue;
 			}
 #endif
-			switch (mget(ms, s, m, nbytes, cont_level, text)) {
+			switch (mget(ms, s, m, nbytes, recursion_level, cont_level, text)) {
 			case -1:
 				return -1;
 			case 0:
@@ -1013,7 +1024,8 @@ mcopy(struct magic_set *ms, union VALUETYPE *p, int type, int indir,
 
 private int
 mget(struct magic_set *ms, const unsigned char *s,
-    struct magic *m, size_t nbytes, unsigned int cont_level, int text)
+    struct magic *m, size_t nbytes, size_t recursion_level,
+    unsigned int cont_level, int text)
 {
 	uint32_t offset = ms->offset;
 	uint32_t count = m->str_range;
@@ -1436,13 +1448,15 @@ mget(struct magic_set *ms, const unsigned char *s,
 		break;
 
 	case FILE_INDIRECT:
+		if (offset == 0)
+			return 0;
 	  	if ((ms->flags & (MAGIC_MIME|MAGIC_APPLE)) == 0 &&
 		    file_printf(ms, "%s", m->desc) == -1)
 			return -1;
 		if (nbytes < offset)
 			return 0;
 		return file_softmagic(ms, s + offset, nbytes - offset,
-		    BINTEST, text);
+		    recursion_level + 1, BINTEST, text);
 
 	case FILE_DEFAULT:	/* nothing to check */
 	default:
