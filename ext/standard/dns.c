@@ -484,6 +484,10 @@ static u_char *php_parserr(u_char *cp, querybuf *answer, int type_to_fetch, int 
 				
 				while (ll < dlen) {
 					n = cp[ll];
+					if ((ll + n) >= dlen) {
+						// Invalid chunk length, truncate
+						n = dlen - (ll + 1);
+					}
 					memcpy(tp + ll , cp + ll + 1, n);
 					ll = ll + n + 1;
 				}
