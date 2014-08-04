@@ -1,0 +1,20 @@
+/* XPM */
+static char * XFACE[] = {
+/* <Values> */
+/* <width/cols> <height/rows> <colors> <char on pixel>*/
+"48 4 6 1",
+/* <Colors> */
+"a c #FFFFFF " /* "0" */,
+"b c #CCCCCC " /* "0.0399" */,
+"c c #999999 " /* "0.0798" */,
+"d m #666666 " /* "0.12" NOTE: this is monochrome/monovisual */,
+"e c #333333 " /* "0.16" */,
+"f c #000000 " /* "0.2" */,
+/* x-axis: 0 40 80 120 160 200 240 280 320 360 400 440 480 */
+/* y-axis: 0 40 80 120 160 200 240 280 320 360 400 440 480 */
+/* <Pixels> */
+"abaabaababaaabaabababaabaabaababaabaaababaabaaab",
+"abaabaababaaabaabababaabaabaababaabaaababaabaaab",
+"abaabaababaaabaabababaabaabaababaabaaababaabaaab",
+"abaabaababaaabaabababaabaabaababaabaaababaabaaab"
+};
