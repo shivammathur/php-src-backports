@@ -820,6 +820,10 @@ cdf_read_property_info(const cdf_stream_t *sst, const cdf_header_t *h,
 		q = (const uint8_t *)(const void *)
 		    ((const char *)(const void *)p + ofs
 		    - 2 * sizeof(uint32_t));
+		if (q < p) {
+			DPRINTF(("Wrapped around %p < %p\n", q, p));
+			goto out;
+		}
 		if (q > e) {
 			DPRINTF(("Ran of the end %p > %p\n", q, e));
 			goto out;
