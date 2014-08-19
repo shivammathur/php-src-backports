@@ -2833,7 +2833,10 @@ static void _php_image_output(INTERNAL_FUNCTION_PARAMETERS, int image_type, char
 
 	if (argc >= 2 && Z_STRLEN_PP(file)) {
 		PHP_GD_CHECK_OPEN_BASEDIR(fn, "Invalid filename");
-
+		if (Z_STRLEN_PP(file) != strlen(Z_STRVAL_PP(file))) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid 2nd parameter, filename must not contain null bytes");
+			RETURN_FALSE;
+		}
 		fp = VCWD_FOPEN(fn, "wb");
 		if (!fp) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to open '%s' for writing", fn);
