@@ -57,8 +57,13 @@ static inline void var_push(php_unserialize_data_t *var_hashx, zval **rval)
 
 PHPAPI void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
 {
-	var_entries *var_hash = var_hashx->first_dtor, *prev = NULL;
+	var_entries *var_hash, *prev = NULL;
 
+	if (!var_hashx) {
+		return;
+	}
+
+	var_hash = var_hashx->first_dtor;
 	while (var_hash && var_hash->used_slots == VAR_ENTRIES_MAX) {
 		prev = var_hash;
 		var_hash = var_hash->next;
