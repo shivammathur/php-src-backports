@@ -318,10 +318,12 @@ GetDataBlock(gdIOCtx *fd, unsigned char *buf)
 	return(rv);
 }
 
+#define CSD_BUF_SIZE 280
+
 static int
 GetCode_(gdIOCtx *fd, int code_size, int flag)
 {
-       static unsigned char    buf[280];
+       static unsigned char    buf[CSD_BUF_SIZE];
        static int              curbit, lastbit, done, last_byte;
        int                     i, j, ret;
        unsigned char           count;
@@ -352,8 +354,14 @@ GetCode_(gdIOCtx *fd, int code_size, int flag)
        }
 
        ret = 0;
-       for (i = curbit, j = 0; j < code_size; ++i, ++j)
-               ret |= ((buf[ i / 8 ] & (1 << (i % 8))) != 0) << j;
+       for (i = curbit, j = 0; j < code_size; ++i, ++j) {
+               if (i < CSD_BUF_SIZE * 8) {
+                       ret |= ((buf[i / 8] & (1 << (i % 8))) != 0) << j;
+               } else {
+                       ret = -1;
+                       break;
+               }
+       }
 
        curbit += code_size;
        return ret;
