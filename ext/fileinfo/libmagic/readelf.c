@@ -313,7 +313,7 @@ dophn_core(struct magic_set *ms, int clazz, int swap, int fd, off_t off,
 			file_badseek(ms);
 			return -1;
 		}
-		if (FINFO_READ_FUNC(fd, xph_addr, xph_sizeof) == -1) {
+		if (FINFO_READ_FUNC(fd, xph_addr, xph_sizeof) < (ssize_t)xph_sizeof) {
 			file_badread(ms);
 			return -1;
 		}
@@ -869,7 +869,7 @@ doshn(struct magic_set *ms, int clazz, int swap, int fd, off_t off, int num,
 			file_badseek(ms);
 			return -1;
 		}
-		if (FINFO_READ_FUNC(fd, xsh_addr, xsh_sizeof) == -1) {
+		if (FINFO_READ_FUNC(fd, xsh_addr, xsh_sizeof) < (ssize_t)xsh_sizeof) {
 			file_badread(ms);
 			return -1;
 		}
@@ -1058,7 +1058,7 @@ dophn_exec(struct magic_set *ms, int clazz, int swap, int fd, off_t off,
 			return -1;
 		}
 
-  		if (FINFO_READ_FUNC(fd, xph_addr, xph_sizeof) == -1) {
+  		if (FINFO_READ_FUNC(fd, xph_addr, xph_sizeof) < (ssize_t)xph_sizeof) {
   			file_badread(ms);
 			return -1;
 		}
