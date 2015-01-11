@@ -2722,7 +2722,7 @@ static int exif_process_user_comment(image_info_type *ImageInfo, char **pszInfoP
 static int exif_process_unicode(image_info_type *ImageInfo, xp_field_type *xp_field, int tag, char *szValuePtr, int ByteCount TSRMLS_DC)
 {
 	xp_field->tag = tag;	
-
+	xp_field->value = NULL;
 	/* Copy the comment */
 #if EXIF_USE_MBSTRING
 /*  What if MS supports big-endian with XP? */
