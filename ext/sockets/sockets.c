@@ -75,6 +75,10 @@
 # include "php_sockets.h"
 #endif
 
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 255
+#endif
+
 ZEND_DECLARE_MODULE_GLOBALS(sockets)
 static PHP_GINIT_FUNCTION(sockets);
 
@@ -585,7 +589,7 @@ static int php_set_inet_addr(struct sockaddr_in *sin, char *string, php_socket *
 	if (inet_aton(string, &tmp)) {
 		sin->sin_addr.s_addr = tmp.s_addr;
 	} else {
-		if (! (host_entry = gethostbyname(string))) {
+		if (strlen(string) > MAXHOSTNAMELEN || ! (host_entry = gethostbyname(string))) {
 			/* Note: < -10000 indicates a host lookup error */
 #ifdef PHP_WIN32
 			PHP_SOCKET_ERROR(php_sock, "Host lookup failed", WSAGetLastError());
