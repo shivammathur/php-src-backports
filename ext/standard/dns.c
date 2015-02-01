@@ -63,6 +63,10 @@
 #endif
 #endif
 
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 255
+#endif
+
 /* Borrowed from SYS/SOCKET.H */
 #if defined(NETWARE) && defined(USE_WINSOCK)
 #define AF_INET 2   /* internetwork: UDP, TCP, etc. */
@@ -193,7 +197,13 @@ PHP_FUNCTION(gethostbyname)
 	}
 
 	convert_to_string_ex(arg);
-
+	
+	if(Z_STRLEN_PP(arg) > MAXHOSTNAMELEN) {
+		/* name too long, protect from CVE-2015-0235 */
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Host name is too long, the limit is %d characters", MAXHOSTNAMELEN);
+		RETURN_STRINGL(Z_STRVAL_PP(arg), Z_STRLEN_PP(arg), 1);
+	}
+	
 	RETVAL_STRING(php_gethostbyname(Z_STRVAL_PP(arg)), 0);
 }
 /* }}} */
@@ -211,7 +221,13 @@ PHP_FUNCTION(gethostbynamel)
 		ZEND_WRONG_PARAM_COUNT();
 	}
 	convert_to_string_ex(arg);
-
+	
+	if(Z_STRLEN_PP(arg) > MAXHOSTNAMELEN) {
+		/* name too long, protect from CVE-2015-0235 */
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Host name is too long, the limit is %d characters", MAXHOSTNAMELEN);
+		RETURN_FALSE;
+	}
+	
 	hp = gethostbyname(Z_STRVAL_PP(arg));
 	if (hp == NULL || hp->h_addr_list == NULL) {
 		RETURN_FALSE;
