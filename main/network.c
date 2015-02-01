@@ -24,6 +24,7 @@
 #include "php.h"
 
 #include <stddef.h>
+#include <errno.h>
 
 #ifdef PHP_WIN32
 #define O_RDONLY _O_RDONLY
@@ -94,6 +95,10 @@ int inet_aton(const char *, struct in_addr *);
 # define SOCK_ERR -1
 # define SOCK_CONN_ERR -1
 # define PHP_TIMEOUT_ERROR_VALUE		ETIMEDOUT
+#endif
+
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 255
 #endif
 
 #if HAVE_GETADDRINFO
@@ -237,7 +242,12 @@ static int php_network_getaddresses(const char *host, int socktype, struct socka
 #else
 	if (!inet_aton(host, &in)) {
 		/* XXX NOT THREAD SAFE (is safe under win32) */
-		host_info = gethostbyname(host);
+		if(strlen(host) > MAXHOSTNAMELEN) {
+			host_info = NULL;
+			errno = E2BIG;
+		} else {
+			host_info = gethostbyname(host);
+		}
 		if (host_info == NULL) {
 			if (error_string) {
 				spprintf(error_string, 0, "php_network_getaddresses: gethostbyname failed. errno=%d", errno);
