@@ -6165,6 +6165,13 @@ PHP_FUNCTION(move_uploaded_file)
 	convert_to_string_ex(path);
 	convert_to_string_ex(new_path);
 
+	if (strlen(Z_STRVAL_PP(path)) != Z_STRLEN_PP(path)) {
+	    RETURN_FALSE;
+	}
+	if (strlen(Z_STRVAL_PP(new_path)) != Z_STRLEN_PP(new_path)) {
+	    RETURN_FALSE;
+	}
+
 	if (!zend_hash_exists(SG(rfc1867_uploaded_files), Z_STRVAL_PP(path), Z_STRLEN_PP(path)+1)) {
 		RETURN_FALSE;
 	}
