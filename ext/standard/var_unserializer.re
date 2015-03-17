@@ -300,6 +300,7 @@ static inline int process_nested_data(UNSERIALIZE_PARAMETER, HashTable *ht, long
 				zend_symtable_update(ht, Z_STRVAL_P(key), Z_STRLEN_P(key) + 1, &data, sizeof(data), NULL);
 				break;
 		}
+		var_push_dtor(var_hash, &data);
 		
 		zval_dtor(key);
 		FREE_ZVAL(key);
