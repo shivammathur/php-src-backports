@@ -908,6 +908,8 @@ mcopy(struct magic_set *ms, union VALUETYPE *p, int type, int indir,
 	if (indir == 0) {
 		switch (type) {
 		case FILE_SEARCH:
+			if (offset > nbytes)
+				offset = nbytes;
 			ms->search.s = RCAST(const char *, s) + offset;
 			ms->search.s_len = nbytes - offset;
 			ms->search.offset = offset;
@@ -926,6 +928,8 @@ mcopy(struct magic_set *ms, union VALUETYPE *p, int type, int indir,
 				ms->search.s = NULL;
 				return 0;
 			}
+			if (offset > nbytes)
+				offset = nbytes;
 			buf = RCAST(const char *, s) + offset;
 			end = last = RCAST(const char *, s) + nbytes;
 			/* mget() guarantees buf <= last */
