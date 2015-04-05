@@ -600,27 +600,28 @@ int phar_open_parsed_phar(char *fname, int fname_len, char *alias, int alias_len
  *
  * Meta-data is in this format:
  * [len32][data...]
- * 
+ *
  * data is the serialized zval
  */
 int phar_parse_metadata(char **buffer, zval **metadata, php_uint32 zip_metadata_len TSRMLS_DC) /* {{{ */
 {
-	const unsigned char *p;
 	php_unserialize_data_t var_hash;
 
 	if (zip_metadata_len) {
+		const unsigned char *p, *p_buff = estrndup(*buffer, zip_metadata_len);
+		p = p_buff;
 		ALLOC_ZVAL(*metadata);
 		INIT_ZVAL(**metadata);
-		p = (const unsigned char*) *buffer;
 		PHP_VAR_UNSERIALIZE_INIT(var_hash);
 
 		if (!php_var_unserialize(metadata, &p, p + zip_metadata_len, &var_hash TSRMLS_CC)) {
+			efree(p_buff);
 			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 			zval_ptr_dtor(metadata);
 			*metadata = NULL;
 			return FAILURE;
 		}
-
+		efree(p_buff);
 		PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 
 		if (PHAR_G(persist)) {
