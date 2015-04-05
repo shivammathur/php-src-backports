@@ -1628,6 +1628,9 @@ static xmlDocPtr dom_document_parser(zval *id, int mode, char *source, int sourc
 	xmlInitParser();
 
 	if (mode == DOM_LOAD_FILE) {
+		if (strlen(source) != source_len) {
+			return NULL;
+		}
 		char *file_dest = _dom_get_valid_file_path(source, resolved_path, MAXPATHLEN  TSRMLS_CC);
 		if (file_dest) {
 			ctxt = xmlCreateFileParserCtxt(file_dest);
@@ -2224,7 +2227,7 @@ static void dom_load_html(INTERNAL_FUNCTION_PARAMETERS, int mode)
 	
 	id = getThis();
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &source, &source_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p", &source, &source_len) == FAILURE) {
 		return;
 	}
 

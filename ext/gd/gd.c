@@ -1594,6 +1594,10 @@ PHP_FUNCTION(imageloadfont)
 
 	convert_to_string_ex(file);
 
+	if (strlen(Z_STRVAL_PP(file)) != Z_STRLEN_PP(file)) {
+		RETURN_FALSE;
+	}
+
 	stream = php_stream_open_wrapper(Z_STRVAL_PP(file), "rb", ENFORCE_SAFE_MODE | IGNORE_PATH | IGNORE_URL_WIN | REPORT_ERRORS, NULL);
 	if (stream == NULL) {
 		RETURN_FALSE;
@@ -2600,6 +2604,10 @@ static void _php_image_create_from(INTERNAL_FUNCTION_PARAMETERS, int image_type,
 	}
 
 	convert_to_string_ex(file);
+
+	if (strlen(Z_STRVAL_PP(file)) != Z_STRLEN_PP(file)) {
+		RETURN_FALSE;
+	}
 
 	if (argc == 5 && image_type == PHP_GDIMG_TYPE_GD2PART) {
 		multi_convert_to_long_ex(4, srcx, srcy, width, height);
@@ -4496,6 +4504,10 @@ PHP_FUNCTION(imagepsencodefont)
 	}
 
 	convert_to_string_ex(enc);
+
+	if (strlen(Z_STRVAL_PP(enc)) != Z_STRLEN_PP(enc)) {
+		RETURN_FALSE;
+	}
 
 	ZEND_FETCH_RESOURCE(f_ind, int *, fnt, -1, "Type 1 font", le_ps_font);
 

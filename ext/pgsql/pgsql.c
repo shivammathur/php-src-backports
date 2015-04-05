@@ -2468,10 +2468,14 @@ PHP_FUNCTION(pg_trace)
 	}
 	if (pgsql_link == NULL && id == -1) {
 		RETURN_FALSE;
-	}	
+	}
 
 	ZEND_FETCH_RESOURCE2(pgsql, PGconn *, pgsql_link, id, "PostgreSQL link", le_link, le_plink);
 	convert_to_string_ex(z_filename);
+
+	if (strlen(Z_STRVAL_PP(z_filename)) != Z_STRLEN_PP(z_filename)) {
+		RETURN_FALSE;
+	}
 
 	stream = php_stream_open_wrapper(Z_STRVAL_PP(z_filename), mode, ENFORCE_SAFE_MODE|REPORT_ERRORS, NULL);
 
