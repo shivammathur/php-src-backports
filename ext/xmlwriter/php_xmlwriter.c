@@ -1619,7 +1619,7 @@ PHP_FUNCTION(xmlwriter_write_dtd_entity)
 /* }}} */
 #endif
 
-/* {{{ proto resource xmlwriter_open_uri(resource xmlwriter, string source)
+/* {{{ proto resource xmlwriter_open_uri(string source)
 Create new xmlwriter using source uri for output */
 PHP_FUNCTION(xmlwriter_open_uri)
 {
@@ -1640,7 +1640,7 @@ PHP_FUNCTION(xmlwriter_open_uri)
 	void *ioctx;
 #endif
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &source, &source_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p", &source, &source_len) == FAILURE) {
 		WRONG_PARAM_COUNT;
 		return;
 	}

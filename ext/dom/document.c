@@ -2049,7 +2049,7 @@ static void dom_load_html(INTERNAL_FUNCTION_PARAMETERS, int mode)
 	
 	id = getThis();
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &source, &source_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p", &source, &source_len) == FAILURE) {
 		return;
 	}
 
