@@ -694,7 +694,7 @@ ftp_pasv(ftpbuf_t *ftp, int pasv)
 	char			*ptr;
 	union ipbox		ipbox;
 	unsigned long		b[6];
-	socklen_t			n;
+	socklen_t		n;
 	struct sockaddr *sa;
 	struct sockaddr_in *sin;
 
@@ -1595,8 +1595,8 @@ ftp_genlist(ftpbuf_t *ftp, const char *cmd, const char *path TSRMLS_DC)
 	databuf_t	*data = NULL;
 	char		*ptr;
 	int		ch, lastch;
-	int		size, rcvd;
-	int		lines;
+	size_t		size, rcvd;
+	size_t		lines;
 	char		**ret = NULL;
 	char		**entry;
 	char		*text;
@@ -1638,7 +1638,7 @@ ftp_genlist(ftpbuf_t *ftp, const char *cmd, const char *path TSRMLS_DC)
 	lines = 0;
 	lastch = 0;
 	while ((rcvd = my_recv(ftp, data->fd, data->buf, FTP_BUFSIZE))) {
-		if (rcvd == -1) {
+		if (rcvd == -1 || rcvd > ((size_t)(-1))-size) {
 			goto bail;
 		}
 
