@@ -1673,7 +1673,7 @@ consult the installation file that came with this distribution, or visit \n\
 #endif /* FASTCGI */
 
 	zend_first_try {
-		while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 1)) != -1) {
+		while (!skip_getopt && (c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 1)) != -1) {
 			switch (c) {
 #if PHP_FASTCGI
 				case 'T':
