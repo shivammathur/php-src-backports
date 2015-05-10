@@ -5499,7 +5499,7 @@ PHP_FUNCTION(set_include_path)
 	int new_value_len;
 	char *old_value;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &new_value, &new_value_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p", &new_value, &new_value_len) == FAILURE) {
 		return;
 	}
 
