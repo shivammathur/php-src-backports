@@ -827,6 +827,12 @@ PHP_FUNCTION(tempnam)
 	}
 	convert_to_string_ex(arg1);
 	convert_to_string_ex(arg2);
+	if (strlen(Z_STRVAL_PP(arg1)) != Z_STRLEN_PP(arg1)) {
+		RETURN_FALSE;
+	}
+	if (strlen(Z_STRVAL_PP(arg2)) != Z_STRLEN_PP(arg2)) {
+		RETURN_FALSE;
+	}
 
 	if (PG(safe_mode) &&(!php_checkuid(Z_STRVAL_PP(arg1), NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
 		RETURN_FALSE;
@@ -1468,7 +1474,7 @@ PHP_FUNCTION(rmdir)
 	php_stream_context *context;
 	int dir_len;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|r", &dir, &dir_len, &zcontext) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p|r", &dir, &dir_len, &zcontext) == FAILURE) {
 		RETURN_FALSE;
 	}
 

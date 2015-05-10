@@ -208,7 +208,7 @@ static void _php_do_opendir(INTERNAL_FUNCTION_PARAMETERS, int createobject)
 	php_stream_context *context = NULL;
 	php_stream *dirp;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|r", &dirname, &dir_len, &zcontext) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p|r", &dirname, &dir_len, &zcontext) == FAILURE) {
 		RETURN_NULL();
 	}
 
@@ -284,11 +284,11 @@ PHP_FUNCTION(chroot)
 {
 	char *str;
 	int ret, str_len;
-	
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &str, &str_len) == FAILURE) {
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p", &str, &str_len) == FAILURE) {
 		RETURN_FALSE;
 	}
-	
+
 	ret = chroot(str);
 	if (ret != 0) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "%s (errno %d)", strerror(errno), errno);

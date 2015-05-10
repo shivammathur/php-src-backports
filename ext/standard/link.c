@@ -64,6 +64,10 @@ PHP_FUNCTION(readlink)
 	}
 	convert_to_string_ex(filename);
 
+	if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
+		RETURN_FALSE;
+	}
+
 	if (PG(safe_mode) && !php_checkuid(Z_STRVAL_PP(filename), NULL, CHECKUID_CHECK_FILE_AND_DIR)) {
 		RETURN_FALSE;
 	}

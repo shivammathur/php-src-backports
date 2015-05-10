@@ -5822,6 +5822,9 @@ PHP_FUNCTION(set_include_path)
 		WRONG_PARAM_COUNT;
 	}
 	convert_to_string_ex(new_value);
+	if (strlen(Z_STRVAL_PP(new_value)) != Z_STRLEN_PP(new_value)) {
+	    RETURN_FALSE;
+	}
 	old_value = zend_ini_string("include_path", sizeof("include_path"), 0);
 	/* copy to return here, because alter might free it! */
 	if (old_value) {
