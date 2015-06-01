@@ -4382,7 +4382,9 @@ PHP_FUNCTION(imagepsloadfont)
 	}
 
 	convert_to_string_ex(file);
-
+	if (strlen(Z_STRVAL_PP(file)) != Z_STRLEN_PP(file)) {
+		RETURN_FALSE;
+	}
 #ifdef PHP_WIN32
 	if (VCWD_STAT(Z_STRVAL_PP(file), &st) < 0) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Font file not found (%s)", Z_STRVAL_PP(file));
