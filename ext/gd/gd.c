@@ -3345,6 +3345,9 @@ PHP_FUNCTION(imagepsloadfont)
 
 	convert_to_string_ex(file);
 
+	if (strlen(Z_STRVAL_PP(file)) != Z_STRLEN_PP(file)) {
+		RETURN_FALSE;
+	}
 	f_ind = T1_AddFont(Z_STRVAL_PP(file));
 
 	if (f_ind < 0) {
