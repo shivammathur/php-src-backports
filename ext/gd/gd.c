@@ -4029,7 +4029,7 @@ PHP_FUNCTION(imagepsloadfont)
 	struct stat st;
 #endif
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &file, &file_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "p", &file, &file_len) == FAILURE) {
 		return;
 	}
 

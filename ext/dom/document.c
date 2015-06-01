@@ -1753,7 +1753,7 @@ PHP_FUNCTION(dom_document_save)
 	char *file;
 	long options = 0;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l", &id, dom_document_class_entry, &file, &file_len, &options) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Op|l", &id, dom_document_class_entry, &file, &file_len, &options) == FAILURE) {
 		return;
 	}
 
@@ -1995,6 +1995,10 @@ static void _dom_document_schema_validate(INTERNAL_FUNCTION_PARAMETERS, int type
 
 	switch (type) {
 	case DOM_LOAD_FILE:
+		if (CHECK_NULL_PATH(source, source_len)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid Schema file source");
+			RETURN_FALSE;
+		}
 		valid_file = _dom_get_valid_file_path(source, resolved_path, MAXPATHLEN  TSRMLS_CC);
 		if (!valid_file) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid Schema file source");
@@ -2084,6 +2088,10 @@ static void _dom_document_relaxNG_validate(INTERNAL_FUNCTION_PARAMETERS, int typ
 
 	switch (type) {
 	case DOM_LOAD_FILE:
+		if (CHECK_NULL_PATH(source, source_len)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid RelaxNG file source");
+			RETURN_FALSE;
+		}
 		valid_file = _dom_get_valid_file_path(source, resolved_path, MAXPATHLEN  TSRMLS_CC);
 		if (!valid_file) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid RelaxNG file source");
@@ -2173,6 +2181,10 @@ static void dom_load_html(INTERNAL_FUNCTION_PARAMETERS, int mode) /* {{{ */
 	}
 
 	if (mode == DOM_LOAD_FILE) {
+		if (CHECK_NULL_PATH(source, source_len)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid file source");
+			RETURN_FALSE;
+		}
 		ctxt = htmlCreateFileParserCtxt(source, NULL);
 	} else {
 		source_len = xmlStrlen(source);
@@ -2257,7 +2269,7 @@ PHP_FUNCTION(dom_document_save_html_file)
 	char *file;
 	const char *encoding;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", &id, dom_document_class_entry, &file, &file_len) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Op", &id, dom_document_class_entry, &file, &file_len) == FAILURE) {
 		return;
 	}
 
