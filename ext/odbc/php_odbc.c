@@ -725,6 +725,14 @@ int odbc_bindcols(odbc_result *result TSRMLS_DC)
 									NULL, 0, NULL, &displaysize);
 				displaysize = displaysize <= result->longreadlen ? displaysize : 
 								result->longreadlen;
+#if defined(ODBCVER) && (ODBCVER >= 0x0300)
+				/* Workaround for drivers that report NVARCHAR(MAX) columns as SQL_WVARCHAR with size 0 (bug #69975) */
+				if (result->values[i].coltype == SQL_WVARCHAR && displaysize == 0) {
+					result->values[i].coltype = SQL_WLONGVARCHAR;
+					result->values[i].value = NULL;
+					break;
+				}
+#endif
 				/* Workaround for Oracle ODBC Driver bug (#50162) when fetching TIMESTAMP column */
 				if (result->values[i].coltype == SQL_TIMESTAMP) {
 					displaysize += 3;
