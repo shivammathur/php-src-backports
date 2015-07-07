@@ -2096,9 +2096,10 @@ static int phar_copy_file_contents(phar_entry_info *entry, php_stream *fp TSRMLS
 }
 /* }}} */
 
-static zval *phar_rename_archive(phar_archive_data *phar, char *ext, zend_bool compress TSRMLS_DC) /* {{{ */
+static zval *phar_rename_archive(phar_archive_data **sphar, char *ext, zend_bool compress TSRMLS_DC) /* {{{ */
 {
 	char *oldname = NULL, *oldpath = NULL;
+	phar_archive_data *phar = *sphar;
 	char *basename = NULL, *basepath = NULL;
 	char *newname = NULL, *newpath = NULL;
 	zval *ret, arg1;
@@ -2205,6 +2206,7 @@ static zval *phar_rename_archive(phar_archive_data *phar, char *ext, zend_bool c
 				phar->fp = NULL;
 				phar_destroy_phar_data(phar TSRMLS_CC);
 				phar = *pphar;
+				*sphar = NULL;
 				phar->refcount++;
 				newpath = oldpath;
 				goto its_ok;
@@ -2419,17 +2421,19 @@ no_copy:
 		phar_add_virtual_dirs(phar, newentry.filename, newentry.filename_len TSRMLS_CC);
 	}
 
-	if ((ret = phar_rename_archive(phar, ext, 0 TSRMLS_CC))) {
+	if ((ret = phar_rename_archive(&phar, ext, 0 TSRMLS_CC))) {
 		return ret;
 	} else {
-		zend_hash_destroy(&(phar->manifest));
-		zend_hash_destroy(&(phar->mounted_dirs));
-		zend_hash_destroy(&(phar->virtual_dirs));
-		if (phar->fp) {
-			php_stream_close(phar->fp);
+		if(phar != NULL) {
+			zend_hash_destroy(&(phar->manifest));
+			zend_hash_destroy(&(phar->mounted_dirs));
+			zend_hash_destroy(&(phar->virtual_dirs));
+			if (phar->fp) {
+				php_stream_close(phar->fp);
+			}
+			efree(phar->fname);
+			efree(phar);
 		}
-		efree(phar->fname);
-		efree(phar);
 		return NULL;
 	}
 }
