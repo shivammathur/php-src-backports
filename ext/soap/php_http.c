@@ -685,18 +685,21 @@ try_again:
 				zend_hash_internal_pointer_reset(Z_ARRVAL_PP(cookies));
 				smart_str_append_const(&soap_headers, "Cookie: ");
 				for (i = 0; i < n; i++) {
+					ulong numindx;
+					int res = zend_hash_get_current_key(Z_ARRVAL_PP(cookies), &key, &numindx, FALSE);
 					zend_hash_get_current_data(Z_ARRVAL_PP(cookies), (void **)&data);
-					zend_hash_get_current_key(Z_ARRVAL_PP(cookies), &key, NULL, FALSE);
 
-					if (Z_TYPE_PP(data) == IS_ARRAY) {
+					if (res == HASH_KEY_IS_STRING && Z_TYPE_PP(data) == IS_ARRAY) {
 					  zval** value;
 
 						if (zend_hash_index_find(Z_ARRVAL_PP(data), 0, (void**)&value) == SUCCESS &&
 						    Z_TYPE_PP(value) == IS_STRING) {
 						  zval **tmp;
 						  if ((zend_hash_index_find(Z_ARRVAL_PP(data), 1, (void**)&tmp) == FAILURE ||
+						   Z_TYPE_PP(tmp) != IS_STRING ||
 						       strncmp(phpurl->path?phpurl->path:"/",Z_STRVAL_PP(tmp),Z_STRLEN_PP(tmp)) == 0) &&
 						      (zend_hash_index_find(Z_ARRVAL_PP(data), 2, (void**)&tmp) == FAILURE ||
+						       Z_TYPE_PP(tmp) != IS_STRING ||
 						       in_domain(phpurl->host,Z_STRVAL_PP(tmp))) &&
 						      (use_ssl || zend_hash_index_find(Z_ARRVAL_PP(data), 3, (void**)&tmp) == FAILURE)) {
 								smart_str_appendl(&soap_headers, key, strlen(key));
