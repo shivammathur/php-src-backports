@@ -40,7 +40,7 @@ void zend_exception_set_previous(zval *exception, zval *add_previous TSRMLS_DC)
 	if (exception == add_previous || !add_previous || !exception) {
 		return;
 	}
-	if (Z_TYPE_P(add_previous) != IS_OBJECT && !instanceof_function(Z_OBJCE_P(add_previous), default_exception_ce TSRMLS_CC)) {
+	if (Z_TYPE_P(add_previous) != IS_OBJECT || !instanceof_function(Z_OBJCE_P(add_previous), default_exception_ce TSRMLS_CC)) {
 		zend_error(E_ERROR, "Cannot set non exception as previous exception");
 		return;
 	}
@@ -579,7 +579,7 @@ ZEND_METHOD(exception, __toString)
 	exception = getThis();
 	ZVAL_STRINGL(&fname, "gettraceasstring", sizeof("gettraceasstring")-1, 1);
 
-	while (exception && Z_TYPE_P(exception) == IS_OBJECT) {
+	while (exception && Z_TYPE_P(exception) == IS_OBJECT && instanceof_function(Z_OBJCE_P(exception), default_exception_ce TSRMLS_CC)){
 		prev_str = str;
 		_default_exception_get_entry(exception, "message", sizeof("message")-1, &message TSRMLS_CC);
 		_default_exception_get_entry(exception, "file", sizeof("file")-1, &file TSRMLS_CC);
@@ -589,6 +589,7 @@ ZEND_METHOD(exception, __toString)
 		convert_to_string(&file);
 		convert_to_long(&line);
 
+		trace = NULL;
 		fci.size = sizeof(fci);
 		fci.function_table = &Z_OBJCE_P(exception)->function_table;
 		fci.function_name = &fname;
@@ -601,7 +602,7 @@ ZEND_METHOD(exception, __toString)
 
 		zend_call_function(&fci, NULL TSRMLS_CC);
 
-		if (Z_TYPE_P(trace) != IS_STRING) {
+		if (trace && Z_TYPE_P(trace) != IS_STRING) {
 			zval_ptr_dtor(&trace);
 			trace = NULL;
 		}
