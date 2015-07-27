@@ -40,7 +40,7 @@ string(183) "Class [ <internal:Core> class stdClass ] {
 }
 
 "
-string(1355) "Class [ <internal:Core> class Exception ] {
+string(1418) "Class [ <internal:Core> class Exception ] {
 
   - Constants [0] {
   }
@@ -61,7 +61,7 @@ string(1355) "Class [ <internal:Core> class Exception ] {
     Property [ <default> private $previous ]
   }
 
-  - Methods [10] {
+  - Methods [11] {
     Method [ <internal:Core> final private method __clone ] {
     }
 
@@ -72,6 +72,9 @@ string(1355) "Class [ <internal:Core> class Exception ] {
         Parameter #1 [ <optional> $code ]
         Parameter #2 [ <optional> $previous ]
       }
+    }
+
+    Method [ <internal:Core> public method __wakeup ] {
     }
 
     Method [ <internal:Core> final public method getMessage ] {
