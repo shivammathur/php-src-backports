@@ -1782,14 +1782,12 @@ void spl_array_unserialize_helper(spl_array_object *intern, const unsigned char 
 
 	ALLOC_INIT_ZVAL(pflags);
 	if (!php_var_unserialize(&pflags, &p, s + buf_len, var_hash_p TSRMLS_CC) || Z_TYPE_P(pflags) != IS_LONG) {
-		zval_ptr_dtor(&pflags);
 		goto outexcept;
 	}
 
 	var_push_dtor(var_hash_p, &pflags);
 	--p; /* for ';' */
 	flags = Z_LVAL_P(pflags);
-	zval_ptr_dtor(&pflags);
 	/* flags needs to be verified and we also need to verify whether the next
 	 * thing we get is ';'. After that we require an 'm' or somethign else
 	 * where 'm' stands for members and anything else should be an array. If
@@ -1801,7 +1799,7 @@ void spl_array_unserialize_helper(spl_array_object *intern, const unsigned char 
 	++p;
 
 	if (*p!='m') {
-		if (*p!='a' && *p!='O' && *p!='C') {
+		if (*p!='a' && *p!='O' && *p!='C' && *p!='r') {
 			goto outexcept;
 		}
 		intern->ar_flags &= ~SPL_ARRAY_CLONE_MASK;
@@ -1836,9 +1834,15 @@ void spl_array_unserialize_helper(spl_array_object *intern, const unsigned char 
 	zval_ptr_dtor(&pmembers);
 
 	/* done reading $serialized */
+	if (pflags) {
+		zval_ptr_dtor(&pflags);
+	}
 	return;
 
 outexcept:
+	if (pflags) {
+		zval_ptr_dtor(&pflags);
+	}
 	zend_throw_exception_ex(spl_ce_UnexpectedValueException, 0 TSRMLS_CC, "Error at offset %ld of %d bytes", (long)((char*)p - (char *)buf), buf_len);
 	return;
 
