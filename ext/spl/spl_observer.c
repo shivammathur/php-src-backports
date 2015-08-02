@@ -743,6 +743,7 @@ SPL_METHOD(SplObjectStorage, unserialize)
 		goto outexcept;
 	}
 
+	var_push_dtor(&var_hash, &pcount);
 	--p; /* for ';' */
 	count = Z_LVAL_P(pcount);
 	zval_ptr_dtor(&pcount);
@@ -808,6 +809,7 @@ SPL_METHOD(SplObjectStorage, unserialize)
 		goto outexcept;
 	}
 
+	var_push_dtor(&var_hash, &pmembers);
 	/* copy members */
 	zend_hash_copy(intern->std.properties, Z_ARRVAL_P(pmembers), (copy_ctor_func_t) zval_add_ref, (void *) NULL, sizeof(zval *));
 	zval_ptr_dtor(&pmembers);
