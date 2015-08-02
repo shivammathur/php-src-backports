@@ -1786,6 +1786,7 @@ void spl_array_unserialize_helper(spl_array_object *intern, const unsigned char 
 		goto outexcept;
 	}
 
+	var_push_dtor(var_hash_p, &pflags);
 	--p; /* for ';' */
 	flags = Z_LVAL_P(pflags);
 	zval_ptr_dtor(&pflags);
@@ -1810,6 +1811,7 @@ void spl_array_unserialize_helper(spl_array_object *intern, const unsigned char 
 		if (!php_var_unserialize(&intern->array, &p, s + buf_len, var_hash_p TSRMLS_CC)) {
 			goto outexcept;
 		}
+		var_push_dtor(var_hash_p, &intern->array);
 	}
 	if (*p != ';') {
 		goto outexcept;
@@ -1828,6 +1830,7 @@ void spl_array_unserialize_helper(spl_array_object *intern, const unsigned char 
 		goto outexcept;
 	}
 
+	var_push_dtor(var_hash_p, &pmembers);
 	/* copy members */
 	zend_hash_copy(intern->std.properties, Z_ARRVAL_P(pmembers), (copy_ctor_func_t) zval_add_ref, (void *) NULL, sizeof(zval *));
 	zval_ptr_dtor(&pmembers);
