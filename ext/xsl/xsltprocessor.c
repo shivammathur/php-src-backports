@@ -214,15 +214,17 @@ static void xsl_ext_function_php(xmlXPathParserContextPtr ctxt, int nargs, int t
 			}
 		}
 	}
-	
+
 	if (error == 1) {
 		for (i = nargs - 1; i >= 0; i--) {
 			obj = valuePop(ctxt);
-			xmlXPathFreeObject(obj);
+			if (obj) {
+			    xmlXPathFreeObject(obj);
+			}
 		}
 		return;
 	}
-		
+
 	fci.param_count = nargs - 1;
 	if (fci.param_count > 0) {
 		fci.params = safe_emalloc(fci.param_count, sizeof(zval**), 0);
