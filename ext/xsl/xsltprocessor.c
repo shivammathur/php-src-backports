@@ -296,9 +296,11 @@ static void xsl_ext_function_php(xmlXPathParserContextPtr ctxt, int nargs, int t
 	fci.function_table = EG(function_table);
 	
 	obj = valuePop(ctxt);
-	if (obj->stringval == NULL) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Handler name must be a string");
-		xmlXPathFreeObject(obj);
+	if (obj == NULL || obj->stringval == NULL) {
+		if (obj) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Handler name must be a string");
+			xmlXPathFreeObject(obj);
+		}
 		if (fci.param_count > 0) {
 			for (i = 0; i < nargs - 1; i++) {
 				zval_ptr_dtor(&args[i]);
