@@ -81,23 +81,32 @@ PHPAPI void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
 
 PHPAPI void var_push_dtor_no_addref(php_unserialize_data_t *var_hashx, zval **rval)
 {
-	var_entries *var_hash = (*var_hashx)->last_dtor;
+	var_entries *var_hash, *prev = NULL;
+
+	if (!var_hashx) {
+		return;
+	}
+
+	var_hash = var_hashx->first_dtor;
 #if VAR_ENTRIES_DBG
 	fprintf(stderr, "var_push_dtor_no_addref(%ld): %d (%d)\n", var_hash?var_hash->used_slots:-1L, Z_TYPE_PP(rval), Z_REFCOUNT_PP(rval));
 #endif
 
-	if (!var_hash || var_hash->used_slots == VAR_ENTRIES_MAX) {
+	while (var_hash && var_hash->used_slots == VAR_ENTRIES_MAX) {
+ 		prev = var_hash;
+ 		var_hash = var_hash->next;
+ 	}
+
+	if (!var_hash) {
 		var_hash = emalloc(sizeof(var_entries));
 		var_hash->used_slots = 0;
 		var_hash->next = 0;
 
-		if (!(*var_hashx)->first_dtor) {
-			(*var_hashx)->first_dtor = var_hash;
+		if (!var_hashx->first_dtor) {
+			var_hashx->first_dtor = var_hash;
 		} else {
-			((var_entries *) (*var_hashx)->last_dtor)->next = var_hash;
+			prev->next = var_hash;
 		}
-
-		(*var_hashx)->last_dtor = var_hash;
 	}
 
 	var_hash->data[var_hash->used_slots++] = *rval;
@@ -290,24 +299,20 @@ static inline int process_nested_data(UNSERIALIZE_PARAMETER, HashTable *ht, long
 		ALLOC_INIT_ZVAL(key);
 
 		if (!php_var_unserialize(&key, p, max, NULL TSRMLS_CC)) {
-			zval_dtor(key);
-			FREE_ZVAL(key);
+			var_push_dtor_no_addref(var_hash, &key);
 			return 0;
 		}
 
 		if (Z_TYPE_P(key) != IS_LONG && Z_TYPE_P(key) != IS_STRING) {
-			zval_dtor(key);
-			FREE_ZVAL(key);
+			var_push_dtor_no_addref(var_hash, &key);
 			return 0;
 		}
 
 		ALLOC_INIT_ZVAL(data);
 
 		if (!php_var_unserialize(&data, p, max, var_hash TSRMLS_CC)) {
-			zval_dtor(key);
-			FREE_ZVAL(key);
-			zval_dtor(data);
-			FREE_ZVAL(data);
+			var_push_dtor_no_addref(var_hash, &key);
+			var_push_dtor_no_addref(var_hash, &data);
 			return 0;
 		}
 
@@ -337,8 +342,7 @@ static inline int process_nested_data(UNSERIALIZE_PARAMETER, HashTable *ht, long
 		}
 		var_push_dtor(var_hash, &data);
 		
-		zval_dtor(key);
-		FREE_ZVAL(key);
+		var_push_dtor_no_addref(var_hash, &key);
 
 		if (elements && *(*p-1) != ';' && *(*p-1) != '}') {
 			(*p)--;
