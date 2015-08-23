@@ -56,7 +56,13 @@ static inline void var_push(php_unserialize_data_t *var_hashx, zval **rval)
 
 static inline void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
 {
-	var_entries *var_hash = var_hashx->first_dtor, *prev = NULL;
+	var_entries *var_hash, *prev = NULL;
+
+	if (!var_hash) {
+		return;
+	}
+
+	var_hash = var_hashx->first_dtor;
 
 	while (var_hash && var_hash->used_slots == VAR_ENTRIES_MAX) {
 		prev = var_hash;
@@ -222,24 +228,20 @@ static inline int process_nested_data(UNSERIALIZE_PARAMETER, HashTable *ht, long
 		ALLOC_INIT_ZVAL(key);
 
 		if (!php_var_unserialize(&key, p, max, NULL TSRMLS_CC)) {
-			zval_dtor(key);
-			FREE_ZVAL(key);
+			var_push_dtor_no_addref(var_hash, &key);
 			return 0;
 		}
 
 		if (Z_TYPE_P(key) != IS_LONG && Z_TYPE_P(key) != IS_STRING) {
-			zval_dtor(key);
-			FREE_ZVAL(key);
+			var_push_dtor_no_addref(var_hash, &key);
 			return 0;
 		}
 
 		ALLOC_INIT_ZVAL(data);
 
 		if (!php_var_unserialize(&data, p, max, var_hash TSRMLS_CC)) {
-			zval_dtor(key);
-			FREE_ZVAL(key);
-			zval_dtor(data);
-			FREE_ZVAL(data);
+			var_push_dtor_no_addref(var_hash, &key);
+			var_push_dtor_no_addref(var_hash, &data);
 			return 0;
 		}
 
@@ -260,8 +262,7 @@ static inline int process_nested_data(UNSERIALIZE_PARAMETER, HashTable *ht, long
 
 		var_push_dtor(var_hash, &data);
 		
-		zval_dtor(key);
-		FREE_ZVAL(key);
+		var_push_dtor_no_addref(var_hash, &key);
 
 		if (elements && *(*p-1) != ';' &&  *(*p-1) != '}') {
 			(*p)--;
