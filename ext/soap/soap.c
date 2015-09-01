@@ -2898,8 +2898,10 @@ PHP_METHOD(SoapClient, __call)
 			}
 			zend_hash_internal_pointer_reset(default_headers);
 			while (zend_hash_get_current_data(default_headers, (void**)&tmp) == SUCCESS) {
-				ZVAL_ADDREF(*tmp);
-				zend_hash_next_index_insert(soap_headers, tmp, sizeof(zval *), NULL);
+				if(Z_TYPE_PP(tmp) == IS_OBJECT) {
+					ZVAL_ADDREF(*tmp);
+					zend_hash_next_index_insert(soap_headers, tmp, sizeof(zval *), NULL);
+				}
 				zend_hash_move_forward(default_headers);
 			}
 		} else {
@@ -4278,11 +4280,18 @@ static xmlDocPtr serialize_function_call(zval *this_ptr, sdlFunctionPtr function
 	if (head) {
 		zval** header;
 
-		zend_hash_internal_pointer_reset(soap_headers);
-		while (zend_hash_get_current_data(soap_headers,(void**)&header) == SUCCESS) {
-			HashTable *ht = Z_OBJPROP_PP(header);
+		for(zend_hash_internal_pointer_reset(soap_headers);
+				zend_hash_get_current_data(soap_headers,(void**)&header) == SUCCESS;
+				zend_hash_move_forward(soap_headers)
+			) {
+			HashTable *ht;
 			zval **name, **ns, **tmp;
 
+			if (Z_TYPE_PP(header) != IS_OBJECT) {
+				continue;
+			}
+
+			ht = Z_OBJPROP_PP(header);
 			if (zend_hash_find(ht, "name", sizeof("name"), (void**)&name) == SUCCESS &&
 			    Z_TYPE_PP(name) == IS_STRING &&
 			    zend_hash_find(ht, "namespace", sizeof("namespace"), (void**)&ns) == SUCCESS &&
@@ -4352,7 +4361,6 @@ static xmlDocPtr serialize_function_call(zval *this_ptr, sdlFunctionPtr function
 					}
 				}
 			}
-			zend_hash_move_forward(soap_headers);
 		}
 	}
 
