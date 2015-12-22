@@ -595,6 +595,20 @@ END_EXTERN_C()
 	(z)->refcount = 1;		\
 	(z)->is_ref = 0;
 
+#ifndef INIT_PZVAL_COPY
+#define INIT_PZVAL_COPY(z,v) \
+	(z)->value = (v)->value; \
+	(z)->type = (v)->type; \
+	(z)->refcount = 1; \
+	(z)->is_ref = 0;
+#endif
+
+#ifndef MAKE_COPY_ZVAL
+#define MAKE_COPY_ZVAL(ppzv, pzv) \
+	INIT_PZVAL_COPY(pzv, *(ppzv));\
+	zval_copy_ctor((pzv));
+#endif
+
 #define INIT_ZVAL(z) z = zval_used_for_init;
 
 #define ALLOC_INIT_ZVAL(zp)						\
