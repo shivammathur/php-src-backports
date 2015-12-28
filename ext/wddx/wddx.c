@@ -270,13 +270,16 @@ PS_SERIALIZER_DECODE_FUNC(wddx)
 	int hash_type;
 	int ret;
 
-	if (vallen == 0) 
+	if (vallen == 0)
 		return SUCCESS;
-	
+
 	MAKE_STD_ZVAL(retval);
 
 	if ((ret = php_wddx_deserialize_ex((char *)val, vallen, retval)) == SUCCESS) {
-
+		if (Z_TYPE_P(retval) != IS_ARRAY) {
+			zval_ptr_dtor(&retval);
+			return FAILURE;
+		}
 		for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(retval));
 			 zend_hash_get_current_data(Z_ARRVAL_P(retval), (void **) &ent) == SUCCESS;
 			 zend_hash_move_forward(Z_ARRVAL_P(retval))) {
