@@ -406,9 +406,13 @@ PHP_FUNCTION(escapeshellcmd)
 	if (zend_get_parameters_ex(1, &arg1) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
-	
+
 	convert_to_string_ex(arg1);
 	if (Z_STRLEN_PP(arg1)) {
+		if (Z_STRLEN_PP(arg1) != strlen(Z_STRVAL_PP(arg1))) {
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Input string contains NULL bytes");
+			return;
+		}
 		cmd = php_escape_shell_cmd(Z_STRVAL_PP(arg1));
 		RETVAL_STRING(cmd, 1);
 		efree(cmd);
@@ -426,9 +430,13 @@ PHP_FUNCTION(escapeshellarg)
 	if (zend_get_parameters_ex(1, &arg1) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
-	
+
 	convert_to_string_ex(arg1);
 	if (Z_STRLEN_PP(arg1)) {
+		if (Z_STRLEN_PP(arg1) != strlen(Z_STRVAL_PP(arg1))) {
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Input string contains NULL bytes");
+			return;
+		}
 		cmd = php_escape_shell_arg(Z_STRVAL_PP(arg1));
 		RETVAL_STRING(cmd, 1);
 		efree(cmd);
