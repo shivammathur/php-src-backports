@@ -418,6 +418,10 @@ PHP_FUNCTION(escapeshellcmd)
 	}
 
 	if (command_len) {
+		if (command_len != strlen(command)) {
+			php_error_docref(NULL, E_ERROR, "Input string contains NULL bytes");
+			return;
+		}
 		cmd = php_escape_shell_cmd(command);
 		RETVAL_STRING(cmd, 0);
 	} else {
@@ -439,6 +443,10 @@ PHP_FUNCTION(escapeshellarg)
 	}
 
 	if (argument) {
+		if (argument_len != strlen(argument)) {
+			php_error_docref(NULL, E_ERROR, "Input string contains NULL bytes");
+			return;
+		}
 		cmd = php_escape_shell_arg(argument);
 		RETVAL_STRING(cmd, 0);
 	}
