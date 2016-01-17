@@ -475,7 +475,13 @@ PHP_FUNCTION(stream_get_meta_data)
 	php_stream_from_zval(stream, arg1);
 
 	array_init(return_value);
-	
+
+	if (!php_stream_populate_meta_data(stream, return_value)) {
+		add_assoc_bool(return_value, "timed_out", 0);
+		add_assoc_bool(return_value, "blocked", 1);
+		add_assoc_bool(return_value, "eof", php_stream_eof(stream));
+	}
+
 	if (stream->wrapperdata) {
 		MAKE_STD_ZVAL(newval);
 		*newval = *(stream->wrapperdata);
@@ -511,12 +517,6 @@ PHP_FUNCTION(stream_get_meta_data)
 	add_assoc_bool(return_value, "seekable", (stream->ops->seek) && (stream->flags & PHP_STREAM_FLAG_NO_SEEK) == 0);
 	if (stream->orig_path) {
 		add_assoc_string(return_value, "uri", stream->orig_path, 1);
-	}
-
-	if (!php_stream_populate_meta_data(stream, return_value)) {
-		add_assoc_bool(return_value, "timed_out", 0);
-		add_assoc_bool(return_value, "blocked", 1);
-		add_assoc_bool(return_value, "eof", php_stream_eof(stream));
 	}
 
 }
