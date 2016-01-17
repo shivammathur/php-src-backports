@@ -29,6 +29,12 @@ unlink($filename);
 ?>
 --EXPECTF--
 array(9) {
+  ["timed_out"]=>
+  bool(false)
+  ["blocked"]=>
+  bool(true)
+  ["eof"]=>
+  bool(false)
   ["wrapper_type"]=>
   string(9) "plainfile"
   ["stream_type"]=>
@@ -501,10 +507,4 @@ array(9) {
   bool(true)
   ["uri"]=>
   string(%i) "%s.tmp"
-  ["timed_out"]=>
-  bool(false)
-  ["blocked"]=>
-  bool(true)
-  ["eof"]=>
-  bool(false)
 }
