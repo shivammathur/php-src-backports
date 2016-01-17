@@ -37,6 +37,12 @@ fclose($client);
 --EXPECTF--
 Write some data:
 array(7) {
+  ["timed_out"]=>
+  bool(false)
+  ["blocked"]=>
+  bool(true)
+  ["eof"]=>
+  bool(false)
   ["stream_type"]=>
   string(%d) "tcp_socke%s"
   ["mode"]=>
@@ -64,17 +70,17 @@ array(7) {
   int(%i)
   ["seekable"]=>
   bool(false)
-  ["timed_out"]=>
-  bool(false)
-  ["blocked"]=>
-  bool(true)
-  ["eof"]=>
-  bool(false)
 }
 
 
 Close the server side socket and read the remaining data from the client:
 array(7) {
+  ["timed_out"]=>
+  bool(false)
+  ["blocked"]=>
+  bool(true)
+  ["eof"]=>
+  bool(true)
   ["stream_type"]=>
   string(%d) "tcp_socke%s"
   ["mode"]=>
@@ -83,10 +89,4 @@ array(7) {
   int(%i)
   ["seekable"]=>
   bool(false)
-  ["timed_out"]=>
-  bool(false)
-  ["blocked"]=>
-  bool(true)
-  ["eof"]=>
-  bool(true)
 }
