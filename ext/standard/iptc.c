@@ -38,6 +38,15 @@
 
 #include <sys/stat.h>
 
+#ifdef PHP_WIN32
+# include "win32/php_stdint.h"
+#else
+# if HAVE_INTTYPES_H
+#  include <inttypes.h>
+# elif HAVE_STDINT_H
+#  include <stdint.h>
+# endif
+#endif
 
 /* some defines for the different JPEG block types */
 #define M_SOF0  0xC0            /* Start Of Frame N */
@@ -220,17 +229,22 @@ PHP_FUNCTION(iptcembed)
 		RETURN_FALSE;
 	}
 
+	len = Z_STRLEN_PP(iptcdata);
+    if ((size_t)len >= SIZE_MAX - sizeof(psheader) - 1025) {
+ 	php_error_docref(NULL TSRMLS_CC, E_WARNING, "IPTC data too large");
+ 	RETURN_FALSE;
+    }
+
     if ((fp = VCWD_FOPEN(Z_STRVAL_PP(jpeg_file), "rb")) == 0) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to open %s", Z_STRVAL_PP(jpeg_file));
         RETURN_FALSE;
     }
 
-	len = Z_STRLEN_PP(iptcdata);
 
 	if (spool < 2) {
 		fstat(fileno(fp), &sb);
 
-		poi = spoolbuf = emalloc(len + sizeof(psheader) + sb.st_size + 1024);
+		poi = spoolbuf = safe_emalloc(1, (size_t)len + sizeof(psheader) + 1024 + 1, sb.st_size);
 	} 
 
 	if (php_iptc_get1(fp, spool, poi?&poi:0 TSRMLS_CC) != 0xFF) {
