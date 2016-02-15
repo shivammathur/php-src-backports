@@ -927,6 +927,16 @@ static void php_wddx_pop_element(void *user_data, const XML_Char *name)
 		!strcmp(name, EL_DATETIME)) {
 		wddx_stack_top(stack, (void**)&ent1);
 
+		if (!ent1->data) {
+			if (stack->top > 1) {
+				stack->top--;
+			} else {
+				stack->done = 1;
+			}
+			efree(ent1);
+			return;
+		}
+
 		if (!strcmp(name, EL_BINARY)) {
 			int new_len=0;
 			unsigned char *new_str;
@@ -1037,6 +1047,7 @@ bigint:
 			stack->done = 1;
 	} else if (!strcmp(name, EL_VAR) && stack->varname) {
 		efree(stack->varname);
+		stack->varname = NULL;
 	} else if (!strcmp(name, EL_FIELD)) {
 		st_entry *ent;
 		wddx_stack_top(stack, (void **)&ent);
@@ -1058,7 +1069,7 @@ static void php_wddx_process_data(void *user_data, const XML_Char *s, int len)
 
 	if (!wddx_stack_is_empty(stack) && !stack->done) {
 		wddx_stack_top(stack, (void**)&ent);
-		switch (Z_TYPE_P(ent)) {
+		switch (ent->type) {
 			case ST_STRING: 
 				decoded = xml_utf8_decode(s, len, &decoded_len, "ISO-8859-1");
 
@@ -1102,11 +1113,11 @@ static void php_wddx_process_data(void *user_data, const XML_Char *s, int len)
 				else if (!strcmp(s, "false"))
 					Z_LVAL_P(ent->data) = 0;
 				else {
-					stack->top--;
 					zval_ptr_dtor(&ent->data);
-					if (ent->varname)
+					if (ent->varname) {
 						efree(ent->varname);
-					efree(ent);
+					}
+					ent->data = NULL;
 				}
 				break;
 
