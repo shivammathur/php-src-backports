@@ -58,5 +58,5 @@ Error: file_put_contents(phar://%s//): failed to open stream: phar error: file "
 Error: file_put_contents(phar://%s/.): failed to open stream: phar error: file "" in phar "%s" cannot be empty
 Error: file_put_contents(phar://%s/../): failed to open stream: phar error: file "" in phar "%s" cannot be empty
 Error: file_put_contents(phar://%s/a/..): failed to open stream: phar error: file "" in phar "%s" cannot be empty
-Exception: Entry a does not exist and cannot be created: phar error: invalid path "a" contains illegal character
+Error: Phar::offsetSet() expects parameter 1 to be valid path, string given
 ===DONE===
