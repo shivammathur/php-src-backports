@@ -215,12 +215,13 @@ PHP_FUNCTION(grapheme_stripos)
 	is_ascii = ( grapheme_ascii_check(haystack, haystack_len) >= 0 );
 
 	if ( is_ascii ) {
+		int32_t noffset = offset >= 0 ? offset : haystack_len + offset;
 		needle_dup = (unsigned char *)estrndup((char *)needle, needle_len);
 		php_strtolower((char *)needle_dup, needle_len);
 		haystack_dup = (unsigned char *)estrndup((char *)haystack, haystack_len);
 		php_strtolower((char *)haystack_dup, haystack_len);
 
-		found = (unsigned char*) php_memnstr((char *)haystack_dup + offset, (char *)needle_dup, needle_len, (char *)haystack_dup + haystack_len);
+		found = (unsigned char*) php_memnstr((char *)haystack_dup + noffset, (char *)needle_dup, needle_len, (char *)haystack_dup + haystack_len);
 
 		efree(haystack_dup);
 		efree(needle_dup);
