@@ -1,16 +1,16 @@
 /*
    +----------------------------------------------------------------------+
-   | PHP Version 5														  |
+   | PHP Version 5							  |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,	  |
-   | that is bundled with this package in the file LICENSE, and is		  |
-   | available through the world-wide-web at the following url:			  |
-   | http://www.php.net/license/3_01.txt								  |
+   | that is bundled with this package in the file LICENSE, and is	  |
+   | available through the world-wide-web at the following url:		  |
+   | http://www.php.net/license/3_01.txt				  |
    | If you did not receive a copy of the PHP license and are unable to   |
-   | obtain it through the world-wide-web, please send a note to		  |
-   | license@php.net so we can mail you a copy immediately.				  |
+   | obtain it through the world-wide-web, please send a note to	  |
+   | license@php.net so we can mail you a copy immediately.		  |
    +----------------------------------------------------------------------+
-   | Author: Ed Batutis <ed@batutis.com>								  |
+   | Author: Ed Batutis <ed@batutis.com>				  |
    +----------------------------------------------------------------------+
  */
 
@@ -112,7 +112,7 @@ PHP_FUNCTION(grapheme_strpos)
 	int haystack_len, needle_len;
 	unsigned char *found;
 	long loffset = 0;
-	int32_t offset = 0;
+	int32_t offset = 0, noffset = 0;
 	int ret_pos, uchar_pos;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|l", (char **)&haystack, &haystack_len, (char **)&needle, &needle_len, &loffset) == FAILURE) {
@@ -132,6 +132,7 @@ PHP_FUNCTION(grapheme_strpos)
 
 	/* we checked that it will fit: */
 	offset = (int32_t) loffset;
+	noffset = offset >= 0 ? offset : haystack_len + offset;
 
 	/* the offset is 'grapheme count offset' so it still might be invalid - we'll check it later */
 
@@ -146,7 +147,7 @@ PHP_FUNCTION(grapheme_strpos)
 	/* quick check to see if the string might be there
 	 * I realize that 'offset' is 'grapheme count offset' but will work in spite of that
 	*/
-	found = (unsigned char *)php_memnstr((char *)haystack + offset, (char *)needle, needle_len, (char *)haystack + haystack_len);
+	found = (unsigned char *)php_memnstr((char *)haystack + noffset, (char *)needle, needle_len, (char *)haystack + haystack_len);
 
 	/* if it isn't there the we are done */
 	if (!found) {
