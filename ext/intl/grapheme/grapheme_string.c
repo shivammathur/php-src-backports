@@ -112,7 +112,7 @@ PHP_FUNCTION(grapheme_strpos)
 	int haystack_len, needle_len;
 	unsigned char *found;
 	long loffset = 0;
-	int32_t offset = 0;
+	int32_t offset = 0, noffset = 0;
 	int ret_pos;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|l", (char **)&haystack, &haystack_len, (char **)&needle, &needle_len, &loffset) == FAILURE) {
@@ -132,6 +132,7 @@ PHP_FUNCTION(grapheme_strpos)
 
 	/* we checked that it will fit: */
 	offset = (int32_t) loffset;
+	noffset = offset >= 0 ? offset : haystack_len + offset;
 
 	/* the offset is 'grapheme count offset' so it still might be invalid - we'll check it later */
 
@@ -146,7 +147,7 @@ PHP_FUNCTION(grapheme_strpos)
 	/* quick check to see if the string might be there
 	 * I realize that 'offset' is 'grapheme count offset' but will work in spite of that
 	*/
-	found = (unsigned char *)php_memnstr((char *)haystack + offset, (char *)needle, needle_len, (char *)haystack + haystack_len);
+	found = (unsigned char *)php_memnstr((char *)haystack + noffset, (char *)needle, needle_len, (char *)haystack + haystack_len);
 
 	/* if it isn't there the we are done */
 	if (!found) {
