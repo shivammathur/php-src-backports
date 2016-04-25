@@ -1084,7 +1084,7 @@ void _xml_characterDataHandler(void *userData, const XML_Char *s, int len)
 						}
 					}
 
-					if (parser->level <= XML_MAXLEVEL) {
+					if (parser->level <= XML_MAXLEVEL && parser->level > 0) {
 						MAKE_STD_ZVAL(tag);
 
 						array_init(tag);
