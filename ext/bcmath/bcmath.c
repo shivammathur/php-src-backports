@@ -147,6 +147,21 @@ static void php_str2num(bc_num *num, char *str TSRMLS_DC)
 }
 /* }}} */
 
+/* {{{ split_bc_num
+ *    Convert to bc_num detecting scale */
+static bc_num split_bc_num(bc_num num) {
+	bc_num newnum;
+	if (num->n_refs >= 1) {
+		return num;
+	}
+	newnum = _bc_new_num_ex(0, 0, 0);
+	*newnum = *num;
+	newnum->n_refs = 1;
+	num->n_refs--;
+	return newnum;
+}
+/* }}} */
+
 /* {{{ proto string bcadd(string left_operand, string right_operand [, int scale])
    Returns the sum of two arbitrary precision numbers */
 PHP_FUNCTION(bcadd)
@@ -181,6 +196,7 @@ PHP_FUNCTION(bcadd)
 	php_str2num(&second, Z_STRVAL_PP(right) TSRMLS_CC);
 	bc_add (first, second, &result, scale);
 	if (result->n_scale > scale) {
+		result = split_bc_num(result);
 		result->n_scale = scale;
 	}
 	Z_STRVAL_P(return_value) = bc_num2str(result);
@@ -227,6 +243,7 @@ PHP_FUNCTION(bcsub)
 	php_str2num(&second, Z_STRVAL_PP(right) TSRMLS_CC);
 	bc_sub (first, second, &result, scale);
 	if (result->n_scale > scale) {
+		result = split_bc_num(result);
 		result->n_scale = scale;
 	}
 	Z_STRVAL_P(return_value) = bc_num2str(result);
@@ -273,6 +290,7 @@ PHP_FUNCTION(bcmul)
 	php_str2num(&second, Z_STRVAL_PP(right) TSRMLS_CC);
 	bc_multiply (first, second, &result, scale TSRMLS_CC);
 	if (result->n_scale > scale) {
+		result = split_bc_num(result);
 		result->n_scale = scale;
 	}
 	Z_STRVAL_P(return_value) = bc_num2str(result);
@@ -320,6 +338,7 @@ PHP_FUNCTION(bcdiv)
 	switch (bc_divide(first, second, &result, scale TSRMLS_CC)) {
 		case 0: /* OK */
 			if (result->n_scale > scale) {
+				result = split_bc_num(result);
 				result->n_scale = scale;
 			}
 			Z_STRVAL_P(return_value) = bc_num2str(result);
@@ -386,6 +405,7 @@ PHP_FUNCTION(bcpowmod)
 	int left_len, right_len, modulous_len;
 	bc_num first, second, mod, result;
 	long scale = BCG(bc_precision);
+	int scale_int;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss|l", &left, &left_len, &right, &right_len, &modulous, &modulous_len, &scale) == FAILURE) {
 		WRONG_PARAM_COUNT;
@@ -398,13 +418,20 @@ PHP_FUNCTION(bcpowmod)
 	php_str2num(&first, left TSRMLS_CC);
 	php_str2num(&second, right TSRMLS_CC);
 	php_str2num(&mod, modulous TSRMLS_CC);
-	bc_raisemod(first, second, mod, &result, scale TSRMLS_CC);
-	if (result->n_scale > scale) {
-		result->n_scale = scale;
+	scale_int = (int) ((int)scale < 0) ? 0 : scale;
+
+	if (bc_raisemod(first, second, mod, &result, scale_int TSRMLS_CC) != -1) {
+		if (result->n_scale > scale_int) {
+			result = split_bc_num(result);
+			result->n_scale = scale_int;
+		}
+		Z_STRVAL_P(return_value) = bc_num2str(result);
+		Z_STRLEN_P(return_value) = strlen(Z_STRVAL_P(return_value));
+		Z_TYPE_P(return_value) = IS_STRING;
+	} else {
+		RETVAL_FALSE;
 	}
-	Z_STRVAL_P(return_value) = bc_num2str(result);
-	Z_STRLEN_P(return_value) = strlen(Z_STRVAL_P(return_value));
-	Z_TYPE_P(return_value) = IS_STRING;
+
 	bc_free_num(&first);
 	bc_free_num(&second);
 	bc_free_num(&mod);
@@ -447,6 +474,7 @@ PHP_FUNCTION(bcpow)
 	php_str2num(&second, Z_STRVAL_PP(right) TSRMLS_CC);
 	bc_raise (first, second, &result, scale TSRMLS_CC);
 	if (result->n_scale > scale) {
+		result = split_bc_num(result);
 		result->n_scale = scale;
 	}
 	Z_STRVAL_P(return_value) = bc_num2str(result);
@@ -489,6 +517,7 @@ PHP_FUNCTION(bcsqrt)
 	php_str2num(&result, Z_STRVAL_PP(left) TSRMLS_CC);
 	if (bc_sqrt (&result, scale TSRMLS_CC) != 0) {
 		if (result->n_scale > scale) {
+			result = split_bc_num(result);
 			result->n_scale = scale;
 		}
 		Z_STRVAL_P(return_value) = bc_num2str(result);
