@@ -1423,6 +1423,11 @@ encode_amp:
 	}
 	replaced[len] = '\0';
 	*newlen = len;
+	if(len > INT_MAX) {
+		zend_error_noreturn(E_ERROR, "Escaped string is too long");
+		efree(replaced);
+		return NULL;
+	}
 
 	return replaced;
 }
