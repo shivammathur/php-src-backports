@@ -1293,6 +1293,10 @@ static void php_html_entities(INTERNAL_FUNCTION_PARAMETERS, int all)
 	}
 
 	replaced = php_escape_html_entities_ex(str, str_len, &len, all, quote_style, hint_charset, double_encode TSRMLS_CC);
+	if (len > INT_MAX) {
+		efree(replaced);
+		RETURN_FALSE;
+	}
 	RETVAL_STRINGL(replaced, len, 0);
 }
 /* }}} */
