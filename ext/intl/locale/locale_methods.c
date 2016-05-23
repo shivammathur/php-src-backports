@@ -329,6 +329,7 @@ static char* get_icu_value_internal( char* loc_name , char* tag_name, int* resul
 		if( U_FAILURE( status ) ) {
 			if( status == U_BUFFER_OVERFLOW_ERROR ) {
 				status = U_ZERO_ERROR;
+				buflen++; /* add space for \0 */
 				continue;
 			}
 
