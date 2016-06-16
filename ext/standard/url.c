@@ -633,6 +633,10 @@ PHPAPI char *php_raw_url_encode(char const *s, int len, int *new_length)
 	if (new_length) {
 		*new_length = y;
 	}
+	if (UNEXPECTED(y > INT_MAX)) {
+		efree(str);
+		zend_error(E_ERROR, "String size overflow");
+	}
 	return ((char *) str);
 }
 /* }}} */
