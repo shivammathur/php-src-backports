@@ -953,7 +953,7 @@ static void _php_mb_regex_ereg_replace_exec(INTERNAL_FUNCTION_PARAMETERS, OnigOp
 				eval_buf.len = 0;
 				zval_dtor(&v);
 			} else if (is_callable) {
-				zval *retval_ptr;
+				zval *retval_ptr = NULL;
 				zval **args[1];
 				zval *subpats;
 				int i;
@@ -972,13 +972,12 @@ static void _php_mb_regex_ereg_replace_exec(INTERNAL_FUNCTION_PARAMETERS, OnigOp
 				arg_replace_fci.param_count = 1;
 				arg_replace_fci.params = args;
 				arg_replace_fci.retval_ptr_ptr = &retval_ptr;
-				if (zend_call_function(&arg_replace_fci, &arg_replace_fci_cache TSRMLS_CC) == SUCCESS && arg_replace_fci.retval_ptr_ptr) {
+				if (zend_call_function(&arg_replace_fci, &arg_replace_fci_cache TSRMLS_CC) == SUCCESS && arg_replace_fci.retval_ptr_ptr && retval_ptr) {
 					convert_to_string_ex(&retval_ptr);
 					smart_str_appendl(&out_buf, Z_STRVAL_P(retval_ptr), Z_STRLEN_P(retval_ptr));
 					eval_buf.len = 0;
 					zval_ptr_dtor(&retval_ptr);
 				} else {
-					efree(description);
 					if (!EG(exception)) {
 						php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to call custom replacement function");
 					}
