@@ -1024,6 +1024,10 @@ static HashTable *php_zip_get_properties(zval *object TSRMLS_DC)/* {{{ */
 	obj = (ze_zip_object *)zend_objects_get_address(object TSRMLS_CC);
 	props = obj->zo.properties;
 
+	if(GC_G(gc_active)) {
+		return props;
+	}
+
 	if (obj->prop_handler == NULL) {
 		return NULL;
 	}
