@@ -3992,15 +3992,18 @@ PHP_FUNCTION(getenv)
 {
 	char *ptr, *str;
 	int str_len;
+	zend_bool local_only = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &str, &str_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &str, &str_len, &local_only) == FAILURE) {
 		RETURN_FALSE;
 	}
 
-	/* SAPI method returns an emalloc()'d string */
-	ptr = sapi_getenv(str, str_len TSRMLS_CC);
-	if (ptr) {
-		RETURN_STRING(ptr, 0);
+	if (!local_only) {
+		/* SAPI method returns an emalloc()'d string */
+		ptr = sapi_getenv(str, str_len TSRMLS_CC);
+		if (ptr) {
+			RETURN_STRING(ptr, 0);
+		}
 	}
 #ifdef PHP_WIN32
 	{
