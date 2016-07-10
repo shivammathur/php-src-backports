@@ -807,6 +807,23 @@ int php_hash_environment(TSRMLS_D)
 }
 /* }}} */
 
+/* Ugly hack to fix HTTP_PROXY issue */
+static void check_http_proxy(HashTable *var_table)
+{
+	if (zend_hash_exists(var_table, "HTTP_PROXY", sizeof("HTTP_PROXY"))) {
+		char *local_proxy = getenv("HTTP_PROXY");
+
+		if (!local_proxy) {
+			zend_hash_del(var_table, "HTTP_PROXY", sizeof("HTTP_PROXY"));
+		} else {
+			zval *local_zval;
+			ALLOC_INIT_ZVAL(local_zval);
+			ZVAL_STRING(local_zval, local_proxy, 1);
+			zend_hash_update(var_table, "HTTP_PROXY", sizeof("HTTP_PROXY"), &local_zval, sizeof(zval **), NULL);
+		}
+	}
+}
+
 static zend_bool php_auto_globals_create_server(char *name, uint name_len TSRMLS_DC)
 {
 	if (PG(variables_order) && (strchr(PG(variables_order),'S') || strchr(PG(variables_order),'s'))) {
@@ -839,6 +856,7 @@ static zend_bool php_auto_globals_create_server(char *name, uint name_len TSRMLS
 		PG(http_globals)[TRACK_VARS_SERVER] = server_vars;
 	}
 
+	check_http_proxy(Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_SERVER]));
 	zend_hash_update(&EG(symbol_table), name, name_len + 1, &PG(http_globals)[TRACK_VARS_SERVER], sizeof(zval *), NULL);
 	PG(http_globals)[TRACK_VARS_SERVER]->refcount++;
 
@@ -865,6 +883,7 @@ static zend_bool php_auto_globals_create_env(char *name, uint name_len TSRMLS_DC
 		php_import_environment_variables(PG(http_globals)[TRACK_VARS_ENV] TSRMLS_CC);
 	}
 
+	check_http_proxy(Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_ENV]));
 	zend_hash_update(&EG(symbol_table), name, name_len + 1, &PG(http_globals)[TRACK_VARS_ENV], sizeof(zval *), NULL);
 	PG(http_globals)[TRACK_VARS_ENV]->refcount++;
 
