@@ -160,7 +160,7 @@ php_stream *php_stream_zip_opener(php_stream_wrapper *wrapper,
 											char **opened_path,
 											php_stream_context *context STREAMS_DC TSRMLS_DC)
 {
-	int path_len;
+	size_t path_len;
 
 	char *file_basename;
 	size_t file_basename_len;
@@ -169,7 +169,7 @@ php_stream *php_stream_zip_opener(php_stream_wrapper *wrapper,
 	struct zip *za;
 	struct zip_file *zf = NULL;
 	char *fragment;
-	int fragment_len;
+	size_t fragment_len;
 	int err;
 
 	php_stream *stream = NULL;
