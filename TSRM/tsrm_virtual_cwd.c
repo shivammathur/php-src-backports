@@ -497,10 +497,9 @@ CWD_API int virtual_file_ex(cwd_state *state, const char *path, verify_path_func
 
 	use_cache = ((use_realpath != CWD_EXPAND) && CWDG(realpath_cache_size_limit));
 
-	if (path_length == 0) 
-		return (1);
-	if (path_length >= MAXPATHLEN)
-		return (1);
+	if (path_length <= 0 || path_length >= MAXPATHLEN-1) {
+		return 1;
+	}
 
 #if VIRTUAL_CWD_DEBUG
 		fprintf(stderr,"cwd = %s path = %s\n", state->cwd, path);
