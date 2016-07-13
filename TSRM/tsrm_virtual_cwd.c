@@ -385,10 +385,9 @@ CWD_API int virtual_file_ex(cwd_state *state, const char *path, verify_path_func
 	time_t t = 0;
 	TSRMLS_FETCH();
 
-	if (path_length == 0) 
-		return (0);
-	if (path_length >= MAXPATHLEN)
-		return (1);
+	if (path_length <= 0 || path_length >= MAXPATHLEN-1) {
+		return 1;
+	}
 
 	if (use_realpath && CWDG(realpath_cache_size_limit)) {
 		if (IS_ABSOLUTE_PATH(path, path_length) || (state->cwd_length < 1)) {
