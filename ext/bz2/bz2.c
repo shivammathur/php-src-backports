@@ -135,29 +135,34 @@ struct php_bz2_stream_data_t {
 static size_t php_bz2iop_read(php_stream *stream, char *buf, size_t count TSRMLS_DC)
 {
 	struct php_bz2_stream_data_t *self = (struct php_bz2_stream_data_t *) stream->abstract;
-	size_t ret;
-	
-	ret = BZ2_bzread(self->bz_file, buf, count);
+	int bz2_ret;
 
-	if (ret == 0) {
+	bz2_ret = BZ2_bzread(self->bz_file, buf, count);
+
+	if (bz2_ret < 0) {
+		stream->eof = 1;
+		return -1;
+	}
+
+	if (bz2_ret == 0) {
 		stream->eof = 1;
 	}
 
-	return ret;
+	return (size_t)bz2_ret;
 }
 
 static size_t php_bz2iop_write(php_stream *stream, const char *buf, size_t count TSRMLS_DC)
 {
 	struct php_bz2_stream_data_t *self = (struct php_bz2_stream_data_t *) stream->abstract;
 
-	return BZ2_bzwrite(self->bz_file, (char*)buf, count); 
+	return BZ2_bzwrite(self->bz_file, (char*)buf, count);
 }
 
 static int php_bz2iop_close(php_stream *stream, int close_handle TSRMLS_DC)
 {
 	struct php_bz2_stream_data_t *self = (struct php_bz2_stream_data_t *)stream->abstract;
 	int ret = EOF;
-	
+
 	if (close_handle) {
 		BZ2_bzclose(self->bz_file);
 	}
