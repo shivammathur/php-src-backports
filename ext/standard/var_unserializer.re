@@ -420,6 +420,9 @@ static inline int object_common2(UNSERIALIZE_PARAMETER, long elements)
 	zval fname;
 
 	if (!process_nested_data(UNSERIALIZE_PASSTHRU, Z_OBJPROP_PP(rval), elements, 1)) {
+	    /* We've got partially constructed object on our hands here. Wipe it. */
+	    zend_hash_clean(Z_OBJPROP_PP(rval));
+	    ZVAL_NULL(*rval);
 		return 0;
 	}
 
