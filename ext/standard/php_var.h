@@ -62,6 +62,7 @@ PHPAPI int php_var_unserialize(zval **rval, const unsigned char **p, const unsig
 	var_destroy(&(var_hash))
 
 PHPAPI void var_replace(php_unserialize_data_t *var_hash, zval *ozval, zval **nzval);
+PHPAPI void var_push_dtor(php_unserialize_data_t *var_hash, zval **val);
 PHPAPI void var_push_dtor_no_addref(php_unserialize_data_t *var_hashx, zval **rval);
 PHPAPI void var_destroy(php_unserialize_data_t *var_hash);
 
