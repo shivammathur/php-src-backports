@@ -956,6 +956,7 @@ PHP_FUNCTION(unserialize)
 
 		PHP_VAR_UNSERIALIZE_INIT(var_hash);
 		if (!php_var_unserialize(&return_value, &p, p + Z_STRLEN_PP(buf),  &var_hash TSRMLS_CC)) {
+			var_push_dtor(&var_hash, &return_value);
 			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 			zval_dtor(return_value);
 			php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_PP(buf)), Z_STRLEN_PP(buf));
