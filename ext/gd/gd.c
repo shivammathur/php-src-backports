@@ -3375,6 +3375,11 @@ PHP_FUNCTION(imagegammacorrect)
 	input = Z_DVAL_PP(inputgamma);
 	output = Z_DVAL_PP(outputgamma);
 
+	if ( input <= 0.0 || output <= 0.0 ) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Gamma values should be positive");
+		RETURN_FALSE;
+	}
+
 	ZEND_FETCH_RESOURCE(im, gdImagePtr, IM, -1, "Image", le_gd);
 
 #if HAVE_LIBGD20
