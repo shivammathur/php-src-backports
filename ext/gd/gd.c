@@ -1804,11 +1804,11 @@ PHP_FUNCTION(imagetruecolortopalette)
 	convert_to_boolean_ex(dither);
 	convert_to_long_ex(ncolors);
 
-	if (Z_LVAL_PP(ncolors) <= 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Number of colors has to be greater than zero");
+	if (Z_LVAL_PP(ncolors) <= 0 || Z_LVAL_PP(ncolors) > INT_MAX) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Number of colors has to be greater than zero and no more than %d", INT_MAX);
 		RETURN_FALSE;
 	}
-	gdImageTrueColorToPalette(im, Z_LVAL_PP(dither), Z_LVAL_PP(ncolors));
+	gdImageTrueColorToPalette(im, Z_LVAL_PP(dither), (int)Z_LVAL_PP(ncolors));
 
 	RETURN_TRUE;
 }
