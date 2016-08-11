@@ -1172,9 +1172,13 @@ int php_wddx_deserialize_ex(char *value, int vallen, zval *return_value)
 
 	if (stack.top == 1) {
 		wddx_stack_top(&stack, (void**)&ent);
-		*return_value = *(ent->data);
-		zval_copy_ctor(return_value);
-		retval = SUCCESS;
+		if(ent->data == NULL) {
+			retval = FAILURE;
+		} else {
+			*return_value = *(ent->data);
+			zval_copy_ctor(return_value);
+			retval = SUCCESS;
+		}
 	} else {
 		retval = FAILURE;
 	}
