@@ -331,6 +331,14 @@ struct _zval_struct {
 };
 
 
+#if (defined (__GNUC__) && __GNUC__ > 2 ) && !defined(__INTEL_COMPILER) && !defined(DARWIN) && !defined(__hpux) && !defined(_AIX)
+# define EXPECTED(condition)   __builtin_expect(condition, 1)
+# define UNEXPECTED(condition) __builtin_expect(condition, 0)
+#else
+# define EXPECTED(condition)   (condition)
+# define UNEXPECTED(condition) (condition)
+#endif
+
 /* excpt.h on Digital Unix 4.0 defines function_table */
 #undef function_table
 

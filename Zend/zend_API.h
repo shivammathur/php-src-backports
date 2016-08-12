@@ -467,6 +467,9 @@ END_EXTERN_C()
 #define ZVAL_STRING(z, s, duplicate) {	\
 		char *__s=(s);					\
 		(z)->value.str.len = strlen(__s);	\
+		if (UNEXPECTED(Z_STRLEN_P(z) < 0)) { \
+			zend_error(E_ERROR, "String size overflow"); \
+		} \
 		(z)->value.str.val = (duplicate?estrndup(__s, (z)->value.str.len):__s);	\
 		(z)->type = IS_STRING;	        \
 	}
