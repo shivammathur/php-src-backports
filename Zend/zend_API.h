@@ -575,6 +575,9 @@ END_EXTERN_C()
 		const char *__s=(s);				\
 		zval *__z = (z);					\
 		Z_STRLEN_P(__z) = strlen(__s);		\
+		if (UNEXPECTED(Z_STRLEN_P(__z) < 0)) { \
+			zend_error(E_ERROR, "String size overflow"); \
+		} \
 		Z_STRVAL_P(__z) = (duplicate?estrndup(__s, Z_STRLEN_P(__z)):(char*)__s);\
 		Z_TYPE_P(__z) = IS_STRING;			\
 	} while (0)
