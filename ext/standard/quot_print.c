@@ -275,6 +275,11 @@ PHP_FUNCTION(quoted_printable_encode)
 	}
 
 	new_str = (char *)php_quot_print_encode((unsigned char *)str, (size_t)str_len, &new_str_len);
+	if (new_str_len > INT_MAX) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "String too long, max length is %d", INT_MAX);
+		efree(new_str);
+		RETURN_FALSE;
+	}
 	RETURN_STRINGL(new_str, new_str_len, 0);
 }
 /* }}} */
