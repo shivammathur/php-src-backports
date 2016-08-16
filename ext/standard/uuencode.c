@@ -200,6 +200,11 @@ PHP_FUNCTION(convert_uuencode)
 	}
 
 	dst_len = php_uuencode(src, src_len, &dst);
+	if (dst_len < 0) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "String too long, max length is %d", INT_MAX);
+		efree(dst);
+		RETURN_FALSE;
+	}
 
 	RETURN_STRINGL(dst, dst_len, 0);
 }
