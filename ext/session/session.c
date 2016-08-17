@@ -1067,7 +1067,6 @@ PS_SERIALIZER_DECODE_FUNC(php) /* {{{ */
 		if (!skip) {
 			PS_ADD_VARL(name, namelen);
 		}
-skip:
 		efree(name);
 
 		p = q;
