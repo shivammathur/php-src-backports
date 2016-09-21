@@ -2784,15 +2784,25 @@ SPL_METHOD(CachingIterator, __toString)
 
 	SPL_FETCH_AND_CHECK_DUAL_IT(intern, getThis());
 
+	if (!spl_caching_it_valid(intern TSRMLS_CC)) {
+		RETURN_EMPTY_STRING();
+	}
+
 	if (!(intern->u.caching.flags & (CIT_CALL_TOSTRING|CIT_TOSTRING_USE_KEY|CIT_TOSTRING_USE_CURRENT|CIT_TOSTRING_USE_INNER)))	{
 		zend_throw_exception_ex(spl_ce_BadMethodCallException, 0 TSRMLS_CC, "%s does not fetch string value (see CachingIterator::__construct)", Z_OBJCE_P(getThis())->name);
 		return;
 	}
 	if (intern->u.caching.flags & CIT_TOSTRING_USE_KEY) {
+		if (!intern->current.key) {
+			RETURN_EMPTY_STRING();
+		}
 		MAKE_COPY_ZVAL(&intern->current.key, return_value);
 		convert_to_string(return_value);
 		return;
 	} else if (intern->u.caching.flags & CIT_TOSTRING_USE_CURRENT) {
+		if (!intern->current.data) {
+			RETURN_EMPTY_STRING();
+		}
 		MAKE_COPY_ZVAL(&intern->current.data, return_value);
 		convert_to_string(return_value);
 		return;
@@ -2800,7 +2810,7 @@ SPL_METHOD(CachingIterator, __toString)
 	if (intern->u.caching.zstr) {
 		RETURN_STRINGL(Z_STRVAL_P(intern->u.caching.zstr), Z_STRLEN_P(intern->u.caching.zstr), 1);
 	} else {
-		RETURN_NULL();
+		RETURN_EMPTY_STRING();
 	}
 } /* }}} */
 
