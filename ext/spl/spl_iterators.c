@@ -1636,10 +1636,17 @@ SPL_METHOD(CachingIterator, __toString)
 
 	intern = (spl_dual_it_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 
+	if (!spl_caching_it_valid(intern TSRMLS_CC)) {
+		RETURN_EMPTY_STRING();
+	}
+
 	if (!(intern->u.caching.flags & (CIT_CALL_TOSTRING|CIT_TOSTRING_USE_KEY|CIT_TOSTRING_USE_CURRENT)))	{
 		zend_throw_exception_ex(spl_ce_BadMethodCallException, 0 TSRMLS_CC, "%s does not fetch string value (see CachingIterator::__construct)", Z_OBJCE_P(getThis())->name);
 	}
 	if (intern->u.caching.flags & CIT_TOSTRING_USE_KEY) {
+		if (!intern->current.str_key) {
+			RETURN_EMPTY_STRING();
+		}
 		if (intern->current.key_type == HASH_KEY_IS_STRING) {
 			RETURN_STRINGL(intern->current.str_key, intern->current.str_key_len-1, 1);
 		} else {
@@ -1648,19 +1655,22 @@ SPL_METHOD(CachingIterator, __toString)
 			return;
 		}
 	} else if (intern->u.caching.flags & CIT_TOSTRING_USE_CURRENT) {
+		if (!intern->current.data) {
+			RETURN_EMPTY_STRING();
+		}
 		RETVAL_ZVAL(intern->current.data, 1, 0);
-		
+
 		return;
 	}
 	if (intern->u.caching.zstr) {
 		RETURN_STRINGL(Z_STRVAL_P(intern->u.caching.zstr), Z_STRLEN_P(intern->u.caching.zstr), 1);
 	} else {
-		RETURN_NULL();
+		RETURN_EMPTY_STRING();
 	}
 } /* }}} */
 
 static
-ZEND_BEGIN_ARG_INFO(arginfo_caching_it___construct, 0) 
+ZEND_BEGIN_ARG_INFO(arginfo_caching_it___construct, 0)
 	ZEND_ARG_OBJ_INFO(0, iterator, Iterator, 0)
 	ZEND_ARG_INFO(0, flags)
 ZEND_END_ARG_INFO();
