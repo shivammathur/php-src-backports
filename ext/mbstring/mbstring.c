@@ -3373,7 +3373,7 @@ PHP_FUNCTION(mb_decode_mimeheader)
 	mbfl_string_init(&result);
 	ret = mbfl_mime_header_decode(&string, &result, MBSTRG(current_internal_encoding)->no_encoding);
 	if (ret != NULL) {
-		RETVAL_STRINGL((char *)ret->val, ret->len, 0);	/* the string is already strdup()'ed */
+		RETVAL_STRINGL_CHECK((char *)ret->val, ret->len, 0);	/* the string is already strdup()'ed */
 	} else {
 		RETVAL_FALSE;
 	}
@@ -3476,7 +3476,7 @@ PHP_FUNCTION(mb_convert_kana)
 
 	ret = mbfl_ja_jp_hantozen(&string, &result, opt);
 	if (ret != NULL) {
-		RETVAL_STRINGL((char *)ret->val, ret->len, 0);		/* the string is already strdup()'ed */
+		RETVAL_STRINGL_CHECK((char *)ret->val, ret->len, 0);		/* the string is already strdup()'ed */
 	} else {
 		RETVAL_FALSE;
 	}
@@ -3772,7 +3772,7 @@ php_mb_numericentity_exec(INTERNAL_FUNCTION_PARAMETERS, int type)
 
 	ret = mbfl_html_numeric_entity(&string, &result, convmap, mapsize, type);
 	if (ret != NULL) {
-		RETVAL_STRINGL((char *)ret->val, ret->len, 0);
+		RETVAL_STRINGL_CHECK((char *)ret->val, ret->len, 0);
 	} else {
 		RETVAL_FALSE;
 	}
