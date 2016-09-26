@@ -1722,7 +1722,7 @@ PHP_FUNCTION(dom_document_savexml)
 		if (options & LIBXML_SAVE_NOEMPTYTAG) {
 			xmlSaveNoEmptyTags = saveempty;
 		}
-		if (!size) {
+		if (!size || !mem) {
 			RETURN_FALSE;
 		}
 		RETVAL_STRINGL(mem, size, 1);
@@ -2185,7 +2185,7 @@ PHP_FUNCTION(dom_document_save_html)
 	DOM_GET_OBJ(docp, id, xmlDocPtr, intern);
 
 	htmlDocDumpMemory(docp, &mem, &size);
-	if (!size) {
+	if (!size || !mem) {
 		if (mem)
 			xmlFree(mem);
 		RETURN_FALSE;
