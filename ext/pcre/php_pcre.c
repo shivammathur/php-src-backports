@@ -969,8 +969,8 @@ PHPAPI char *php_pcre_replace_impl(pcre_cache_entry *pce, char *subject, int sub
 	char 			**subpat_names;		/* Array for named subpatterns */
 	int				 num_subpats;		/* Number of captured subpatterns */
 	int				 size_offsets;		/* Size of the offsets array */
-	int				 new_len;			/* Length of needed storage */
-	int				 alloc_len;			/* Actual allocated length */
+	size_t			 new_len;			/* Length of needed storage */
+	size_t			 alloc_len;			/* Actual allocated length */
 	int				 eval_result_len=0;	/* Length of the eval'ed or
 										   function-returned string */
 	int				 match_len;			/* Length of the current match */
@@ -1030,21 +1030,21 @@ PHPAPI char *php_pcre_replace_impl(pcre_cache_entry *pce, char *subject, int sub
 	}
 
 	offsets = (int *)safe_emalloc(size_offsets, sizeof(int), 0);
-	
-	alloc_len = 2 * subject_len + 1;
-	result = safe_emalloc(alloc_len, sizeof(char), 0);
+
+	result = safe_emalloc(subject_len, 2*sizeof(char), 1);
+	alloc_len = 2 * (size_t)subject_len + 1;
 
 	/* Initialize */
 	match = NULL;
 	*result_len = 0;
 	start_offset = 0;
 	PCRE_G(error_code) = PHP_PCRE_NO_ERROR;
-	
+
 	while (1) {
 		/* Execute the regular expression. */
 		count = pcre_exec(pce->re, extra, subject, subject_len, start_offset,
 						  exoptions|g_notempty, offsets, size_offsets);
-		
+
 		/* the string was already proved to be valid UTF-8 */
 		exoptions |= PCRE_NO_UTF8_CHECK;
 
@@ -1097,8 +1097,8 @@ PHPAPI char *php_pcre_replace_impl(pcre_cache_entry *pce, char *subject, int sub
 			}
 
 			if (new_len + 1 > alloc_len) {
-				alloc_len = 1 + alloc_len + 2 * new_len;
-				new_buf = emalloc(alloc_len);
+				new_buf = safe_emalloc(2, new_len + 1, alloc_len);
+				alloc_len = 1 + alloc_len + 2 * (size_t)new_len;
 				memcpy(new_buf, result, *result_len);
 				efree(result);
 				result = new_buf;
@@ -1159,8 +1159,8 @@ PHPAPI char *php_pcre_replace_impl(pcre_cache_entry *pce, char *subject, int sub
 			} else {
 				new_len = *result_len + subject_len - start_offset;
 				if (new_len + 1 > alloc_len) {
-					alloc_len = new_len + 1; /* now we know exactly how long it is */
-					new_buf = safe_emalloc(alloc_len, sizeof(char), 0);
+					new_buf = safe_emalloc(new_len, sizeof(char), 1);
+					alloc_len = (size_t)new_len + 1; /* now we know exactly how long it is */
 					memcpy(new_buf, result, *result_len);
 					efree(result);
 					result = new_buf;
@@ -1190,6 +1190,12 @@ PHPAPI char *php_pcre_replace_impl(pcre_cache_entry *pce, char *subject, int sub
 
 	efree(offsets);
 	efree(subpat_names);
+
+	if(result && (size_t)(*result_len) > INT_MAX) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Result is too big, max is %d", INT_MAX);
+		efree(result);
+		result = NULL;
+	}
 
 	return result;
 }
