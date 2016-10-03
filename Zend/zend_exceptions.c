@@ -208,13 +208,9 @@ ZEND_METHOD(exception, __construct)
 /* {{{ proto Exception::__wakeup()
    Exception unserialize checks */
 #define CHECK_EXC_TYPE(name, type) \
-	value = zend_read_property(default_exception_ce, object, name, sizeof(name)-1, 0 TSRMLS_CC); \
+	value = zend_read_property(default_exception_ce, object, name, sizeof(name)-1, 1 TSRMLS_CC); \
 	if (value && Z_TYPE_P(value) != IS_NULL && Z_TYPE_P(value) != type) { \
-		zval *tmp; \
-		MAKE_STD_ZVAL(tmp); \
-		ZVAL_STRINGL(tmp, name, sizeof(name)-1, 1); \
-		Z_OBJ_HANDLER_P(object, unset_property)(object, tmp TSRMLS_CC); \
-		zval_ptr_dtor(&tmp); \
+		zend_unset_property(default_exception_ce, object, name, sizeof(name)-1 TSRMLS_CC); \
 	}
 
 ZEND_METHOD(exception, __wakeup)
@@ -228,7 +224,12 @@ ZEND_METHOD(exception, __wakeup)
 	CHECK_EXC_TYPE("file", IS_STRING);
 	CHECK_EXC_TYPE("line", IS_LONG);
 	CHECK_EXC_TYPE("trace", IS_ARRAY);
-	CHECK_EXC_TYPE("previous", IS_OBJECT);
+	value = zend_read_property(default_exception_ce, object, "previous", sizeof("previous")-1, 1 TSRMLS_CC);
+	if (value && Z_TYPE_P(value) != IS_NULL && (Z_TYPE_P(value) != IS_OBJECT ||
+			!instanceof_function(Z_OBJCE_P(value), default_exception_ce TSRMLS_CC) ||
+			value == object)) {
+		zend_unset_property(default_exception_ce, object, "previous", sizeof("previous")-1 TSRMLS_CC);
+	}
 }
 /* }}} */
 
