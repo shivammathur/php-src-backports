@@ -623,13 +623,28 @@ ZEND_METHOD(exception, __toString)
 		zval_dtor(&file);
 		zval_dtor(&line);
 
-		exception = zend_read_property(default_exception_ce, exception, "previous", sizeof("previous")-1, 0 TSRMLS_CC);
+		Z_OBJPROP_P(exception)->nApplyCount++;
+		exception = zend_read_property(default_exception_ce, exception, "previous", sizeof("previous")-1, 1 TSRMLS_CC);
+		if (exception && Z_TYPE_P(exception) == IS_OBJECT && Z_OBJPROP_P(exception)->nApplyCount > 0) {
+			exception = NULL;
+		}
 
 		if (trace) {
 			zval_ptr_dtor(&trace);
 		}
 	}
 	zval_dtor(&fname);
+
+	/* Reset apply counts */
+	exception = getThis();
+	while (exception && Z_TYPE_P(exception) == IS_OBJECT && instanceof_function(Z_OBJCE_P(exception), default_exception_ce TSRMLS_CC)) {
+		if(Z_OBJPROP_P(exception)->nApplyCount) {
+			Z_OBJPROP_P(exception)->nApplyCount--;
+		} else {
+			break;
+		}
+		exception = zend_read_property(default_exception_ce, exception, "previous", sizeof("previous")-1, 1 TSRMLS_CC);
+	}
 
 	/* We store the result in the private property string so we can access
 	 * the result in uncaught exception handlers without memleaks. */
