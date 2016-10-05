@@ -107,6 +107,13 @@ static void resourcebundle_ctor(INTERNAL_FUNCTION_PARAMETERS)
 		locale = INTL_G(default_locale);
 	}
 
+	if (bundlename_len >= MAXPATHLEN) {
+		intl_error_set( NULL, U_ILLEGAL_ARGUMENT_ERROR,	"Bundle name too long", 0 TSRMLS_CC );
+		zval_dtor(return_value);
+		ZVAL_NULL(return_value);
+		RETURN_NULL();
+	}
+
 	if (fallback) {
 		rb->me = ures_open(bundlename, locale, &INTL_DATA_ERROR_CODE(rb));
 	} else {
@@ -327,6 +334,11 @@ PHP_FUNCTION( resourcebundle_locales )
 	{
 		intl_error_set(NULL, U_ILLEGAL_ARGUMENT_ERROR,	
 			"resourcebundle_locales: unable to parse input params", 0 TSRMLS_CC);
+		RETURN_FALSE;
+	}
+
+	if (bundlename_len >= MAXPATHLEN) {
+		intl_error_set( NULL, U_ILLEGAL_ARGUMENT_ERROR,	"resourcebundle_locales: bundle name too long", 0 TSRMLS_CC );
 		RETURN_FALSE;
 	}
 
