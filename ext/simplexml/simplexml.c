@@ -1412,9 +1412,15 @@ SXE_METHOD(asXML)
 	if (node) {
 		if (node->parent && (XML_DOCUMENT_NODE == node->parent->type)) {
 			xmlDocDumpMemoryEnc((xmlDocPtr) sxe->document->ptr, &strval, &strval_len, ((xmlDocPtr) sxe->document->ptr)->encoding);
-			RETVAL_STRINGL((char *)strval, strval_len, 1);
+			if (!strval) {
+				RETVAL_FALSE;
+			} else {
+				RETVAL_STRINGL((char *)strval, strval_len, 1);
+			}
 			xmlFree(strval);
 		} else {
+			char *return_content;
+			size_t return_len;
 			/* Should we be passing encoding information instead of NULL? */
 			outbuf = xmlAllocOutputBuffer(NULL);
 
@@ -1425,10 +1431,17 @@ SXE_METHOD(asXML)
 			xmlNodeDumpOutput(outbuf, (xmlDocPtr) sxe->document->ptr, node, 0, 0, ((xmlDocPtr) sxe->document->ptr)->encoding);
 			xmlOutputBufferFlush(outbuf);
 #ifdef LIBXML2_NEW_BUFFER
-			RETVAL_STRINGL((char *)xmlOutputBufferGetContent(outbuf), xmlOutputBufferGetSize(outbuf), 1);
+			return_content = (char *)xmlOutputBufferGetContent(outbuf);
+			return_len = xmlOutputBufferGetSize(outbuf);
 #else
-			RETVAL_STRINGL((char *)outbuf->buffer->content, outbuf->buffer->use, 1);
+			return_content = (char *)outbuf->buffer->content;
+			return_len = outbuf->buffer->use;
 #endif
+			if (!return_content) {
+				RETVAL_FALSE;
+			} else {
+				RETVAL_STRINGL_CHECK(return_content, return_len, 1);
+			}
 			xmlOutputBufferClose(outbuf);
 		}
 	} else {
