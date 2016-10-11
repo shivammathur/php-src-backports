@@ -409,8 +409,8 @@ PHP_EREG_API char *php_ereg_replace(const char *pattern, const char *replace, co
 		 *nbuf,	/* nbuf is used when we grow the buffer */
 		 *walkbuf; /* used to walk buf when replacing backrefs */
 	const char *walk; /* used to walk replacement string for backrefs */
-	int buf_len;
-	int pos, tmp, string_len, new_l;
+	size_t buf_len, new_l;
+	int pos, tmp, string_len;
 	int err, copts = 0;
 
 	string_len = strlen(string);
@@ -434,8 +434,8 @@ PHP_EREG_API char *php_ereg_replace(const char *pattern, const char *replace, co
 
 	/* start with a buffer that is twice the size of the stringo
 	   we're doing replacements in */
+	buf = safe_emalloc(string_len, 2, 1);
 	buf_len = 2 * string_len + 1;
-	buf = safe_emalloc(buf_len, sizeof(char), 0);
 
 	err = pos = 0;
 	buf[0] = '\0';
@@ -472,8 +472,8 @@ PHP_EREG_API char *php_ereg_replace(const char *pattern, const char *replace, co
 				}
 			}
 			if (new_l + 1 > buf_len) {
+				nbuf = safe_emalloc(new_l + 1, 2, buf_len);
 				buf_len = 1 + buf_len + 2 * new_l;
-				nbuf = emalloc(buf_len);
 				strncpy(nbuf, buf, buf_len - 1);
 				nbuf[buf_len - 1] = '\0';
 				efree(buf);
@@ -510,8 +510,8 @@ PHP_EREG_API char *php_ereg_replace(const char *pattern, const char *replace, co
 				}
 				new_l = strlen (buf) + 1;
 				if (new_l + 1 > buf_len) {
+					nbuf = safe_emalloc(new_l + 1, 2, buf_len);
 					buf_len = 1 + buf_len + 2 * new_l;
-					nbuf = safe_emalloc(buf_len, sizeof(char), 0);
 					strncpy(nbuf, buf, buf_len-1);
 					efree(buf);
 					buf = nbuf;
@@ -526,7 +526,7 @@ PHP_EREG_API char *php_ereg_replace(const char *pattern, const char *replace, co
 			new_l = strlen(buf) + strlen(&string[pos]);
 			if (new_l + 1 > buf_len) {
 				buf_len = new_l + 1; /* now we know exactly how long it is */
-				nbuf = safe_emalloc(buf_len, sizeof(char), 0);
+				nbuf = safe_emalloc(new_l, 1, 1);
 				strncpy(nbuf, buf, buf_len-1);
 				efree(buf);
 				buf = nbuf;
@@ -598,7 +598,7 @@ static void php_do_ereg_replace(INTERNAL_FUNCTION_PARAMETERS, int icase)
 	if (ret == (char *) -1) {
 		RETVAL_FALSE;
 	} else {
-		RETVAL_STRING(ret, 1);
+		RETVAL_STRINGL_CHECK(ret, strlen(ret), 1);
 		STR_FREE(ret);
 	}
 

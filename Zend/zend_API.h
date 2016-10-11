@@ -642,6 +642,19 @@ END_EXTERN_C()
 #define RETURN_FALSE  					{ RETVAL_FALSE; return; }
 #define RETURN_TRUE   					{ RETVAL_TRUE; return; }
 
+/* Check that returned string length fits int */
+#define RETVAL_STRINGL_CHECK(s, len, dup) do {  \
+	size_t __len = (len);                   \
+	if (UNEXPECTED(__len > INT_MAX)) {      \
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "String too long, max is %d", INT_MAX); \
+		if(!(dup)) {                        \
+			efree((s));                     \
+		}                                   \
+		RETURN_FALSE;                       \
+	}                                       \
+	RETVAL_STRINGL((s), __len, (dup)); \
+} while (0)
+
 #define SET_VAR_STRING(n, v) {																				\
 								{																			\
 									zval *var;																\
