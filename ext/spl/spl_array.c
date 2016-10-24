@@ -1808,7 +1808,7 @@ void spl_array_unserialize_helper(spl_array_object *intern, const unsigned char 
 		ALLOC_INIT_ZVAL(intern->array);
 		if (!php_var_unserialize(&intern->array, &p, s + buf_len, var_hash_p TSRMLS_CC)
 				|| (Z_TYPE_P(intern->array) != IS_ARRAY && Z_TYPE_P(intern->array) != IS_OBJECT)) {
-			zval_ptr_dtor(&intern->array);
+			// zval_ptr_dtor(&intern->array);
 			goto outexcept;
 		}
 		var_push_dtor(var_hash_p, &intern->array);
