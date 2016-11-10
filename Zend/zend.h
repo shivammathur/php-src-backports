@@ -690,6 +690,19 @@ END_EXTERN_C()
 		}													\
 	}
 
+#define ZVAL_COPY_VALUE(z, v)                   \
+	do {                                        \
+		(z)->value = (v)->value;                \
+		Z_TYPE_P(z) = Z_TYPE_P(v);              \
+	} while (0)
+
+#define INIT_PZVAL_COPY(z, v)                   \
+	do {                                        \
+		ZVAL_COPY_VALUE(z, v);                  \
+		Z_SET_REFCOUNT_P(z, 1);                 \
+		Z_UNSET_ISREF_P(z);                     \
+	} while (0)
+
 #define SEPARATE_ZVAL_IF_NOT_REF(ppzv)		\
 	if (!PZVAL_IS_REF(*ppzv)) {				\
 		SEPARATE_ZVAL(ppzv);				\
