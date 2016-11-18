@@ -197,11 +197,11 @@ PHPAPI php_url *php_url_parse_ex(char const *str, int length)
 		p = e + 1;
 		pp = p;
 
-		while (pp-p < 6 && isdigit(*pp)) {
+		while (pp < ue && pp - p < 6 && isdigit(*pp)) {
 			pp++;
 		}
 
-		if (pp - p > 0 && pp - p < 6 && (*pp == '/' || *pp == '\0')) {
+		if (pp - p > 0 && pp - p < 6 && (pp == ue || *pp == '/')) {
 			long port;
 			memcpy(port_buf, p, (pp - p));
 			port_buf[pp - p] = '\0';
