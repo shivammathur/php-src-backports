@@ -760,18 +760,26 @@ static void php_wddx_push_element(void *user_data, const XML_Char *name, const X
 	} else if (!strcmp(name, EL_BOOLEAN)) {
 		int i;
 
-		if (atts) for (i = 0; atts[i]; i++) {
-			if (!strcmp(atts[i], EL_VALUE) && atts[i+1] && atts[i+1][0]) {
-				ent.type = ST_BOOLEAN;
-				SET_STACK_VARNAME;
+		if (atts) {
+				for (i = 0; atts[i]; i++) {
+					if (!strcmp(atts[i], EL_VALUE) && atts[i+1] && atts[i+1][0]) {
+						ent.type = ST_BOOLEAN;
+						SET_STACK_VARNAME;
 
-				ALLOC_ZVAL(ent.data);
-				INIT_PZVAL(ent.data);
-				Z_TYPE_P(ent.data) = IS_BOOL;
-				wddx_stack_push((wddx_stack *)stack, &ent, sizeof(st_entry));
-				php_wddx_process_data(user_data, atts[i+1], strlen(atts[i+1]));
-				break;
-			}
+						ALLOC_ZVAL(ent.data);
+						INIT_PZVAL(ent.data);
+						Z_TYPE_P(ent.data) = IS_BOOL;
+						wddx_stack_push((wddx_stack *)stack, &ent, sizeof(st_entry));
+						php_wddx_process_data(user_data, atts[i+1], strlen(atts[i+1]));
+						break;
+					}
+				}
+		} else {
+			ent.type = ST_BOOLEAN;
+			SET_STACK_VARNAME;
+			ALLOC_ZVAL(ent.data);
+			ZVAL_FALSE(ent.data);
+			wddx_stack_push((wddx_stack *)stack, &ent, sizeof(st_entry));
 		}
 	} else if (!strcmp(name, EL_NULL)) {
 		ent.type = ST_NULL;
@@ -1006,6 +1014,8 @@ static void php_wddx_pop_element(void *user_data, const XML_Char *name)
 												&ent1->data,
 												sizeof(zval *), NULL);
 				}
+			} else if (!strcmp(name, EL_BINARY) && Z_STRLEN_P(ent1->data) < 1) {
+				zval_ptr_dtor(&ent1->data);
 			}
 			efree(ent1);
 		} else
