@@ -27,6 +27,11 @@
 #define VAR_ENTRIES_MAX 1024
 #define VAR_ENTRIES_DBG 0
 
+#define VAR_WAKEUP_FLAG 1
+#define WITH_WAKEUP_FLAG(zv_ptr) ((zval *) ((zend_uintptr_t) zv_ptr | VAR_WAKEUP_FLAG))
+#define WITHOUT_WAKEUP_FLAG(zv_ptr) ((zval *) ((zend_uintptr_t) zv_ptr & ~VAR_WAKEUP_FLAG))
+#define HAS_WAKEUP_FLAG(zv_ptr) ((zend_uintptr_t) zv_ptr & VAR_WAKEUP_FLAG)
+
 typedef struct {
 	zval *data[VAR_ENTRIES_MAX];
 	long used_slots;
@@ -57,18 +62,15 @@ static inline void var_push(php_unserialize_data_t *var_hashx, zval **rval)
 	var_hash->data[var_hash->used_slots++] = *rval;
 }
 
-PHPAPI void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
+static inline zval **get_var_push_dtor_slot(php_unserialize_data_t *var_hashx)
 {
 	var_entries *var_hash;
 
 	if (!var_hashx || !*var_hashx) {
-		return;
+		return NULL;
 	}
 
 	var_hash = (*var_hashx)->last_dtor;
-#if VAR_ENTRIES_DBG
-	fprintf(stderr, "var_push_dtor(%p, %ld): %d\n", *rval, var_hash?var_hash->used_slots:-1L, Z_TYPE_PP(rval));
-#endif
 
 	if (!var_hash || var_hash->used_slots == VAR_ENTRIES_MAX) {
 		var_hash = emalloc(sizeof(var_entries));
@@ -84,8 +86,17 @@ PHPAPI void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
 		(*var_hashx)->last_dtor = var_hash;
 	}
 
+	return &var_hash->data[var_hash->used_slots++];
+}
+
+PHPAPI void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
+{
+	zval **slot = get_var_push_dtor_slot(var_hashx);
+	if (!slot) {
+		return;
+	}
 	Z_ADDREF_PP(rval);
-	var_hash->data[var_hash->used_slots++] = *rval;
+	*slot = *rval;
 }
 
 PHPAPI void var_push_dtor_no_addref(php_unserialize_data_t *var_hashx, zval **rval)
@@ -163,9 +174,8 @@ PHPAPI void var_destroy(php_unserialize_data_t *var_hashx)
 	void *next;
 	long i;
 	var_entries *var_hash = (*var_hashx)->first;
-#if VAR_ENTRIES_DBG
-	fprintf(stderr, "var_destroy(%ld)\n", var_hash?var_hash->used_slots:-1L);
-#endif
+	zend_bool wakeup_failed = 0;
+	TSRMLS_FETCH();
 
 	while (var_hash) {
 		next = var_hash->next;
@@ -177,10 +187,32 @@ PHPAPI void var_destroy(php_unserialize_data_t *var_hashx)
 
 	while (var_hash) {
 		for (i = 0; i < var_hash->used_slots; i++) {
-#if VAR_ENTRIES_DBG
-    fprintf(stderr, "var_destroy dtor(%p, %ld)\n", var_hash->data[i], Z_REFCOUNT_P(var_hash->data[i]));
-#endif
-			zval_ptr_dtor(&var_hash->data[i]);
+			zval *zv = var_hash->data[i];
+
+			if (HAS_WAKEUP_FLAG(zv)) {
+				zv = WITHOUT_WAKEUP_FLAG(zv);
+				if (!wakeup_failed) {
+					zval *retval_ptr = NULL;
+					zval wakeup_name;
+					INIT_PZVAL(&wakeup_name);
+					ZVAL_STRINGL(&wakeup_name, "__wakeup", sizeof("__wakeup") - 1, 0);
+
+					BG(serialize_lock)++;
+					if (call_user_function_ex(CG(function_table), &zv, &wakeup_name, &retval_ptr, 0, 0, 1, NULL TSRMLS_CC) == FAILURE || retval_ptr == NULL) {
+						wakeup_failed = 1;
+						zend_object_store_ctor_failed(zv TSRMLS_CC);
+					}
+					BG(serialize_lock)--;
+
+					if (retval_ptr) {
+						zval_ptr_dtor(&retval_ptr);
+					}
+				} else {
+					zend_object_store_ctor_failed(zv TSRMLS_CC);
+				}
+			}
+
+			zval_ptr_dtor(&zv);
 		}
 		next = var_hash->next;
 		efree(var_hash);
@@ -439,9 +471,6 @@ static inline long object_common1(UNSERIALIZE_PARAMETER, zend_class_entry *ce)
 #endif
 static inline int object_common2(UNSERIALIZE_PARAMETER, long elements)
 {
-	zval *retval_ptr = NULL;
-	zval fname;
-
 	if (Z_TYPE_PP(rval) != IS_OBJECT) {
 		return 0;
 	}
@@ -461,19 +490,14 @@ static inline int object_common2(UNSERIALIZE_PARAMETER, long elements)
 
 	if (Z_OBJCE_PP(rval) != PHP_IC_ENTRY &&
 		zend_hash_exists(&Z_OBJCE_PP(rval)->function_table, "__wakeup", sizeof("__wakeup"))) {
-		INIT_PZVAL(&fname);
-		ZVAL_STRINGL(&fname, "__wakeup", sizeof("__wakeup") - 1, 0);
-		BG(serialize_lock)++;
-		call_user_function_ex(CG(function_table), rval, &fname, &retval_ptr, 0, 0, 1, NULL TSRMLS_CC);
-		BG(serialize_lock)--;
-	}
-
-	if (retval_ptr) {
-		zval_ptr_dtor(&retval_ptr);
-	}
-
-	if (EG(exception)) {
-		return 0;
+		/* Store object for delayed __wakeup call. Remove references. */
+		zval **slot = get_var_push_dtor_slot(var_hash);
+		zval *zv = *rval;
+		Z_ADDREF_P(zv);
+		if (PZVAL_IS_REF(zv)) {
+			SEPARATE_ZVAL(&zv);
+		}
+		*slot = WITH_WAKEUP_FLAG(zv);
 	}
 
 	return finish_nested_data(UNSERIALIZE_PASSTHRU);
