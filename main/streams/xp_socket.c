@@ -524,7 +524,6 @@ static inline int parse_unix_address(php_stream_xport_param *xparam, struct sock
 static inline char *parse_ip_address_ex(const char *str, int str_len, int *portno, int get_err, char **err TSRMLS_DC)
 {
 	char *colon;
-	char *host = NULL;
 
 	if (memchr(str, '\0', str_len)) {
 		spprintf(err, 0, "The hostname must not contain null bytes" );
@@ -534,14 +533,20 @@ static inline char *parse_ip_address_ex(const char *str, int str_len, int *portn
 #ifdef HAVE_IPV6
 	if (*(str) == '[' && str_len > 1) {
 		/* IPV6 notation to specify raw address with port (i.e. [fe80::1]:80) */
-		char *p = memchr(str + 1, ']', str_len - 2);
+		char *p = memchr(str + 1, ']', str_len - 2), *e = NULL;
 		if (!p || *(p + 1) != ':') {
 			if (get_err) {
 				spprintf(err, 0, "Failed to parse IPv6 address \"%s\"", str);
 			}
 			return NULL;
 		}
-		*portno = atoi(p + 2);
+		*portno = strtol(p + 2, &e, 10);
+		if (e && *e) {
+			if (get_err) {
+				spprintf(err, 0, "Failed to parse address \"%s\"", str);
+			}
+			return NULL;
+		}
 		return estrndup(str + 1, p - str - 1);
 	}
 #endif
@@ -551,16 +556,16 @@ static inline char *parse_ip_address_ex(const char *str, int str_len, int *portn
 		colon = NULL;
 	}
 	if (colon) {
-		*portno = atoi(colon + 1);
-		host = estrndup(str, colon - str);
-	} else {
-		if (get_err) {
-			spprintf(err, 0, "Failed to parse address \"%s\"", str);
+		char *e = NULL;
+		*portno = strtol(colon + 1, &e, 10);
+		if (!e || !*e) {
+			return estrndup(str, colon - str);
 		}
-		return NULL;
 	}
-
-	return host;
+	if (get_err) {
+		spprintf(err, 0, "Failed to parse address \"%s\"", str);
+	}
+	return NULL;
 }
 
 static inline char *parse_ip_address(php_stream_xport_param *xparam, int *portno TSRMLS_DC)
