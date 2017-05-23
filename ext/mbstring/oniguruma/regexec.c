@@ -1570,14 +1570,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
       break;
 
     case OP_EXACT1:  STAT_OP_IN(OP_EXACT1);
-#if 0
       DATA_ENSURE(1);
       if (*p != *s) goto fail;
       p++; s++;
-#endif
-      if (*p != *s++) goto fail;
-      DATA_ENSURE(0);
-      p++;
       STAT_OP_OUT;
       break;
 
