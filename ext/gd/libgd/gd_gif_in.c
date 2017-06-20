@@ -126,6 +126,9 @@ gdImageCreateFromGifCtx(gdIOCtxPtr fd)
        gdImagePtr im = 0;
        ZeroDataBlock = FALSE;
 
+       memset(ColorMap, 0, 3 * MAXCOLORMAPSIZE);
+       memset(localColorMap, 0, 3 * MAXCOLORMAPSIZE);
+
        /*1.4//imageNumber = 1; */
        if (! ReadOK(fd,buf,6)) {
 		return 0;
