@@ -217,10 +217,6 @@ terminated:
        if (!im) {
 		return 0;
        }
-	if (!im->colorsTotal) {
-		gdImageDestroy(im);
-		return 0;
-	}
        /* Check for open colors at the end, so
           we can reduce colorsTotal and ultimately
           BitsPerPixel */
@@ -230,6 +226,10 @@ terminated:
                 } else {
                 	break;
                 }
+       }
+       if (!im->colorsTotal) {
+		gdImageDestroy(im);
+		return 0;
        }
        return im;
 }
@@ -329,7 +329,7 @@ GetCode_(gdIOCtx *fd, int code_size, int flag)
        static unsigned char    buf[CSD_BUF_SIZE];
        static int              curbit, lastbit, done, last_byte;
        int                     i, j, ret;
-       unsigned char           count;
+       int                     count;
 
        if (flag) {
                curbit = 0;
