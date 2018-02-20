@@ -586,9 +586,9 @@ php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper, char *path,
 					php_stream_notify_error(context, PHP_STREAM_NOTIFY_FAILURE,
 							tmp_line, response_code);
 			}
-			if (tmp_line[tmp_line_len - 1] == '\n') {
+			if (tmp_line_len >= 1 && tmp_line[tmp_line_len - 1] == '\n') {
 				--tmp_line_len;
-				if (tmp_line[tmp_line_len - 1] == '\r') {
+				if (tmp_line_len >= 1 &&tmp_line[tmp_line_len - 1] == '\r') {
 					--tmp_line_len;
 				}
 			}
