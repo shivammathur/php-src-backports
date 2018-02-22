@@ -955,6 +955,7 @@ static zend_always_inline int zend_verify_arg_type(zend_function *zf, uint32_t a
 		return 1;
 	}
 
+	ce = NULL;
 	if (UNEXPECTED(!zend_check_type(zf, cur_arg_info, arg, &ce, cache_slot, default_value, 0))) {
 		zend_verify_arg_error(zf, cur_arg_info, arg_num, ce, arg);
 		return 0;
@@ -1539,7 +1540,7 @@ static zend_always_inline HashTable *zend_get_target_symbol_table(zend_execute_d
 
 static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht, const zval *dim, int dim_type, int type)
 {
-	zval *retval;
+	zval *retval = NULL;
 	zend_string *offset_key;
 	zend_ulong hval;
 
