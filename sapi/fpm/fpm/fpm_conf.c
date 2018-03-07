@@ -104,6 +104,7 @@ static struct ini_value_parser_s ini_fpm_global_options[] = {
 	{ "process_control_timeout",     &fpm_conf_set_time,            GO(process_control_timeout) },
 	{ "process.max",                 &fpm_conf_set_integer,         GO(process_max) },
 	{ "process.priority",            &fpm_conf_set_integer,         GO(process_priority) },
+	{ "process.dumpable",            &fpm_conf_set_boolean,         WPO(process_dumpable) },
 	{ "daemonize",                   &fpm_conf_set_boolean,         GO(daemonize) },
 	{ "rlimit_files",                &fpm_conf_set_integer,         GO(rlimit_files) },
 	{ "rlimit_core",                 &fpm_conf_set_rlimit_core,     GO(rlimit_core) },
@@ -128,6 +129,7 @@ static struct ini_value_parser_s ini_fpm_pool_options[] = {
 	{ "listen.mode",               &fpm_conf_set_string,      WPO(listen_mode) },
 	{ "listen.allowed_clients",    &fpm_conf_set_string,      WPO(listen_allowed_clients) },
 	{ "process.priority",          &fpm_conf_set_integer,     WPO(process_priority) },
+	{ "process.dumpable",          &fpm_conf_set_boolean,     WPO(process_dumpable) },
 	{ "pm",                        &fpm_conf_set_pm,          WPO(pm) },
 	{ "pm.max_children",           &fpm_conf_set_integer,     WPO(pm_max_children) },
 	{ "pm.start_servers",          &fpm_conf_set_integer,     WPO(pm_start_servers) },
@@ -1586,6 +1588,7 @@ static void fpm_conf_dump() /* {{{ */
 		} else {
 			zlog(ZLOG_NOTICE, "\tprocess.priority = %d", wp->config->process_priority);
 		}
+		zlog(ZLOG_NOTICE, "\tprocess.dumpable = %s",           BOOL2STR(wp->config->process_dumpable));
 		zlog(ZLOG_NOTICE, "\tpm = %s",                         PM2STR(wp->config->pm));
 		zlog(ZLOG_NOTICE, "\tpm.max_children = %d",            wp->config->pm_max_children);
 		zlog(ZLOG_NOTICE, "\tpm.start_servers = %d",           wp->config->pm_start_servers);
