@@ -1696,7 +1696,7 @@ static void exif_iif_add_value(image_info_type *image_info, int section_index, c
 	switch (format) {
 		case TAG_FMT_STRING:
 			if (value) {
-				length = php_strnlen(value, length);
+				length = (int) php_strnlen(value, length);
 				info_value->s = estrndup(value, length);
 				info_data->length = length;
 			} else {
