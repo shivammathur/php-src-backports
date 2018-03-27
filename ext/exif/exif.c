@@ -1693,7 +1693,7 @@ static void exif_iif_add_value(image_info_type *image_info, int section_index, c
 	switch (format) {
 		case TAG_FMT_STRING:
 			if (value) {
-				length = php_strnlen(value, length);
+				length = (int) php_strnlen(value, length);
 				if (PG(magic_quotes_runtime)) {
 					info_value->s = php_addslashes(value, length, &length, 0 TSRMLS_CC);
 				} else {
