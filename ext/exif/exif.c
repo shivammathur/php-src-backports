@@ -2641,6 +2641,7 @@ static int exif_process_IFD_in_MAKERNOTE(image_info_type *ImageInfo, char * valu
 	int NumDirEntries, old_motorola_intel, offset_diff;
 	const maker_note_type *maker_note;
 	char *dir_start;
+	int data_len;
 
 	for (i=0; i<=sizeof(maker_note_array)/sizeof(maker_note_type); i++) {
 		if (i==sizeof(maker_note_array)/sizeof(maker_note_type))
@@ -2689,6 +2690,7 @@ static int exif_process_IFD_in_MAKERNOTE(image_info_type *ImageInfo, char * valu
 	switch (maker_note->offset_mode) {
 		case MN_OFFSET_MAKER:
 			offset_base = value_ptr;
+			data_len = value_len;
 			break;
 		case MN_OFFSET_GUESS:
 			offset_diff = 2 + NumDirEntries*12 + 4 - php_ifd_get32u(dir_start+10, ImageInfo->motorola_intel);
@@ -2696,6 +2698,7 @@ static int exif_process_IFD_in_MAKERNOTE(image_info_type *ImageInfo, char * valu
 			exif_error_docref(NULL EXIFERR_CC, ImageInfo, E_NOTICE, "Using automatic offset correction: 0x%04X", ((int)dir_start-(int)offset_base+maker_note->offset+displacement) + offset_diff);
 #endif
 			offset_base = value_ptr + offset_diff;
+			data_len = value_len - offset_diff;
 			break;
 		default:
 		case MN_OFFSET_NORMAL:
@@ -2710,7 +2713,7 @@ static int exif_process_IFD_in_MAKERNOTE(image_info_type *ImageInfo, char * valu
 
 	for (de=0;de<NumDirEntries;de++) {
 		if (!exif_process_IFD_TAG(ImageInfo, dir_start + 2 + 12 * de,
-								  offset_base, IFDlength, displacement, section_index, 0, maker_note->tag_table TSRMLS_CC)) {
+								  offset_base, data_len, displacement, section_index, 0, maker_note->tag_table TSRMLS_CC)) {
 			return FALSE;
 		}
 	}
