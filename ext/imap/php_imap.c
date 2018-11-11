@@ -3653,7 +3653,6 @@ PHP_FUNCTION(imap_mail)
 	} else {
 		/* this is not really an error, so it is allowed. */
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "No message string in mail command");
-		message = NULL;
 	}
 
 	/* other headers */
