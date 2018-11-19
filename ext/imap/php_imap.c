@@ -876,6 +876,9 @@ PHP_MINIT_FUNCTION(imap)
 	mail_parameters(NIL, SET_WRITETIMEOUT, (void *) FG(default_socket_timeout));
 	mail_parameters(NIL, SET_CLOSETIMEOUT, (void *) FG(default_socket_timeout));
 
+	/* disable rsh globally */
+	mail_parameters(NIL, SET_RSHTIMEOUT, 0);
+
 	/* timeout constants */
 	REGISTER_LONG_CONSTANT("IMAP_OPENTIMEOUT", 1, CONST_PERSISTENT | CONST_CS);
 	REGISTER_LONG_CONSTANT("IMAP_READTIMEOUT", 2, CONST_PERSISTENT | CONST_CS);
