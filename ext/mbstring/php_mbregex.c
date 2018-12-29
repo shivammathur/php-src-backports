@@ -1057,7 +1057,7 @@ PHP_FUNCTION(mb_split)
 	OnigUChar *pos, *chunk_pos;
 	int string_len;
 
-	int n, err;
+	int err;
 	long count = -1;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|l", &arg_pattern, &arg_pattern_len, &string, &string_len, &count) == FAILURE) {
@@ -1115,8 +1115,8 @@ PHP_FUNCTION(mb_split)
 	}
 
 	/* otherwise we just have one last element to add to the array */
-	n = ((OnigUChar *)(string + string_len) - chunk_pos);
-	if (n > 0) {
+	if ((OnigUChar *)(string + string_len) > chunk_pos) {
+		size_t n = ((OnigUChar *)(string + string_len) - chunk_pos);
 		add_next_index_stringl(return_value, (char *)chunk_pos, n, 1);
 	} else {
 		add_next_index_stringl(return_value, "", 0, 1);
