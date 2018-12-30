@@ -454,6 +454,10 @@ static u_char *php_parserr(u_char *cp, u_char *end, querybuf *answer, int type_t
 	GETLONG(ttl, cp);
 	GETSHORT(dlen, cp);
 	CHECKCP(dlen);
+	if (dlen == 0) {
+		/* No data in the response - nothing to do */
+		return NULL;
+	}
 	if (type_to_fetch != T_ANY && type != type_to_fetch) {
 		cp += dlen;
 		return cp;
