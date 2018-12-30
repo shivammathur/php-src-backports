@@ -82,11 +82,13 @@ utf16le_is_mbc_newline(const UChar* p, const UChar* end)
 static OnigCodePoint
 utf16le_mbc_to_code(const UChar* p, const UChar* end)
 {
+  if (end - p < 2) return 0;
   OnigCodePoint code;
   UChar c0 = *p;
   UChar c1 = *(p+1);
 
   if (UTF16_IS_SURROGATE_FIRST(c1)) {
+    if (end - p < 4) return 0;
     code = ((((c1 - 0xd8) << 2) + ((c0  & 0xc0) >> 6) + 1) << 16)
          + ((((c0 & 0x3f) << 2) + (p[3] - 0xdc)) << 8)
          + p[2];
