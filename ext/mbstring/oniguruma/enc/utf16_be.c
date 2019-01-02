@@ -145,6 +145,7 @@ utf16be_mbc_to_normalize(OnigAmbigType flag, const UChar** pp, const UChar* end,
   else {
     int len;
     len = EncLen_UTF16[*p];
+    if (*pp + len > end) len = end - *pp;
     if (lower != p) {
       int i;
       for (i = 0; i < len; i++) {

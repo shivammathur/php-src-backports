@@ -235,7 +235,7 @@ utf8_mbc_to_normalize(OnigAmbigType flag, const UChar** pp, const UChar* end, UC
   else {
     int len;
 
-    if (*p == 195) { /* 195 == '\303' */
+    if (*p == 195 && p + 1 < end) { /* 195 == '\303' */
       int c = *(p + 1);
       if (c >= 128) {
         if (c <= (UChar )'\236' &&  /* upper */
@@ -251,6 +251,7 @@ utf8_mbc_to_normalize(OnigAmbigType flag, const UChar** pp, const UChar* end, UC
     }
 
     len = enc_len(ONIG_ENCODING_UTF8, p);
+    if (*pp + len > end) len = end - *pp;
     if (lower != p) {
       int i;
       for (i = 0; i < len; i++) {
@@ -276,7 +277,7 @@ utf8_is_mbc_ambiguous(OnigAmbigType flag, const UChar** pp, const UChar* end)
   else {
     (*pp) += enc_len(ONIG_ENCODING_UTF8, p);
 
-    if (*p == 195) { /* 195 == '\303' */
+    if (*p == 195 && p + 1 < end) { /* 195 == '\303' */
       int c = *(p + 1);
       if (c >= 128) {
         if ((flag & ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE) != 0) {
