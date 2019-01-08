@@ -451,13 +451,13 @@ compile_length_string_node(Node* node, regex_t* reg)
   ambig = NSTRING_IS_AMBIG(node);
 
   p = prev = sn->s;
-  prev_len = enc_len(enc, p);
+  SAFE_ENC_LEN(enc, p, sn->end, prev_len);
   p += prev_len;
   slen = 1;
   rlen = 0;
 
   for (; p < sn->end; ) {
-    len = enc_len(enc, p);
+    SAFE_ENC_LEN(enc, p, sn->end, len);
     if (len == prev_len) {
       slen++;
     }
@@ -500,12 +500,12 @@ compile_string_node(Node* node, regex_t* reg)
   ambig = NSTRING_IS_AMBIG(node);
 
   p = prev = sn->s;
-  prev_len = enc_len(enc, p);
+  SAFE_ENC_LEN(enc, p, end, prev_len);
   p += prev_len;
   slen = 1;
 
   for (; p < end; ) {
-    len = enc_len(enc, p);
+    SAFE_ENC_LEN(enc, p, end, len);
     if (len == prev_len) {
       slen++;
     }
