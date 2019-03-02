@@ -2657,6 +2657,12 @@ static int exif_process_IFD_in_MAKERNOTE(image_info_type *ImageInfo, char * valu
 		break;
 	}
 
+    if (value_len < 2 || maker_note->offset >= value_len - 1) {
+        /* Do not go past the value end */
+        exif_error_docref("exif_read_data#error_ifd" EXIFERR_CC, ImageInfo, E_WARNING, "IFD data too short: 0x%04X offset 0x%04X", value_len, maker_note->offset);
+        return FALSE;
+    }
+
 	dir_start = value_ptr + maker_note->offset;
 
 #ifdef EXIF_DEBUG
@@ -2693,6 +2699,7 @@ static int exif_process_IFD_in_MAKERNOTE(image_info_type *ImageInfo, char * valu
 			break;
 		default:
 		case MN_OFFSET_NORMAL:
+			data_len = value_len;
 			break;
 	}
 
