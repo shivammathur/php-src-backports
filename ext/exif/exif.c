@@ -1667,15 +1667,16 @@ static int exif_file_sections_free(image_info_type *ImageInfo)
 /* {{{ exif_iif_add_value
  Add a value to image_info
 */
-static void exif_iif_add_value(image_info_type *image_info, int section_index, char *name, int tag, int format, int length, void* value, int motorola_intel TSRMLS_DC)
+static void exif_iif_add_value(image_info_type *image_info, int section_index, char *name, int tag, int format, size_t length, void* value, size_t value_len, int motorola_intel TSRMLS_DC)
 {
 	size_t idex;
-	void *vptr;
+	void *vptr, *vptr_end;
 	image_info_value *info_value;
 	image_info_data  *info_data;
 	image_info_data  *list;
 
-	if (length < 0) {
+	if (length > INT_MAX) {
+		exif_error_docref("exif_iif_add_value" EXIFERR_CC, image_info, E_WARNING, "Value too large");
 		return;
 	}
 
@@ -1692,10 +1693,16 @@ static void exif_iif_add_value(image_info_type *image_info, int section_index, c
 
 	switch (format) {
 		case TAG_FMT_STRING:
+			if (length > value_len) {
+				exif_error_docref("exif_iif_add_value" EXIFERR_CC, image_info, E_WARNING, "length > value_len: %zu > %zu", length, value_len);
+				value = NULL;
+			}
 			if (value) {
-				length = (int) php_strnlen(value, length);
+				length = php_strnlen(value, length);
 				if (PG(magic_quotes_runtime)) {
-					info_value->s = php_addslashes(value, length, &length, 0 TSRMLS_CC);
+					int escaped_length;
+					info_value->s = php_addslashes(value, (int)length, &escaped_length, 0 TSRMLS_CC);
+					length = escaped_length;
 				} else {
 					info_value->s = estrndup(value, length);
 				}
@@ -1719,10 +1726,16 @@ static void exif_iif_add_value(image_info_type *image_info, int section_index, c
 			if (!length)
 				break;
 		case TAG_FMT_UNDEFINED:
+			if (length > value_len) {
+				exif_error_docref("exif_iif_add_value" EXIFERR_CC, image_info, E_WARNING, "length > value_len: %zu > %zu", length, value_len);
+				value = NULL;
+			}
 			if (value) {
 				/* do not recompute length here */
 				if (PG(magic_quotes_runtime)) {
-					info_value->s = php_addslashes(value, length, &length, 0 TSRMLS_CC);
+					int escaped_length;
+					info_value->s = php_addslashes(value, (int)length, &escaped_length, 0 TSRMLS_CC);
+					length = escaped_length;
 				} else {
 					info_value->s = estrndup(value, length);
 				}
@@ -1743,13 +1756,19 @@ static void exif_iif_add_value(image_info_type *image_info, int section_index, c
 		case TAG_FMT_DOUBLE:
 			if (length==0) {
 				break;
-			} else
+			}
 			if (length>1) {
 				info_value->list = safe_emalloc(length, sizeof(image_info_value), 0);
 			} else {
 				info_value = &info_data->value;
 			}
-			for (idex=0,vptr=value; idex<(size_t)length; idex++,vptr=(char *) vptr + php_tiff_bytes_per_format[format]) {
+			vptr_end = (char *) value + value_len;
+			for (idex=0,vptr=value; idex<length; idex++,vptr=(char *) vptr + php_tiff_bytes_per_format[format]) {
+				if ((char *) vptr_end - (char *) vptr < php_tiff_bytes_per_format[format]) {
+					exif_error_docref("exif_iif_add_value" EXIFERR_CC, image_info, E_WARNING, "Value too short");
+					info_data->length = idex;
+					break;
+				}
 				if (length>1) {
 					info_value = &info_data->value.list[idex];
 				}
@@ -1784,13 +1803,14 @@ static void exif_iif_add_value(image_info_type *image_info, int section_index, c
 #ifdef EXIF_DEBUG
 						php_error_docref(NULL TSRMLS_CC, E_WARNING, "Found value of type single");
 #endif
-						info_value->f = *(float *)value;
+						memcpy(&info_value->f, vptr, sizeof(info_value->f));
+						break;
 
 					case TAG_FMT_DOUBLE:
 #ifdef EXIF_DEBUG
 						php_error_docref(NULL TSRMLS_CC, E_WARNING, "Found value of type double");
 #endif
-						info_value->d = *(double *)value;
+						memcpy(&info_value->d, vptr, sizeof(info_value->d));
 						break;
 				}
 			}
@@ -1803,9 +1823,9 @@ static void exif_iif_add_value(image_info_type *image_info, int section_index, c
 /* {{{ exif_iif_add_tag
  Add a tag from IFD to image_info
 */
-static void exif_iif_add_tag(image_info_type *image_info, int section_index, char *name, int tag, int format, size_t length, void* value TSRMLS_DC)
+static void exif_iif_add_tag(image_info_type *image_info, int section_index, char *name, int tag, int format, size_t length, void* value, size_t value_len TSRMLS_DC)
 {
-	exif_iif_add_value(image_info, section_index, name, tag, format, (int)length, value, image_info->motorola_intel TSRMLS_CC);
+	exif_iif_add_value(image_info, section_index, name, tag, format, length, value, value_len, image_info->motorola_intel TSRMLS_CC);
 }
 /* }}} */
 
@@ -2241,7 +2261,7 @@ static void add_assoc_image_info(zval *value, int sub_array, image_info_type *im
 */
 static void exif_process_COM (image_info_type *image_info, char *value, size_t length TSRMLS_DC)
 {
-	exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_STRING, length-2, value+2 TSRMLS_CC);
+	exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_STRING, length-2, value+2, length-2 TSRMLS_CC);
 }
 /* }}} */
 
@@ -2256,17 +2276,17 @@ static void exif_process_CME (image_info_type *image_info, char *value, size_t l
 	if (length>3) {
 		switch(value[2]) {
 			case 0:
-				exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_UNDEFINED, length, value TSRMLS_CC);
+				exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_UNDEFINED, length, value, length TSRMLS_CC);
 				break;
 			case 1:
-				exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_STRING, length, value);
+				exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_STRING, length, value, length TSRMLS_CC);
 				break;
 			default:
 				php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Undefined JPEG2000 comment encoding");
 				break;
 		}
 	} else {
-		exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_UNDEFINED, 0, NULL);
+		exif_iif_add_tag(image_info, SECTION_COMMENT, "Comment", TAG_COMPUTED_VALUE, TAG_FMT_UNDEFINED, 0, NULL, 0 TSRMLS_CC);
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "JPEG2000 comment section too small");
 	}
 }
@@ -2855,7 +2875,7 @@ static int exif_process_IFD_in_MAKERNOTE(image_info_type *ImageInfo, char * valu
 static int exif_process_IFD_TAG(image_info_type *ImageInfo, char *dir_entry, char *offset_base, size_t IFDlength, size_t displacement, int section_index, int ReadNextIFD, tag_table_type tag_table TSRMLS_DC)
 {
 	size_t length;
-	int tag, format, components;
+	unsigned int tag, format, components;
 	char *value_ptr, tagname[64], cbuf[32], *outside=NULL;
 	size_t byte_count, offset_val, fpos, fgot;
 	int64_t byte_count_signed;
@@ -3161,7 +3181,7 @@ static int exif_process_IFD_TAG(image_info_type *ImageInfo, char *dir_entry, cha
 				}
 		}
 	}
-	exif_iif_add_tag(ImageInfo, section_index, exif_get_tagname(tag, tagname, sizeof(tagname), tag_table TSRMLS_CC), tag, format, components, value_ptr TSRMLS_CC);
+	exif_iif_add_tag(ImageInfo, section_index, exif_get_tagname(tag, tagname, sizeof(tagname), tag_table TSRMLS_CC), tag, format, components, value_ptr, byte_count TSRMLS_CC);
 	EFREE_IF(outside);
 	return TRUE;
 }
@@ -3324,10 +3344,10 @@ static void exif_process_APP12(image_info_type *ImageInfo, char *buffer, size_t 
 	size_t l1, l2=0;
 
 	if ((l1 = php_strnlen(buffer+2, length-2)) > 0) {
-		exif_iif_add_tag(ImageInfo, SECTION_APP12, "Company", TAG_NONE, TAG_FMT_STRING, l1, buffer+2 TSRMLS_CC);
+		exif_iif_add_tag(ImageInfo, SECTION_APP12, "Company", TAG_NONE, TAG_FMT_STRING, l1, buffer+2, l1 TSRMLS_CC);
 		if (length > 2+l1+1) {
-			l2 = php_strnlen(buffer+2+l1+1, length-2-l1+1);
-			exif_iif_add_tag(ImageInfo, SECTION_APP12, "Info", TAG_NONE, TAG_FMT_STRING, l2, buffer+2+l1+1 TSRMLS_CC);
+			l2 = php_strnlen(buffer+2+l1+1, length-2-l1-1);
+			exif_iif_add_tag(ImageInfo, SECTION_APP12, "Info", TAG_NONE, TAG_FMT_STRING, l2, buffer+2+l1+1, l2 TSRMLS_CC);
 		}
 	}
 #ifdef EXIF_DEBUG
@@ -4135,7 +4155,7 @@ PHP_FUNCTION(exif_read_data)
 	if (ImageInfo.Thumbnail.size) {
 		if (read_thumbnail) {
 			/* not exif_iif_add_str : this is a buffer */
-			exif_iif_add_tag(&ImageInfo, SECTION_THUMBNAIL, "THUMBNAIL", TAG_NONE, TAG_FMT_UNDEFINED, ImageInfo.Thumbnail.size, ImageInfo.Thumbnail.data TSRMLS_CC);
+			exif_iif_add_tag(&ImageInfo, SECTION_THUMBNAIL, "THUMBNAIL", TAG_NONE, TAG_FMT_UNDEFINED, ImageInfo.Thumbnail.size, ImageInfo.Thumbnail.data, ImageInfo.Thumbnail.size TSRMLS_CC);
 		}
 		if (!ImageInfo.Thumbnail.width || !ImageInfo.Thumbnail.height) {
 			/* try to evaluate if thumbnail data is present */
