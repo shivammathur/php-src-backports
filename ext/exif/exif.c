@@ -2901,7 +2901,7 @@ static int exif_process_IFD_TAG(image_info_type *ImageInfo, char *dir_entry, cha
 		offset_val = php_ifd_get32u(dir_entry+8, ImageInfo->motorola_intel);
 		/* If its bigger than 4 bytes, the dir entry contains an offset. */
 		value_ptr = offset_base+offset_val;
-		if (byte_count > IFDlength || offset_val > IFDlength-byte_count || value_ptr < dir_entry) {
+		if (byte_count > IFDlength || offset_val > IFDlength-byte_count || value_ptr < dir_entry || offset_val < (size_t)(dir_entry-offset_base) || dir_entry <= offset_base) {
 			/* It is important to check for IMAGE_FILETYPE_TIFF
 			 * JPEG does not use absolute pointers instead its pointers are
 			 * relative to the start of the TIFF header in APP1 section. */
