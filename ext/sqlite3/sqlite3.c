@@ -1997,6 +1997,15 @@ static int php_sqlite3_authorizer(void *autharg, int access_type, const char *ar
 		{
 			if (memcmp(arg3, ":memory:", sizeof(":memory:")) && *arg3) {
 				TSRMLS_FETCH();
+				if (strncmp(arg3, "file:", 5) == 0) {
+					/* starts with "file:" */
+					if (!arg3[5]) {
+						return SQLITE_DENY;
+					}
+					if (php_check_open_basedir(arg3 + 5)) {
+						return SQLITE_DENY;
+					}
+				}
 
 #if PHP_API_VERSION < 20100412
 				if (PG(safe_mode) && (!php_checkuid(arg3, NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
