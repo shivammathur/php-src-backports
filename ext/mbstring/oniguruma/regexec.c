@@ -2949,6 +2949,7 @@ str_lower_case_match(OnigEncoding enc, int ambig_flag,
     lowlen = ONIGENC_MBC_TO_NORMALIZE(enc, ambig_flag, &p, end, lowbuf);
     q = lowbuf;
     while (lowlen > 0) {
+      if (t >= tend)    return 0;
       if (*t++ != *q++) {
         if ((ambig_flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0) {
           ambig_flag &= ~ONIGENC_AMBIGUOUS_MATCH_COMPOUND;
