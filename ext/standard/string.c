@@ -4592,7 +4592,7 @@ PHPAPI size_t php_strip_tags_ex(char *rbuf, int len, int *stateptr, char *allow,
 			
 			case '!': 
 				/* JavaScript & Other HTML scripting languages */
-				if (state == 1 && *(p-1) == '<') { 
+				if (state == 1 && p >= buf + 1 && *(p-1) == '<') {
 					state = 3;
 					lc = c;
 				} else {
@@ -4619,7 +4619,7 @@ PHPAPI size_t php_strip_tags_ex(char *rbuf, int len, int *stateptr, char *allow,
 
 			case '?':
 
-				if (state == 1 && *(p-1) == '<') { 
+				if (state == 1 && p >= buf + 1 && *(p-1) == '<') {
 					br=0;
 					state=2;
 					break;
