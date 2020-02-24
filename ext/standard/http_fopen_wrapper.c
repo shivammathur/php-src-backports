@@ -86,6 +86,17 @@
 #define HTTP_WRAPPER_HEADER_INIT    1
 #define HTTP_WRAPPER_REDIRECTED     2
 
+static zend_bool check_has_header(const char *headers, const char *header) {
+	const char *s = headers;
+	while ((s = strstr(s, header))) {
+		if (s == headers || (s - headers >= 2 && *(s-1) == '\n' && *(s-2) == '\r')) {
+			return 1;
+		}
+		s++;
+	}
+	return 0;
+}
+
 static inline void strip_header(char *header_bag, char *lc_header_bag,
 		const char *lc_header_name)
 {
@@ -690,35 +701,23 @@ finish:
 				strip_header(user_headers, tmp, "content-type:");
 			}
 
-			if ((s = strstr(tmp, "user-agent:")) &&
-			    (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' ||
-			                 *(s-1) == '\t' || *(s-1) == ' ')) {
-				 have_header |= HTTP_HEADER_USER_AGENT;
+			if (check_has_header(tmp, "user-agent:")) {
+				have_header |= HTTP_HEADER_USER_AGENT;
 			}
-			if ((s = strstr(tmp, "host:")) &&
-			    (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' ||
-			                 *(s-1) == '\t' || *(s-1) == ' ')) {
-				 have_header |= HTTP_HEADER_HOST;
+			if (check_has_header(tmp, "host:")) {
+				have_header |= HTTP_HEADER_HOST;
 			}
-			if ((s = strstr(tmp, "from:")) &&
-			    (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' ||
-			                 *(s-1) == '\t' || *(s-1) == ' ')) {
-				 have_header |= HTTP_HEADER_FROM;
-				}
-			if ((s = strstr(tmp, "authorization:")) &&
-			    (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' ||
-			                 *(s-1) == '\t' || *(s-1) == ' ')) {
-				 have_header |= HTTP_HEADER_AUTH;
+			if (check_has_header(tmp, "from:")) {
+				have_header |= HTTP_HEADER_FROM;
 			}
-			if ((s = strstr(tmp, "content-length:")) &&
-			    (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' ||
-			                 *(s-1) == '\t' || *(s-1) == ' ')) {
-				 have_header |= HTTP_HEADER_CONTENT_LENGTH;
+			if (check_has_header(tmp, "authorization:")) {
+				have_header |= HTTP_HEADER_AUTH;
 			}
-			if ((s = strstr(tmp, "content-type:")) &&
-			    (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' ||
-			                 *(s-1) == '\t' || *(s-1) == ' ')) {
-				 have_header |= HTTP_HEADER_TYPE;
+			if (check_has_header(tmp, "content-length:")) {
+				have_header |= HTTP_HEADER_CONTENT_LENGTH;
+			}
+			if (check_has_header(tmp, "content-type:")) {
+				have_header |= HTTP_HEADER_TYPE;
 			}
 			/* remove Proxy-Authorization header */
 			if (use_proxy && use_ssl && (s = strstr(tmp, "proxy-authorization:")) &&
