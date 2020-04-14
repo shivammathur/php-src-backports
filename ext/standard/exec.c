@@ -475,6 +475,16 @@ PHP_FUNCTION(shell_exec)
 	}
 
 	convert_to_string_ex(cmd);
+
+	if (!Z_STRLEN_PP(cmd)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cannot execute a blank command");
+        RETURN_FALSE;
+    }
+	if (strlen(Z_STRVAL_PP(cmd)) != Z_STRLEN_PP(cmd)) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "NULL byte detected. Possible attack");
+		RETURN_FALSE;
+	}
+
 #ifdef PHP_WIN32
 	if ((in=VCWD_POPEN(Z_STRVAL_PP(cmd), "rt"))==NULL) {
 #else
