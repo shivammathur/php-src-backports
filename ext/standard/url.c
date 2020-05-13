@@ -92,6 +92,22 @@ PHPAPI php_url *php_url_parse(char const *str)
 	return php_url_parse_ex(str, strlen(str));
 }
 
+static int is_userinfo_valid(const char *str, size_t len)
+{
+	char *valid = "-._~!$&'()*+,;=:";
+	const char *p = str;
+	while (p - str < len) {
+		if (isalpha(*p) || isdigit(*p) || strchr(valid, *p)) {
+			p++;
+		} else if (*p == '%' && p - str + 3 <= len && isdigit(*(p+1)) && isxdigit(*(p+2))) {
+			p += 3;
+		} else {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 /* {{{ php_url_parse
  */
 PHPAPI php_url *php_url_parse_ex(char const *str, int length)
@@ -185,7 +201,7 @@ PHPAPI php_url *php_url_parse_ex(char const *str, int length)
 			pp++;
 		}
 		
-		if (pp-p < 6 && (*pp == '/' || *pp == '\0')) {
+		if (pp - p > 0 && pp-p < 6 && (*pp == '/' || *pp == '\0')) {
 			memcpy(port_buf, p, (pp-p));
 			port_buf[pp-p] = '\0';
 			ret->port = atoi(port_buf);
@@ -235,13 +251,18 @@ PHPAPI php_url *php_url_parse_ex(char const *str, int length)
 				php_replace_controlchars_ex(ret->pass, (p-pp));
 			}	
 		} else {
+			if (!is_userinfo_valid(s, p-s)) {
+				goto check_port;
+			}
 			ret->user = estrndup(s, (p-s));
 			php_replace_controlchars_ex(ret->user, (p-s));
+
 		}
 		
 		s = p + 1;
 	}
 
+check_port:
 	/* check for port */
 	if (*s == '[' && *(e-1) == ']') {
 		/* Short circuit portscan, 
