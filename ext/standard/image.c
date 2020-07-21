@@ -1303,6 +1303,11 @@ PHP_FUNCTION(getimagesize)
 		return;
 	}
 	
+	if(strlen(arg1) != arg1_len) {
+		php_error_docref(NULL, E_WARNING, "Invalid path");
+		return;
+	}
+
 	if (argc == 2) {
 		zval_dtor(*info);
 		array_init(*info);
