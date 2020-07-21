@@ -1284,6 +1284,11 @@ PHP_FUNCTION(getimagesize)
 		WRONG_PARAM_COUNT;
 	}
 
+	if(Z_STRLEN_PP(arg1) != strlen(Z_STRVAL_PP(arg1))) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid path");
+		return;
+	}
+
 	stream = php_stream_open_wrapper(Z_STRVAL_PP(arg1), "rb", STREAM_MUST_SEEK|REPORT_ERRORS|IGNORE_PATH|ENFORCE_SAFE_MODE, NULL);
 
 	if (!stream) {
