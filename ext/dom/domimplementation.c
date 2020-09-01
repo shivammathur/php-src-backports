@@ -111,6 +111,10 @@ PHP_METHOD(domimplementation, createDocumentType)
 	if (systemid_len > 0)
 		pch2 = systemid;
 
+	if (strstr(name, "%00")) {
+		RETURN_FALSE;
+	}
+
 	uri = xmlParseURI(name);
 	if (uri != NULL && uri->opaque != NULL) {
 		localname = xmlStrdup(uri->opaque);

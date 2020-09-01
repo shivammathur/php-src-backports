@@ -299,6 +299,9 @@ static void *php_libxml_streams_IO_open_wrapper(const char *filename, const char
 	xmlURI *uri;
 
 	TSRMLS_FETCH();
+	if (strstr(filename, "%00")) {
+		return NULL;
+	}
 
 	uri = xmlParseURI(filename);
 	if (uri && (uri->scheme == NULL ||
@@ -429,6 +432,10 @@ php_libxml_output_buffer_create_filename(const char *URI,
 
 	if (URI == NULL)
 		return(NULL);
+
+	if (strstr(URI, "%00")) {
+		return NULL;
+	}
 
 	puri = xmlParseURI(URI);
 	if (puri != NULL) {
