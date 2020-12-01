@@ -410,8 +410,13 @@ foundit:
 			off_t now;
 			char *sig;
 
-			now = php_stream_tell(fp);
 			pefree(entry.filename, entry.is_persistent);
+
+            if (entry.uncompressed_filesize > 0x10000) {
+                PHAR_ZIP_FAIL("signatures larger than 64 KiB are not supported");
+            }
+
+            now = php_stream_tell(fp);
 			sigfile = php_stream_fopen_tmpfile();
 			if (!sigfile) {
 				PHAR_ZIP_FAIL("couldn't open temporary file");
