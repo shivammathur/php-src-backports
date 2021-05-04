@@ -1,0 +1,40 @@
+name: Sync workflow
+on:
+  workflow_dispatch:
+jobs:
+  sync:
+    name: sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Update tags and branches
+        run: |
+          push_ref() {
+            ref=$1
+            git push -f https://${{ github.repository_owner }}:${{ secrets.TOKEN }}@github.com/${{ github.repository }}.git "$ref" || true
+          }
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git remote add up https://github.com/microsoft/php-src
+          mapfile -t branches < <(git branch -r | sed 's/ *origin\///g')
+          mapfile -t tags < <(git tag --sort=-refname | awk 'match($0, /^[0-9]+\.[0-9]+\.[0-9]+/)')
+          for branch in "${branches[@]}"; do
+            echo "---- $branch ----"
+            if [ "$branch" = "main" ]; then
+              continue
+            fi
+            git checkout "$branch"
+            git pull up "$branch"
+            push_ref "$branch"
+          done
+          for tag in "${tags[@]}"; do
+            echo "---- $tag ----"
+            git checkout "$tag"
+            git rebase origin/"$(echo "${branches[@]}" | grep -Po "PHP-${tag%.*}-[a-zA-Z-]+" | head -n 1)"
+            git tag -fa "$tag" -m "Update $tag tag"
+            push_ref "$tag"
+          done
+          curl -u "${{ github.repository_owner }}:${{ secrets.TOKEN }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shivammathur/homebrew-php/actions/workflows/3912302/dispatches -d '{"ref": "master"}'
