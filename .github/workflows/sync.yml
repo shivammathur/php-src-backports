@@ -37,4 +37,4 @@ jobs:
             git tag -fa "$tag" -m "Update $tag tag"
             push_ref "$tag"
           done
-          curl -u "${{ github.repository_owner }}:${{ secrets.TOKEN }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shivammathur/homebrew-php/actions/workflows/3912302/dispatches -d '{"ref": "master"}'
+          GITHUB_TOKEN=${{ secrets.TOKEN }} gh workflow run dispatch-rebottle.yml -R shivammathur/homebrew-php
