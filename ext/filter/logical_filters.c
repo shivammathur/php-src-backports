@@ -445,6 +445,22 @@ void php_filter_validate_regexp(PHP_INPUT_FILTER_PARAM_DECL) /* {{{ */
 }
 /* }}} */
 
+static int is_userinfo_valid(char *str)
+{
+	const char *valid = "-._~!$&'()*+,;=:";
+	const char *p = str;
+	while (p - str < strlen(str)) {
+		if (isalpha(*p) || isdigit(*p) || strchr(valid, *p)) {
+			p++;
+		} else if (*p == '%' && p - str <= strlen(str) - 3 && isdigit(*(p+1)) && isxdigit(*(p+2))) {
+			p += 3;
+		} else {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 void php_filter_validate_url(PHP_INPUT_FILTER_PARAM_DECL) /* {{{ */
 {
 	php_url *url;
@@ -496,6 +512,14 @@ bad_url:
 		php_url_free(url);
 		RETURN_VALIDATION_FAILED
 	}
+
+	if (url->user != NULL && !is_userinfo_valid(url->user)
+		|| url->pass != NULL && !is_userinfo_valid(url->pass)
+	) {
+		php_url_free(url);
+		RETURN_VALIDATION_FAILED
+	}
+
 	php_url_free(url);
 }
 /* }}} */
