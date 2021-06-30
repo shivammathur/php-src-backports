@@ -37,4 +37,4 @@ jobs:
             git tag -fa "$tag" -m "Update $tag tag"
             push_ref "$tag"
           done
-          GITHUB_TOKEN=${{ secrets.TOKEN }} gh workflow run dispatch-rebottle.yml -R shivammathur/homebrew-php
+          GITHUB_TOKEN=${{ secrets.TOKEN }} gh workflow run build.yml -R shivammathur/homebrew-php
