@@ -35,7 +35,7 @@ jobs:
             git checkout "$tag"
             suffix=""
             [ "${tag%.*}" = "5.6" ] && suffix="openssl11"
-            git rebase origin/"$(echo "${branches[@]}" | grep -Po "PHP-${tag%.*}-[a-zA-Z-]+$suffix" | head -n 1)"
+            git rebase "$(echo "${branches[@]}" | grep -Po "PHP-${tag%.*}-[a-zA-Z-]+$suffix" | head -n 1)"
             git tag -fa "$tag" -m "Update $tag tag"
             push_ref "$tag"
           done
