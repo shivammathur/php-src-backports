@@ -27,7 +27,8 @@ jobs:
               continue
             fi
             git checkout "$branch"
-            git pull up "$branch"
+            git fetch up "$branch"
+            git reset --hard up/"$branch"
             push_ref "$branch"
           done
           for tag in "${tags[@]}"; do
