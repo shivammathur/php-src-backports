@@ -1,6 +1,11 @@
 name: Sync workflow
 on:
   workflow_dispatch:
+    inputs:
+      upstream:
+        description: Upstream php-src repository
+        default: microsoft/php-src
+        required: false
 jobs:
   sync:
     name: sync
@@ -18,7 +23,7 @@ jobs:
           }
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git remote add up https://github.com/microsoft/php-src
+          git remote add up https://github.com/${{ github.event.inputs.upstream }}
           mapfile -t branches < <(git branch -r | sed 's/ *origin\///g')
           mapfile -t tags < <(git tag --sort=-refname | awk 'match($0, /^[0-9]+\.[0-9]+\.[0-9]+/)')
           for branch in "${branches[@]}"; do
