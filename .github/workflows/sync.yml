@@ -5,11 +5,11 @@ on:
       upstream:
         description: Upstream php-src repository
         default: microsoft/php-src
-        required: false
+        required: true
       run_build:
         description: Trigger workflow_dispatch for shivammathur/php tap
         default: 'true'
-        required: false
+        required: true
 jobs:
   sync:
     name: sync
@@ -45,10 +45,11 @@ jobs:
             git checkout "$tag"
             suffix=""
             [ "${tag%.*}" = "5.6" ] && suffix="openssl11"
-            git rebase "$(echo "${branches[@]}" | grep -Po "PHP-${tag%.*}-[a-zA-Z-]+$suffix" | head -n 1)"
+            git reset --hard "$(echo "${branches[@]}" | grep -Po "PHP-${tag%.*}-[a-zA-Z-]+$suffix" | head -n 1)"
+            [ "${tag%.*}" = "7.1" ] && git fetch origin 6d934d70f1fa63248671520c6229f8af7ecb4f1c && git cherry-pick 6d934d70f1fa63248671520c6229f8af7ecb4f1c
             git tag -fa "$tag" -m "Update $tag tag"
             push_ref "$tag"
           done
           if [ '${{ github.event.inputs.run_build }}' = 'true' ]; then
             GITHUB_TOKEN=${{ secrets.TOKEN }} gh workflow run build.yml -R shivammathur/homebrew-php
-          fi  
+          fi
