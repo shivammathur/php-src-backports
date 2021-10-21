@@ -6,6 +6,10 @@ on:
         description: Upstream php-src repository
         default: microsoft/php-src
         required: false
+      run_build:
+        description: Trigger workflow_dispatch for shivammathur/php tap
+        default: 'true'
+        required: false
 jobs:
   sync:
     name: sync
@@ -45,4 +49,6 @@ jobs:
             git tag -fa "$tag" -m "Update $tag tag"
             push_ref "$tag"
           done
-          GITHUB_TOKEN=${{ secrets.TOKEN }} gh workflow run build.yml -R shivammathur/homebrew-php
+          if [ '${{ github.event.inputs.run_build }}' = 'true' ]; then
+            GITHUB_TOKEN=${{ secrets.TOKEN }} gh workflow run build.yml -R shivammathur/homebrew-php
+          fi  
