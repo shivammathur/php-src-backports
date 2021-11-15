@@ -6,7 +6,7 @@ if (!extension_loaded('simplexml')) die('skip simplexml extension not available'
 ?>
 --FILE--
 <?php
-if (PHP_OS_FAMILY === 'Windows') {
+if (DIRECTORY_SEPARATOR !== '/') {
     $path = '/' . str_replace('\\', '/', __DIR__);
 } else {
     $path = __DIR__;
