@@ -433,6 +433,8 @@ php_libxml_output_buffer_create_filename(const char *URI,
 	void *context = NULL;
 	char *unescaped = NULL;
 
+	TSRMLS_FETCH();
+
 	if (URI == NULL)
 		return(NULL);
 
