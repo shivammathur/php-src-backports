@@ -1,7 +1,13 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-Backported from 7.4.25
+Backported from 7.3.33
+
+- XML:
+  . Fix #79971: special character is breaking the path in xml function.
+    (CVE-2021-21707) (cmb)
+
+Backported from 7.3.32
 
 - FPM:
   . Fixed bug #81026 (PHP-FPM oob R/W in root process leading to privilege
