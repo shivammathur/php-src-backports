@@ -7,7 +7,7 @@ if (!extension_loaded('dom')) die('skip dom extension not available');
 --FILE--
 <?php
 $imp = new DOMImplementation;
-if (PHP_OS_FAMILY === 'Windows') {
+if (DIRECTORY_SEPARATOR !== '/') {
     $path = '/' . str_replace('\\', '/', __DIR__);
 } else {
     $path = __DIR__;
