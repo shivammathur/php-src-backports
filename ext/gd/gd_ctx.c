@@ -77,7 +77,7 @@ static void _php_image_stream_ctxfreeandclose(struct gdIOCtx *ctx) /* {{{ */
 } /* }}} */
 
 /* {{{ _php_image_output_ctx */
-static void _php_image_output_ctx(INTERNAL_FUNCTION_PARAMETERS, int image_type, char *tn, void (*func_p)())
+static void _php_image_output_ctx(INTERNAL_FUNCTION_PARAMETERS, int image_type, char *tn)
 {
 	zval *imgind;
 	char *file = NULL;
@@ -177,16 +177,20 @@ static void _php_image_output_ctx(INTERNAL_FUNCTION_PARAMETERS, int image_type, 
 
 	switch(image_type) {
 		case PHP_GDIMG_TYPE_JPG:
-			(*func_p)(im, ctx, q);
+			gdImageJpegCtx(im, ctx, q);
 			break;
 		case PHP_GDIMG_TYPE_WEBP:
 			if (q == -1) {
 				q = 80;
 			}
-			(*func_p)(im, ctx, q);
+			gdImageWebpCtx(im, ctx, q);
 			break;
 		case PHP_GDIMG_TYPE_PNG:
-			(*func_p)(im, ctx, q, f);
+#ifdef HAVE_GD_BUNDLED
+			gdImagePngCtxEx(im, ctx, q, f);
+#else
+			gdImagePngCtxEx(im, ctx, q);
+#endif
 			break;
 		case PHP_GDIMG_TYPE_XBM:
 		case PHP_GDIMG_TYPE_WBM:
@@ -197,16 +201,16 @@ static void _php_image_output_ctx(INTERNAL_FUNCTION_PARAMETERS, int image_type, 
 				q = i;
 			}
 			if (image_type == PHP_GDIMG_TYPE_XBM) {
-				(*func_p)(im, file ? file : "", q, ctx);
+				gdImageXbmCtx(im, file ? file : "", q, ctx);
 			} else {
-				(*func_p)(im, q, ctx);
+				gdImageWBMPCtx(im, q, ctx);
 			}
 			break;
 		case PHP_GDIMG_TYPE_BMP:
-			(*func_p)(im, ctx, (int) compressed);
+			gdImageBmpCtx(im, ctx, (int) compressed);
 			break;
-		default:
-			(*func_p)(im, ctx);
+		case PHP_GDIMG_TYPE_GIF:
+			gdImageGifCtx(im, ctx);
 			break;
 	}
 
