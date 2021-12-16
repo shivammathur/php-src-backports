@@ -3,11 +3,20 @@ on:
   workflow_dispatch:
     inputs:
       upstream:
+        type: choice
         description: Upstream php-src repository
-        default: microsoft/php-src
+        options:
+        - remicollet/php-src-security
+        - oerdnj/php-src-security
+        - microsoft/php-src
+        default: remicollet/php-src-security
         required: true
       run_build:
+        type: choice
         description: Trigger workflow_dispatch for shivammathur/php tap
+        options:
+        - true
+        - false
         default: 'true'
         required: true
 jobs:
