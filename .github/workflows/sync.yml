@@ -37,8 +37,10 @@ jobs:
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git remote add up https://github.com/${{ github.event.inputs.upstream }}
+          git remote add php https://github.com/php/php-src
           mapfile -t branches < <(git branch -r | sed 's/ *origin\///g')
           mapfile -t tags < <(git tag --sort=-refname | awk 'match($0, /^[0-9]+\.[0-9]+\.[0-9]+/)')
+          cp -r patches /tmp
           for branch in "${branches[@]}"; do
             echo "---- $branch ----"
             if [ "$branch" = "main" ]; then
@@ -55,7 +57,9 @@ jobs:
             suffix=""
             [ "${tag%.*}" = "5.6" ] && suffix="openssl11"
             git reset --hard "$(echo "${branches[@]}" | grep -Po "PHP-${tag%.*}-[a-zA-Z-]+$suffix" | head -n 1)"
-            [ "${tag%.*}" = "7.1" ] && git fetch origin 6d934d70f1fa63248671520c6229f8af7ecb4f1c && git cherry-pick 6d934d70f1fa63248671520c6229f8af7ecb4f1c
+            while read patch; do
+              git am < /tmp/patches/"$patch"
+            done < /tmp/patches/"${tag%.*}"
             git tag -fa "$tag" -m "Update $tag tag"
             push_ref "$tag"
           done
