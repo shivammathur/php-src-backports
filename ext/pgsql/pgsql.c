@@ -1708,7 +1708,7 @@ PHP_FUNCTION(pg_query_params)
 		for(i = 0; i < num_params; i++) {
 			if (zend_hash_get_current_data(Z_ARRVAL_P(pv_param_arr), (void **) &tmp) == FAILURE) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error getting parameter");
-				_php_pgsql_free_params(params, num_params);
+				_php_pgsql_free_params(params, i);
 				RETURN_FALSE;
 			}
 
@@ -1721,7 +1721,7 @@ PHP_FUNCTION(pg_query_params)
 				if (Z_TYPE(tmp_val) != IS_STRING) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error converting parameter");
 					zval_dtor(&tmp_val);
-					_php_pgsql_free_params(params, num_params);
+					_php_pgsql_free_params(params, i);
 					RETURN_FALSE;
 				}
 				params[i] = estrndup(Z_STRVAL(tmp_val), Z_STRLEN(tmp_val));
@@ -1915,7 +1915,7 @@ PHP_FUNCTION(pg_execute)
 		for(i = 0; i < num_params; i++) {
 			if (zend_hash_get_current_data(Z_ARRVAL_P(pv_param_arr), (void **) &tmp) == FAILURE) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error getting parameter");
-				_php_pgsql_free_params(params, num_params);
+				_php_pgsql_free_params(params, i);
 				RETURN_FALSE;
 			}
 
@@ -1928,7 +1928,7 @@ PHP_FUNCTION(pg_execute)
 				if (Z_TYPE(tmp_val) != IS_STRING) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error converting parameter");
 					zval_dtor(&tmp_val);
-					_php_pgsql_free_params(params, num_params);
+					_php_pgsql_free_params(params, i);
 					RETURN_FALSE;
 				}
 				params[i] = estrndup(Z_STRVAL(tmp_val), Z_STRLEN(tmp_val));
@@ -4529,7 +4529,7 @@ PHP_FUNCTION(pg_send_query_params)
 		for(i = 0; i < num_params; i++) {
 			if (zend_hash_get_current_data(Z_ARRVAL_P(pv_param_arr), (void **) &tmp) == FAILURE) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error getting parameter");
-				_php_pgsql_free_params(params, num_params);
+				_php_pgsql_free_params(params, i);
 				RETURN_FALSE;
 			}
 
@@ -4542,7 +4542,7 @@ PHP_FUNCTION(pg_send_query_params)
 				if (Z_TYPE(tmp_val) != IS_STRING) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error converting parameter");
 					zval_dtor(&tmp_val);
-					_php_pgsql_free_params(params, num_params);
+					_php_pgsql_free_params(params, i);
 					RETURN_FALSE;
 				}
 				params[i] = estrndup(Z_STRVAL(tmp_val), Z_STRLEN(tmp_val));
@@ -4666,7 +4666,7 @@ PHP_FUNCTION(pg_send_execute)
 		for(i = 0; i < num_params; i++) {
 			if (zend_hash_get_current_data(Z_ARRVAL_P(pv_param_arr), (void **) &tmp) == FAILURE) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error getting parameter");
-				_php_pgsql_free_params(params, num_params);
+				_php_pgsql_free_params(params, i);
 				RETURN_FALSE;
 			}
 
@@ -4679,7 +4679,7 @@ PHP_FUNCTION(pg_send_execute)
 				if (Z_TYPE(tmp_val) != IS_STRING) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING,"Error converting parameter");
 					zval_dtor(&tmp_val);
-					_php_pgsql_free_params(params, num_params);
+					_php_pgsql_free_params(params, i);
 					RETURN_FALSE;
 				}
 				params[i] = estrndup(Z_STRVAL(tmp_val), Z_STRLEN(tmp_val));
