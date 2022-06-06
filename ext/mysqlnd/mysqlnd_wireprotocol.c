@@ -763,7 +763,8 @@ static size_t
 php_mysqlnd_change_auth_response_write(void * _packet, MYSQLND_CONN_DATA * conn TSRMLS_DC)
 {
 	MYSQLND_PACKET_CHANGE_AUTH_RESPONSE *packet= (MYSQLND_PACKET_CHANGE_AUTH_RESPONSE *) _packet;
-	zend_uchar * buffer = conn->net->cmd_buffer.length >= packet->auth_data_len? conn->net->cmd_buffer.buffer : mnd_emalloc(packet->auth_data_len);
+	size_t total_packet_size = packet->auth_data_len + MYSQLND_HEADER_SIZE;
+	zend_uchar * buffer = conn->net->cmd_buffer.length >= total_packet_size? conn->net->cmd_buffer.buffer : mnd_emalloc(total_packet_size);
 	zend_uchar *p = buffer + MYSQLND_HEADER_SIZE; /* start after the header */
 
 	DBG_ENTER("php_mysqlnd_change_auth_response_write");
