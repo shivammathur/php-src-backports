@@ -1,6 +1,16 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+Backported from 7.4.30
+
+- mysqlnd:
+  . Fixed bug #81719: mysqlnd/pdo password buffer overflow.
+    (CVE-2022-31626) (c dot fol at ambionics dot io)
+
+- pgsql
+  . Fixed bug #81720: Uninitialized array in pg_query_params().
+    (CVE-2022-31625) (cmb)
+
 Backported from 7.3.33
 
 - XML:
