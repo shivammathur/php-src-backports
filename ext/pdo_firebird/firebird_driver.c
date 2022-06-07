@@ -240,21 +240,31 @@ static long firebird_handle_doer(pdo_dbh_t *dbh, const char *sql, long sql_len T
 	/* execute the statement */
 	if (isc_dsql_execute2(H->isc_status, &H->tr, &stmt, PDO_FB_SQLDA_VERSION, &in_sqlda, &out_sqlda)) {
 		RECORD_ERROR(dbh);
-		return -1;
+		ret = -1;
+		goto free_statement;
 	}
 	
 	/* find out how many rows were affected */
 	if (isc_dsql_sql_info(H->isc_status, &stmt, sizeof(info_count), const_cast(info_count),
 			sizeof(result),	result)) {
 		RECORD_ERROR(dbh);
-		return -1;
+		ret = -1;
+		goto free_statement;
 	}
 
 	if (result[0] == isc_info_sql_records) {
 		unsigned i = 3, result_size = isc_vax_integer(&result[1],2);
-
+		if (result_size > sizeof(result)) {
+			ret = -1;
+			goto free_statement;
+		}
 		while (result[i] != isc_info_end && i < result_size) {
 			short len = (short)isc_vax_integer(&result[i+1],2);
+			/* bail out on bad len */
+			if (len != 1 && len != 2 && len != 4) {
+				ret = -1;
+				goto free_statement;
+			}
 			if (result[i] != isc_info_req_select_count) {
 				ret += isc_vax_integer(&result[i+3],len);
 			}
@@ -264,6 +274,12 @@ static long firebird_handle_doer(pdo_dbh_t *dbh, const char *sql, long sql_len T
 	
 	/* commit if we're in auto_commit mode */
 	if (dbh->auto_commit && isc_commit_retaining(H->isc_status, &H->tr)) {
+		RECORD_ERROR(dbh);
+	}
+
+free_statement:
+
+	if (isc_dsql_free_statement(H->isc_status, &stmt, DSQL_drop)) {
 		RECORD_ERROR(dbh);
 	}
 
