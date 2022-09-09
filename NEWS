@@ -1,6 +1,12 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+Backported from 7.4.31
+
+- Core:
+  . Fixed bug #81727: Don't mangle HTTP variable names that clash with ones
+    that have a specific semantic meaning. (CVE-2022-31629). (Derick)
+
 Backported from 7.4.30
 
 - mysqlnd:
