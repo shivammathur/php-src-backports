@@ -57,11 +57,12 @@ PHPAPI void php_register_variable_safe(char *var, char *strval, int str_len, zva
 	php_register_variable_ex(var, &new_entry, track_vars_array TSRMLS_CC);
 }
 
-PHPAPI void php_register_variable_ex(char *var, zval *val, zval *track_vars_array TSRMLS_DC)
+PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars_array TSRMLS_DC)
 {
 	char *p = NULL;
 	char *ip;		/* index pointer */
 	char *index, *escaped_index = NULL;
+	char *var, *var_orig;
 	int var_len, index_len;
 	zval *gpc_element, **gpc_element_p;
 	zend_bool is_array = 0;
@@ -84,6 +85,8 @@ PHPAPI void php_register_variable_ex(char *var, zval *val, zval *track_vars_arra
 	 * Prepare variable name
 	 */
 
+	var_orig = estrdup(var_name);
+	var = var_orig;
 	/* ignore leading spaces in the variable name */
 	while (*var && *var==' ') {
 		var++;
@@ -102,8 +105,23 @@ PHPAPI void php_register_variable_ex(char *var, zval *val, zval *track_vars_arra
 	}
 	var_len = p - var;
 
+	/* Discard variable if mangling made it start with __Host-, where pre-mangling it did not start with __Host- */
+	if (strncmp(var, "__Host-", sizeof("__Host-")-1) == 0 && strncmp(var_name, "__Host-", sizeof("__Host-")-1) != 0) {
+		zval_dtor(val);
+		efree(var_orig);
+		return;
+	}
+
+	/* Discard variable if mangling made it start with __Secure-, where pre-mangling it did not start with __Secure- */
+	if (strncmp(var, "__Secure-", sizeof("__Secure-")-1) == 0 && strncmp(var_name, "__Secure-", sizeof("__Secure-")-1) != 0) {
+		zval_dtor(val);
+		efree(var_orig);
+		return;
+	}
+
 	if (var_len==0) { /* empty variable name, or variable name with a space in it */
 		zval_dtor(val);
+		efree(var_orig);
 		return;
 	}
 
@@ -112,6 +130,7 @@ PHPAPI void php_register_variable_ex(char *var, zval *val, zval *track_vars_arra
 		var_len == sizeof("GLOBALS")-1 &&
 		!memcmp(var, "GLOBALS", sizeof("GLOBALS")-1)) {
 		zval_dtor(val);
+		efree(var_orig);
 		return;
 	}
 
@@ -140,6 +159,7 @@ PHPAPI void php_register_variable_ex(char *var, zval *val, zval *track_vars_arra
 				if (!PG(display_errors)) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING, "Input variable nesting level more than allowed %ld (change max_input_nesting_level in php.ini to increase the limit)", PG(max_input_nesting_level));
 				}
+				efree(var_orig);
 				return;
 			}
 			ip++;
@@ -191,6 +211,7 @@ PHPAPI void php_register_variable_ex(char *var, zval *val, zval *track_vars_arra
 							efree(escaped_index);
 						}
 						zval_dtor(val);
+						efree(var_orig);
 						return;
 					}
 				}
@@ -249,6 +270,7 @@ plain_var:
 			}
 		}
 	}
+	efree(var_orig);
 }
 
 SAPI_API SAPI_POST_HANDLER_FUNC(php_std_post_handler)
