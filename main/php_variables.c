@@ -105,6 +105,20 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 	}
 	var_len = p - var;
 
+	/* Discard variable if mangling made it start with __Host-, where pre-mangling it did not start with __Host- */
+	if (strncmp(var, "__Host-", sizeof("__Host-")-1) == 0 && strncmp(var_name, "__Host-", sizeof("__Host-")-1) != 0) {
+		zval_dtor(val);
+		efree(var_orig);
+		return;
+	}
+
+	/* Discard variable if mangling made it start with __Secure-, where pre-mangling it did not start with __Secure- */
+	if (strncmp(var, "__Secure-", sizeof("__Secure-")-1) == 0 && strncmp(var_name, "__Secure-", sizeof("__Secure-")-1) != 0) {
+		zval_dtor(val);
+		efree(var_orig);
+		return;
+	}
+
 	if (var_len==0) { /* empty variable name, or variable name with a space in it */
 		zval_dtor(val);
 		efree(var_orig);
