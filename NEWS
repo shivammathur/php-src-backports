@@ -1,6 +1,12 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+Backported from 7.4.33
+
+- Hash:
+  . Fixed bug #81738: buffer overflow in hash_update() on long parameter.
+    (CVE-2022-37454) (nicky at mouha dot be)
+
 Backported from 7.4.32
 
 - Core:
