@@ -232,6 +232,9 @@ static char *pdo_sqlite_last_insert_id(pdo_dbh_t *dbh, const char *name, unsigne
 /* NB: doesn't handle binary strings... use prepared stmts for that */
 static int sqlite_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unquotedlen, char **quoted, int *quotedlen, enum pdo_param_type paramtype  TSRMLS_DC)
 {
+	if (unquotedlen > (INT_MAX - 3) / 2) {
+		return 0;
+	}
 	*quoted = safe_emalloc(2, unquotedlen, 3);
 	sqlite3_snprintf(2*unquotedlen + 3, *quoted, "'%q'", unquoted);
 	*quotedlen = strlen(*quoted);
