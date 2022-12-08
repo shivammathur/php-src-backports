@@ -1,7 +1,7 @@
 # php-src-backports
 <p>
   <a href="https://github.com/shivammathur/php-src-backports" title="php-src-backports">
-    <img alt="PHP Versions Supported" src="https://img.shields.io/badge/php-5.6%20to%207.3-777bb3.svg?logo=php&logoColor=white&labelColor=555555">
+    <img alt="PHP Versions Supported" src="https://img.shields.io/badge/php-5.6%20to%207.4-777bb3.svg?logo=php&logoColor=white&labelColor=555555">
   </a>
 <p>
 
@@ -14,6 +14,7 @@ This is a fork of `php/php-src` with security patches backported from maintained
 |7.1|[PHP-7.1-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.1-security-backports)|[7.1.33](https://github.com/shivammathur/php-src-backports/archive/7.1.33.tar.gz)|
 |7.2|[PHP-7.2-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.2-security-backports)|[7.2.34](https://github.com/shivammathur/php-src-backports/archive/7.2.34.tar.gz)|
 |7.3|[PHP-7.3-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.3-security-backports)|[7.3.33](https://github.com/shivammathur/php-src-backports/archive/7.3.33.tar.gz)|
+|7.4|[PHP-7.4-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.4-security-backports)|[7.4.33](https://github.com/shivammathur/php-src-backports/archive/7.4.33.tar.gz)|
 
 ## License
 
