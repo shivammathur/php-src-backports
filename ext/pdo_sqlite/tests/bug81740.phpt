@@ -10,7 +10,7 @@ memory_limit=-1
 --FILE--
 <?php
 $pdo = new PDO("sqlite::memory:");
-$string = str_repeat("a", 0x80000000);
+$string = str_repeat("a", 0x7fffffff);
 var_dump($pdo->quote($string));
 ?>
 --EXPECT--
