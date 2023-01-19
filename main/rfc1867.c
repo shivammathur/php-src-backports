@@ -798,7 +798,8 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler)
 	zend_llist header;
  	char *max_uploads = INI_STR("max_file_uploads");
  	int upload_cnt = 20;
- 
+	int body_parts_cnt = INI_INT("max_multipart_body_parts");
+
  	if (max_uploads && *max_uploads) {
  		upload_cnt = atoi(max_uploads);
  	}
@@ -807,6 +808,11 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler)
 		sapi_module.sapi_error(E_WARNING, "POST Content-Length of %ld bytes exceeds the limit of %ld bytes", SG(request_info).content_length, SG(post_max_size));
 		return;
 	}
+
+	if (body_parts_cnt < 0) {
+		body_parts_cnt = PG(max_input_vars) + upload_cnt;
+	}
+	int body_parts_limit = body_parts_cnt;
 
 	/* Get the boundary */
 	boundary = strstr(content_type_dup, "boundary");
@@ -876,6 +882,11 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler)
 			char *pair=NULL;
 			int end=0;
 			
+			if (--body_parts_cnt < 0) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Multipart body parts limit exceeded %d. To increase the limit change max_multipart_body_parts in php.ini.", body_parts_limit);
+				SAFE_RETURN;
+			}
+
 			while (isspace(*cd)) {
 				++cd;
 			}
@@ -945,7 +956,10 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler)
 				skip_upload = 1;
 			} else if (upload_cnt <= 0) {
 				skip_upload = 1;
-				sapi_module.sapi_error(E_WARNING, "Maximum number of allowable file uploads has been exceeded");
+				if (upload_cnt == 0) {
+					--upload_cnt;
+					sapi_module.sapi_error(E_WARNING, "Maximum number of allowable file uploads has been exceeded");
+				}
 			}
 
 			/* Return with an error if the posted data is garbled */
