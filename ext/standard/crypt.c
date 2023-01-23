@@ -196,6 +196,7 @@ PHPAPI int php_crypt(const char *password, const int pass_len, const char *salt,
 		} else if (
 				salt[0] == '$' &&
 				salt[1] == '2' &&
+				salt[2] != 0 &&
 				salt[3] == '$' &&
 				salt[4] >= '0' && salt[4] <= '3' &&
 				salt[5] >= '0' && salt[5] <= '9' &&
