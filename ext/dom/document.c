@@ -1498,7 +1498,7 @@ static xmlDocPtr dom_document_parser(zval *id, int mode, char *source, int sourc
 	int validate, recover, resolve_externals, keep_blanks, substitute_ent;
 	int resolved_path_len;
 	int old_error_reporting = 0;
-	char *directory=NULL, resolved_path[MAXPATHLEN];
+	char *directory=NULL, resolved_path[MAXPATHLEN + 1];
 
 	if (id != NULL) {
 		intern = (dom_object *)zend_object_store_get_object(id TSRMLS_CC);
