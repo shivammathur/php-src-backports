@@ -91,8 +91,8 @@
 */
 PHPAPI int php_check_specific_open_basedir(const char *basedir, const char *path TSRMLS_DC)
 {
-	char resolved_name[MAXPATHLEN];
-	char resolved_basedir[MAXPATHLEN];
+	char resolved_name[MAXPATHLEN + 1];
+	char resolved_basedir[MAXPATHLEN + 1];
 	char local_open_basedir[MAXPATHLEN];
 	int resolved_basedir_len;
 	int resolved_name_len;

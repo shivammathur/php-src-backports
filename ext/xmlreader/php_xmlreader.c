@@ -1007,7 +1007,7 @@ PHP_METHOD(xmlreader, XML)
 	xmlreader_object *intern = NULL;
 	char *source, *uri = NULL;
 	int resolved_path_len;
-	char *directory=NULL, resolved_path[MAXPATHLEN];
+	char *directory=NULL, resolved_path[MAXPATHLEN + 1];
 	xmlParserInputBufferPtr inputbfr;
 	xmlTextReaderPtr reader;
 
