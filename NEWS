@@ -1,6 +1,12 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+Backported from 8.0.29
+
+- Soap:
+  . Fixed bug GHSA-76gg-c692-v2mw (Missing error check and insufficient random
+    bytes in HTTP Digest authentication for SOAP). (nielsdos, timwolla)
+
 Backported from 8.0.28
 
 - Core:
