@@ -23,6 +23,7 @@
 #include "ext/standard/base64.h"
 #include "ext/standard/md5.h"
 #include "ext/standard/php_rand.h"
+#include "ext/hash/php_hash.h"
 
 static char *get_http_header_value(char *headers, char *type);
 static int get_http_body(php_stream *socketd, int close, char *headers,  char **response, int *out_size TSRMLS_DC);
@@ -638,13 +639,17 @@ try_again:
 				if (Z_TYPE_PP(digest) == IS_ARRAY) {
 					char          HA1[33], HA2[33], response[33], cnonce[33], nc[9];
 					PHP_MD5_CTX   md5ctx;
+					unsigned char nonce[16];
 					unsigned char hash[16];
+					int i;
 
-					PHP_MD5Init(&md5ctx);
-					snprintf(cnonce, sizeof(cnonce), "%ld", php_rand(TSRMLS_C));
-					PHP_MD5Update(&md5ctx, (unsigned char*)cnonce, strlen(cnonce));
-					PHP_MD5Final(hash, &md5ctx);
-					make_digest(cnonce, hash);
+					for(i = 0; i < 16; i++) {
+						php_uint32 rand_val = (php_mt_rand(TSRMLS_C) >> 1);
+						nonce[i] = (unsigned char)(rand_val & 0x000000FF);
+					}
+
+					php_hash_bin2hex(cnonce, nonce, sizeof(nonce));
+					cnonce[32] = 0;
 
 					if (zend_hash_find(Z_ARRVAL_PP(digest), "nc", sizeof("nc"), (void **)&tmp) == SUCCESS &&
 					    Z_TYPE_PP(tmp) == IS_LONG) {
