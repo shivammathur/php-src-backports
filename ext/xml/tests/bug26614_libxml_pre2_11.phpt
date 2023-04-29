@@ -4,6 +4,7 @@ Bug #26614 (CDATA sections skipped on line count)
 <?php
 require_once("skipif.inc");
 if (!defined("LIBXML_VERSION")) die('skip libxml2 test');
+if (LIBXML_VERSION >= 21100) die('skip libxml2 test variant for version < 2.11');
 ?>
 --FILE--
 <?php

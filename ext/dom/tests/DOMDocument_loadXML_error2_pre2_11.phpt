@@ -1,5 +1,9 @@
 --TEST--
 Test DOMDocument::loadXML() detects not-well formed XML
+--SKIPIF--
+<?php
+if (LIBXML_VERSION >= 21100) die('skip libxml2 test variant for version < 2.11');
+?>
 --DESCRIPTION--
 This test verifies the method detects attributes values not closed between " or '
 Environment variables used in the test:
