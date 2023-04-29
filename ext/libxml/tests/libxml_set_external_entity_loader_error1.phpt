@@ -35,6 +35,8 @@ Warning: libxml_set_external_entity_loader() expects exactly 1 parameter, 2 give
 NULL
 bool(true)
 
+Warning: DOMDocument::validate(): Call to user entity loader callback %s
+
 Warning: DOMDocument::validate(): Could not load the external subset "http://example.com/foobar" in %s on line %d
 Exception: Too few arguments to function {closure}(), 3 passed and exactly 4 expected
 Done.
