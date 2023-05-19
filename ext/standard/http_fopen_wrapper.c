@@ -82,6 +82,7 @@
 
 #define HTTP_WRAPPER_HEADER_INIT    1
 #define HTTP_WRAPPER_REDIRECTED     2
+#define HTTP_WRAPPER_KEEP_METHOD    4
 
 static inline void strip_header(char *header_bag, char *lc_header_bag,
 		const char *lc_header_name)
@@ -343,6 +344,7 @@ static php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper,
 	char *user_headers = NULL;
 	int header_init = ((flags & HTTP_WRAPPER_HEADER_INIT) != 0);
 	int redirected = ((flags & HTTP_WRAPPER_REDIRECTED) != 0);
+	int redirect_keep_method = ((flags & HTTP_WRAPPER_KEEP_METHOD) != 0);
 	int response_code;
 	smart_str req_buf = {0};
 	zend_bool custom_request_method;
@@ -582,7 +584,7 @@ finish:
 		if (Z_TYPE_P(tmpzval) == IS_STRING && Z_STRLEN_P(tmpzval) > 0) {
 			/* As per the RFC, automatically redirected requests MUST NOT use other methods than
 			 * GET and HEAD unless it can be confirmed by the user */
-			if (!redirected
+			if (!redirected || redirect_keep_method
 				|| (Z_STRLEN_P(tmpzval) == 3 && memcmp("GET", Z_STRVAL_P(tmpzval), 3) == 0)
 				|| (Z_STRLEN_P(tmpzval) == 4 && memcmp("HEAD",Z_STRVAL_P(tmpzval), 4) == 0)
 			) {
@@ -670,7 +672,7 @@ finish:
 			php_strtolower(ZSTR_VAL(tmp), ZSTR_LEN(tmp));
 			t = ZSTR_VAL(tmp);
 
-			if (!header_init) {
+			if (!header_init && !redirect_keep_method) {
 				/* strip POST headers on redirect */
 				strip_header(user_headers, t, "content-length:");
 				strip_header(user_headers, t, "content-type:");
@@ -818,7 +820,7 @@ finish:
 		 * see bug #44603 for details. Since Content-Type maybe part of user's headers we need to do this check first.
 		 */
 		if (
-				header_init &&
+				(header_init || redirect_keep_method) &&
 				context &&
 				!(have_header & HTTP_HEADER_CONTENT_LENGTH) &&
 				(tmpzval = php_stream_context_get_option(context, "http", "content")) != NULL &&
@@ -836,7 +838,7 @@ finish:
 	}
 
 	/* Request content, such as for POST requests */
-	if (header_init && context &&
+	if ((header_init || redirect_keep_method) && context &&
 		(tmpzval = php_stream_context_get_option(context, "http", "content")) != NULL &&
 		Z_TYPE_P(tmpzval) == IS_STRING && Z_STRLEN_P(tmpzval) > 0) {
 		if (!(have_header & HTTP_HEADER_CONTENT_LENGTH)) {
@@ -1100,9 +1102,16 @@ finish:
 				CHECK_FOR_CNTRL_CHARS(resource->pass);
 				CHECK_FOR_CNTRL_CHARS(resource->path);
 			}
+			int new_flags = HTTP_WRAPPER_REDIRECTED;
+			if (response_code == 307 || response_code == 308) {
+				/* RFC 7538 specifies that status code 308 does not allow changing the request method from POST to GET.
+				 * RFC 7231 does the same for status code 307.
+				 * To keep consistency between POST and PATCH requests, we'll also not change the request method from PATCH to GET, even though it's allowed it's not mandated by the RFC. */
+				new_flags |= HTTP_WRAPPER_KEEP_METHOD;
+			}
 			stream = php_stream_url_wrap_http_ex(
 				wrapper, new_path, mode, options, opened_path, context,
-				--redirect_max, HTTP_WRAPPER_REDIRECTED, response_header STREAMS_CC);
+				--redirect_max, new_flags, response_header STREAMS_CC);
 			efree(new_path);
 		} else {
 			php_stream_wrapper_log_error(wrapper, options, "HTTP request failed! %s", tmp_line);

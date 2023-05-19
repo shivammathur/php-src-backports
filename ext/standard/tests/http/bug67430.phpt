@@ -41,7 +41,7 @@ POST / HTTP/1.0
 Host: 127.0.0.1:12342
 Connection: close
 
-GET /foo HTTP/1.0
+POST /foo HTTP/1.0
 Host: 127.0.0.1:12342
 Connection: close
 
