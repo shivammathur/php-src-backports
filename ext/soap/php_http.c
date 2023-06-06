@@ -22,7 +22,8 @@
 #include "php_soap.h"
 #include "ext/standard/base64.h"
 #include "ext/standard/md5.h"
-#include "ext/standard/php_rand.h"
+#include "ext/standard/php_random.h"
+#include "ext/hash/php_hash.h"
 
 static char *get_http_header_value(char *headers, char *type);
 static zend_string *get_http_body(php_stream *socketd, int close, char *headers);
