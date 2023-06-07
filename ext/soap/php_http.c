@@ -639,10 +639,13 @@ try_again:
 					char          HA1[33], HA2[33], response[33], cnonce[33], nc[9];
 					PHP_MD5_CTX   md5ctx;
 					unsigned char hash[16];
+					int i;
 
 					PHP_MD5Init(&md5ctx);
-					snprintf(cnonce, sizeof(cnonce), "%ld", php_rand(TSRMLS_C));
-					PHP_MD5Update(&md5ctx, (unsigned char*)cnonce, strlen(cnonce));
+					for (i = 0; i < 4; i++) { /* 16 bytes of randomness*/
+						snprintf(cnonce, sizeof(cnonce), "%ld", php_rand(TSRMLS_C));
+						PHP_MD5Update(&md5ctx, (unsigned char*)cnonce, strlen(cnonce));
+					}
 					PHP_MD5Final(hash, &md5ctx);
 					make_digest(cnonce, hash);
 
