@@ -92,26 +92,30 @@ static int phar_dir_seek(php_stream *stream, off_t offset, int whence, off_t *ne
  */
 static size_t phar_dir_read(php_stream *stream, char *buf, size_t count TSRMLS_DC) /* {{{ */
 {
-	size_t to_read;
 	HashTable *data = (HashTable *)stream->abstract;
 	char *str_key;
 	uint keylen;
 	ulong unused;
+
+	if (count != sizeof(php_stream_dirent)) {
+		return -1;
+	}
 
 	if (HASH_KEY_NON_EXISTENT == zend_hash_get_current_key_ex(data, &str_key, &keylen, &unused, 0, NULL)) {
 		return 0;
 	}
 
 	zend_hash_move_forward(data);
-	to_read = MIN(keylen, count);
 
-	if (to_read == 0 || count < keylen) {
+	php_stream_dirent *dirent = (php_stream_dirent *) buf;
+
+	if (sizeof(dirent->d_name) <= keylen) {
 		return 0;
 	}
 
-	memset(buf, 0, sizeof(php_stream_dirent));
-	memcpy(((php_stream_dirent *) buf)->d_name, str_key, to_read);
-	((php_stream_dirent *) buf)->d_name[to_read + 1] = '\0';
+	memset(dirent, 0, sizeof(php_stream_dirent));
+	memcpy(dirent->d_name, str_key, keylen);
+	dirent->d_name[keylen] = '\0';
 
 	return sizeof(php_stream_dirent);
 }
