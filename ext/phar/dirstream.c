@@ -92,7 +92,6 @@ static int phar_dir_seek(php_stream *stream, off_t offset, int whence, off_t *ne
  */
 static size_t phar_dir_read(php_stream *stream, char *buf, size_t count TSRMLS_DC) /* {{{ */
 {
-	size_t to_read;
 	HashTable *data = (HashTable *)stream->abstract;
 	phar_zstr key;
 	char *str_key;
@@ -103,23 +102,26 @@ static size_t phar_dir_read(php_stream *stream, char *buf, size_t count TSRMLS_D
 		return 0;
 	}
 
+	if (count != sizeof(php_stream_dirent)) {
+		return -1;
+	}
+
 	if (HASH_KEY_NON_EXISTENT == zend_hash_get_current_key_ex(data, &key, &keylen, &unused, 0, NULL)) {
 		return 0;
 	}
 
 	PHAR_STR(key, str_key);
 	zend_hash_move_forward(data);
-	to_read = MIN(keylen, count);
+	php_stream_dirent *dirent = (php_stream_dirent *) buf;
 
-	if (to_read == 0 || count < keylen) {
+	if (sizeof(dirent->d_name) <= keylen) {
 		PHAR_STR_FREE(str_key);
 		return 0;
 	}
 
-	memset(buf, 0, sizeof(php_stream_dirent));
-	memcpy(((php_stream_dirent *) buf)->d_name, str_key, to_read);
+	memset(dirent, 0, sizeof(php_stream_dirent));
+	PHP_STRLCPY(dirent->d_name, str_key, sizeof(dirent->d_name), keylen);
 	PHAR_STR_FREE(str_key);
-	((php_stream_dirent *) buf)->d_name[to_read + 1] = '\0';
 
 	return sizeof(php_stream_dirent);
 }
