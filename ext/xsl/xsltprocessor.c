@@ -398,7 +398,7 @@ PHP_FUNCTION(xsl_xsltprocessor_import_stylesheet)
 	xmlDoc *doc = NULL, *newdoc = NULL;
 	xsltStylesheetPtr sheetp, oldsheetp;
 	xsl_object *intern;
-	int prevSubstValue, prevExtDtdValue, clone_docu = 0;
+	int clone_docu = 0;
 	xmlNode *nodep = NULL;
 	zval *cloneDocu, member, rv;
 
@@ -421,13 +421,12 @@ PHP_FUNCTION(xsl_xsltprocessor_import_stylesheet)
 	stylesheet document otherwise the node proxies will be a mess */
 	newdoc = xmlCopyDoc(doc, 1);
 	xmlNodeSetBase((xmlNodePtr) newdoc, (xmlChar *)doc->URL);
-	prevSubstValue = xmlSubstituteEntitiesDefault(1);
-	prevExtDtdValue = xmlLoadExtDtdDefaultValue;
+	PHP_LIBXML_SANITIZE_GLOBALS(parse);
+	xmlSubstituteEntitiesDefault(1);
 	xmlLoadExtDtdDefaultValue = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
 
 	sheetp = xsltParseStylesheetDoc(newdoc);
-	xmlSubstituteEntitiesDefault(prevSubstValue);
-	xmlLoadExtDtdDefaultValue = prevExtDtdValue;
+	PHP_LIBXML_RESTORE_GLOBALS(parse);
 
 	if (!sheetp) {
 		xmlFreeDoc(newdoc);

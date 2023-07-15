@@ -2194,7 +2194,9 @@ PHP_FUNCTION(simplexml_load_file)
 		RETURN_FALSE;
 	}
 
+	PHP_LIBXML_SANITIZE_GLOBALS(read_file);
 	docp = xmlReadFile(filename, NULL, (int)options);
+	PHP_LIBXML_RESTORE_GLOBALS(read_file);
 
 	if (!docp) {
 		RETURN_FALSE;
@@ -2248,7 +2250,9 @@ PHP_FUNCTION(simplexml_load_string)
 		RETURN_FALSE;
 	}
 
+	PHP_LIBXML_SANITIZE_GLOBALS(read_memory);
 	docp = xmlReadMemory(data, (int)data_len, NULL, NULL, (int)options);
+	PHP_LIBXML_RESTORE_GLOBALS(read_memory);
 
 	if (!docp) {
 		RETURN_FALSE;
@@ -2298,7 +2302,9 @@ SXE_METHOD(__construct)
 		return;
 	}
 
+	PHP_LIBXML_SANITIZE_GLOBALS(read_file_or_memory);
 	docp = is_url ? xmlReadFile(data, NULL, (int)options) : xmlReadMemory(data, (int)data_len, NULL, NULL, (int)options);
+	PHP_LIBXML_RESTORE_GLOBALS(read_file_or_memory);
 
 	if (!docp) {
 		((php_libxml_node_object *)sxe)->document = NULL;
