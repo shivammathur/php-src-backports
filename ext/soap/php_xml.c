@@ -20,6 +20,7 @@
 /* $Id$ */
 
 #include "php_soap.h"
+#include "ext/libxml/php_libxml.h"
 #include "libxml/parser.h"
 #include "libxml/parserInternals.h"
 
@@ -91,6 +92,7 @@ xmlDocPtr soap_xmlParseFile(const char *filename TSRMLS_DC)
 	ctxt = xmlCreateFileParserCtxt(filename);
 	PG(allow_url_fopen) = old_allow_url_fopen;
 	if (ctxt) {
+		php_libxml_sanitize_parse_ctxt_options(ctxt);
 		ctxt->keepBlanks = 0;
 		ctxt->sax->ignorableWhitespace = soap_ignorableWhitespace;
 		ctxt->sax->comment = soap_Comment;
@@ -133,6 +135,7 @@ xmlDocPtr soap_xmlParseMemory(const void *buf, size_t buf_size)
 */
 	ctxt = xmlCreateMemoryParserCtxt(buf, buf_size);
 	if (ctxt) {
+		php_libxml_sanitize_parse_ctxt_options(ctxt);
 		ctxt->sax->ignorableWhitespace = soap_ignorableWhitespace;
 		ctxt->sax->comment = soap_Comment;
 		ctxt->sax->warning = NULL;

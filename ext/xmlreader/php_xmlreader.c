@@ -303,6 +303,7 @@ static xmlRelaxNGPtr _xmlreader_get_relaxNG(char *source, int source_len, int ty
 		return NULL;
 	}
 
+	PHP_LIBXML_SANITIZE_GLOBALS(parse);
 	if (error_func || warn_func) {
 		xmlRelaxNGSetParserErrors(parser,
 			(xmlRelaxNGValidityErrorFunc) error_func,
@@ -311,6 +312,7 @@ static xmlRelaxNGPtr _xmlreader_get_relaxNG(char *source, int source_len, int ty
 	}
 	sptr = xmlRelaxNGParse(parser);
 	xmlRelaxNGFreeParserCtxt(parser);
+	PHP_LIBXML_RESTORE_GLOBALS(parse);
 
 	return sptr;
 }
@@ -909,7 +911,9 @@ PHP_METHOD(xmlreader, open)
 	valid_file = _xmlreader_get_valid_file_path(source, resolved_path, MAXPATHLEN  TSRMLS_CC);
 
 	if (valid_file) {
+		PHP_LIBXML_SANITIZE_GLOBALS(reader_for_file);
 		reader = xmlNewTextReaderFilename(valid_file);
+		PHP_LIBXML_RESTORE_GLOBALS(reader_for_file);
 	}
 
 	if (reader == NULL) {
@@ -1046,6 +1050,7 @@ PHP_METHOD(xmlreader, XML)
 			}
 			uri = (char *) xmlCanonicPath((const xmlChar *) resolved_path);
 		}
+		PHP_LIBXML_SANITIZE_GLOBALS(text_reader);
 		reader = xmlNewTextReader(inputbfr, uri);
 		if (uri) {
 			xmlFree(uri);
@@ -1060,10 +1065,12 @@ PHP_METHOD(xmlreader, XML)
 			} else {
 				intern->input = inputbfr;
 				intern->ptr = reader;
+				PHP_LIBXML_RESTORE_GLOBALS(text_reader);
 				RETURN_TRUE;
 
 			}
 		}
+		PHP_LIBXML_RESTORE_GLOBALS(text_reader);
 	}
 
 	if (inputbfr) {
