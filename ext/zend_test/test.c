@@ -52,8 +52,6 @@ ZEND_END_ARG_INFO()
 #if defined(HAVE_LIBXML) && !defined(PHP_WIN32)
 static ZEND_FUNCTION(zend_test_override_libxml_global_state)
 {
-	ZEND_PARSE_PARAMETERS_NONE();
-
 	xmlLoadExtDtdDefaultValue = 1;
 	xmlDoValidityCheckingDefaultValue = 1;
 	(void) xmlPedanticParserDefault(1);
