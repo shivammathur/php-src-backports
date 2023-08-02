@@ -2165,6 +2165,7 @@ static void dom_load_html(INTERNAL_FUNCTION_PARAMETERS, int mode) /* {{{ */
 		RETURN_FALSE;
 	}
 
+	php_libxml_sanitize_parse_ctxt_options(ctxt);
 	if (options) {
 		htmlCtxtUseOptions(ctxt, options);
 	}
@@ -2175,10 +2176,6 @@ static void dom_load_html(INTERNAL_FUNCTION_PARAMETERS, int mode) /* {{{ */
 		ctxt->sax->error = php_libxml_ctx_error;
 		ctxt->sax->warning = php_libxml_ctx_warning;
 	}
-	php_libxml_sanitize_parse_ctxt_options(ctxt);
-	if (options) {
- 		htmlCtxtUseOptions(ctxt, (int)options);
- 	}
 	htmlParseDocument(ctxt);
 	newdoc = ctxt->myDoc;
 	htmlFreeParserCtxt(ctxt);
