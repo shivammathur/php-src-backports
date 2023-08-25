@@ -548,6 +548,7 @@ php_mysqlnd_ok_read(void *_packet, MYSQLND *conn TSRMLS_DC)
 										 TSRMLS_CC);
 		DBG_RETURN(PASS);
 	}
+	zend_ulong net_len;
 	/* Everything was fine! */
 	packet->affected_rows  = php_mysqlnd_net_field_length_ll(&p);
 	BAIL_IF_NO_MORE_DATA;
@@ -564,8 +565,15 @@ php_mysqlnd_ok_read(void *_packet, MYSQLND *conn TSRMLS_DC)
 	BAIL_IF_NO_MORE_DATA;
 
 	/* There is a message */
-	if (packet->header.size > (size_t) (p - buf) && (i = php_mysqlnd_net_field_length(&p))) {
-		packet->message_len = MIN(i, buf_len - (p - begin));
+	if (packet->header.size > (size_t) (p - buf) && (net_len = php_mysqlnd_net_field_length(&p))) {
+		/* p can get past packet size when getting field length so it needs to be checked first
+			* and after that it can be checked that the net_len is not greater than the packet size */
+		if ((p - buf) > packet->header.size || packet->header.size - (p - buf) < net_len) {
+			DBG_ERR_FMT("OK packet message length is past the packet size");
+			php_error_docref(NULL, E_WARNING, "OK packet message length is past the packet size");
+			DBG_RETURN(FAIL);
+		}
+		packet->message_len = net_len;
 		packet->message = mnd_pestrndup((char *)p, packet->message_len, FALSE);
 	} else {
 		packet->message = NULL;
@@ -832,6 +840,17 @@ php_mysqlnd_rset_header_read(void *_packet, MYSQLND *conn TSRMLS_DC)
 			if (packet->header.size  > (size_t) (p - buf) && (len = php_mysqlnd_net_field_length(&p))) {
 				packet->info_or_local_file = mnd_emalloc(len + 1);
 				if (packet->info_or_local_file) {
+					/* p can get past packet size when getting field length so it needs to be checked first
+					* and after that it can be checked that the len is not greater than the packet size */
+					if ((p - buf) > packet->header.size || packet->header.size - (p - buf) < len) {
+						size_t local_file_name_over_read = ((p - buf) - packet->header.size) + len;
+						DBG_ERR_FMT("RSET_HEADER packet additional data length is past %zu bytes the packet size",
+							local_file_name_over_read);
+						php_error_docref(NULL, E_WARNING,
+							"RSET_HEADER packet additional data length is past %zu bytes the packet size",
+							local_file_name_over_read);
+						DBG_RETURN(FAIL);
+					}
 					memcpy(packet->info_or_local_file, p, len);
 					packet->info_or_local_file[len] = '\0';
 					packet->info_or_local_file_len = len;
@@ -1009,6 +1028,13 @@ php_mysqlnd_rset_field_read(void *_packet, MYSQLND *conn TSRMLS_DC)
 		(len = php_mysqlnd_net_field_length(&p)) &&
 		len != MYSQLND_NULL_LENGTH)
 	{
+		size_t current_offset = p - buf;
+		if (len > packet->header.size - current_offset) {
+			DBG_ERR_FMT("Def field length is past the packet size");
+			php_error_docref(NULL, E_WARNING, "Def field length is past the packet size");
+			DBG_RETURN(FAIL);
+		}
+
 		BAIL_IF_NO_MORE_DATA;
 		DBG_INF_FMT("Def found, length %lu, persistent=%u", len, packet->persistent_alloc);
 		meta->def = mnd_pemalloc(len + 1, packet->persistent_alloc);
@@ -1197,8 +1223,10 @@ php_mysqlnd_rowp_read_binary_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zv
 									  zend_bool as_unicode, zend_bool as_int_or_float,
 									  MYSQLND_STATS * stats TSRMLS_DC)
 {
-	unsigned int i;
-	zend_uchar *p = row_buffer->ptr;
+	unsigned int i, j;
+	size_t rbs = row_buffer->app;
+	zend_uchar * rbp = row_buffer->ptr;
+	zend_uchar * p = rbp;
 	zend_uchar *null_ptr, bit;
 	zval **current_field, **end_field, **start_field;
 
@@ -1238,7 +1266,21 @@ php_mysqlnd_rowp_read_binary_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zv
 			statistic = STAT_BINARY_TYPE_FETCHED_NULL;
 		} else {
 			enum_mysqlnd_field_types type = fields_metadata[i].type;
-			mysqlnd_ps_fetch_functions[type].func(*current_field, &fields_metadata[i], 0, &p, as_unicode TSRMLS_CC);
+			size_t row_position = p - rbp;
+			if (rbs <= row_position) {
+				for (j = 0, current_field = start_field; j < i; current_field++, j++) {
+					zval_ptr_dtor(current_field);
+				}
+				php_error_docref(NULL, E_WARNING, "Malformed server packet. No packet space left for the field");
+				DBG_RETURN(FAIL);
+			}
+			mysqlnd_ps_fetch_functions[type].func(*current_field, &fields_metadata[i], rbs - row_position, &p, as_unicode TSRMLS_CC);
+			if (p == NULL) {
+				for (j = 0, current_field = start_field; j < i; current_field++, j++) {
+					zval_ptr_dtor(current_field);
+				}
+				DBG_RETURN(FAIL);
+			}
 
 			if (MYSQLND_G(collect_statistics)) {
 				switch (fields_metadata[i].type) {
@@ -1327,9 +1369,8 @@ php_mysqlnd_rowp_read_text_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zval
 		/* php_mysqlnd_net_field_length() call should be after *this_field_len_pos = p; */
 		const unsigned long len = php_mysqlnd_net_field_length(&p);
 
-		if (len != MYSQLND_NULL_LENGTH && ((p + len) > packet_end)) {
-			php_error_docref(NULL, E_WARNING, "Malformed server packet. Field length pointing "MYSQLND_SZ_T_SPEC
-							  " bytes after end of packet", (p + len) - packet_end - 1);
+		if (len != MYSQLND_NULL_LENGTH && (p > packet_end || len > packet_end - p)) {
+			php_error_docref(NULL, E_WARNING, "Malformed server packet. Field length pointing after end of packet");
 			DBG_RETURN(FAIL);
 		}
 		if (current_field > start_field && last_field_was_string) {
