@@ -330,8 +330,8 @@ int php_init_config(TSRMLS_D)
 			strcat(php_ini_search_path, env_location);
 		}
 
-		/* Add cwd (only with CLI) */
-		if (strcmp(sapi_module.name, "cli") == 0) {
+		/* Add cwd except for CLI. */
+		if (strcmp(sapi_module.name, "cli") != 0) {
 			if (*php_ini_search_path) {
 				strcat(php_ini_search_path, paths_separator);
 			}
