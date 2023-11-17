@@ -25,6 +25,7 @@
 #if HAVE_LIBXML && HAVE_DOM
 #include "php_dom.h"
 #include <libxml/SAX.h>
+#include <libxml/xmlsave.h>
 #ifdef LIBXML_SCHEMAS_ENABLED
 #include <libxml/relaxng.h>
 #include <libxml/xmlschemas.h>

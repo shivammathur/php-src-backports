@@ -37,6 +37,7 @@ extern zend_module_entry libxml_module_entry;
 
 #include "zend_smart_str.h"
 #include <libxml/tree.h>
+#include <libxml/parser.h>
 
 #define LIBXML_SAVE_NOEMPTYTAG 1<<2
 
