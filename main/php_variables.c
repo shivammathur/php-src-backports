@@ -57,6 +57,21 @@ PHPAPI void php_register_variable_safe(char *var, char *strval, int str_len, zva
 	php_register_variable_ex(var, &new_entry, track_vars_array TSRMLS_CC);
 }
 
+/* Discard variable if mangling made it start with __Host-, where pre-mangling it did not start with __Host-
+ * Discard variable if mangling made it start with __Secure-, where pre-mangling it did not start with __Secure- */
+static zend_bool php_is_forbidden_variable_name(const char *mangled_name, size_t mangled_name_len, const char *pre_mangled_name)
+{
+    if (mangled_name_len >= sizeof("__Host-")-1 && strncmp(mangled_name, "__Host-", sizeof("__Host-")-1) == 0 && strncmp(pre_mangled_name, "__Host-", sizeof("__Host-")-1) != 0) {
+        return 1;
+    }
+
+    if (mangled_name_len >= sizeof("__Secure-")-1 && strncmp(mangled_name, "__Secure-", sizeof("__Secure-")-1) == 0 && strncmp(pre_mangled_name, "__Secure-", sizeof("__Secure-")-1) != 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
 PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars_array TSRMLS_DC)
 {
 	char *p = NULL;
@@ -105,19 +120,6 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 	}
 	var_len = p - var;
 
-	/* Discard variable if mangling made it start with __Host-, where pre-mangling it did not start with __Host- */
-	if (strncmp(var, "__Host-", sizeof("__Host-")-1) == 0 && strncmp(var_name, "__Host-", sizeof("__Host-")-1) != 0) {
-		zval_dtor(val);
-		efree(var_orig);
-		return;
-	}
-
-	/* Discard variable if mangling made it start with __Secure-, where pre-mangling it did not start with __Secure- */
-	if (strncmp(var, "__Secure-", sizeof("__Secure-")-1) == 0 && strncmp(var_name, "__Secure-", sizeof("__Secure-")-1) != 0) {
-		zval_dtor(val);
-		efree(var_orig);
-		return;
-	}
 
 	if (var_len==0) { /* empty variable name, or variable name with a space in it */
 		zval_dtor(val);
@@ -194,6 +196,11 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 				array_init(gpc_element);
 				zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p);
 			} else {
+                if (php_is_forbidden_variable_name(index, index_len, var_name)) {
+                    zval_dtor(val);
+                    efree(var_orig);
+                    return;
+                }
 				if (PG(magic_quotes_gpc)) {
 					escaped_index = php_addslashes(index, index_len, &index_len, 0 TSRMLS_CC);
 				} else {
@@ -242,7 +249,12 @@ plain_var:
 		if (!index) {
 			zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p);
 		} else {
-			if (PG(magic_quotes_gpc)) { 
+            if (php_is_forbidden_variable_name(index, index_len, var_name)) {
+                zval_dtor(val);
+                efree(var_orig);
+                return;
+            }
+			if (PG(magic_quotes_gpc)) {
 				escaped_index = php_addslashes(index, index_len, &index_len, 0 TSRMLS_CC);
 			} else {
 				escaped_index = index;
