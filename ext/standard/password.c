@@ -438,6 +438,11 @@ PHP_FUNCTION(password_hash)
 					cost = zval_get_long(option_buffer);
 				}
 
+				if (memchr(ZSTR_VAL(password), '\0', ZSTR_LEN(password))) {
+					php_error_docref(NULL, E_WARNING, "Bcrypt password must not contain null character");
+					RETURN_NULL();
+				}
+
 				if (cost < 4 || cost > 31) {
 					php_error_docref(NULL, E_WARNING, "Invalid bcrypt cost parameter specified: " ZEND_LONG_FMT, cost);
 					RETURN_NULL();
