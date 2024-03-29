@@ -16,6 +16,8 @@ var_dump(password_hash("foo", PASSWORD_BCRYPT, array("salt" => 123)));
 
 var_dump(password_hash("foo", PASSWORD_BCRYPT, array("cost" => "foo")));
 
+var_dump(password_hash("null\0password", PASSWORD_BCRYPT));
+
 ?>
 --EXPECTF--
 Warning: password_hash(): Invalid bcrypt cost parameter specified: 3 in %s on line %d
@@ -36,4 +38,6 @@ NULL
 Warning: password_hash(): Invalid bcrypt cost parameter specified: 0 in %s on line %d
 NULL
 
+Warning: password_hash(): Bcrypt password must not contain null character in %s on line %d
+NULL
 
