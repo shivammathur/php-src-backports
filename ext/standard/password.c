@@ -323,6 +323,11 @@ PHP_FUNCTION(password_hash)
 		{
 			long cost = PHP_PASSWORD_BCRYPT_COST;
 	
+            if (memchr(password, '\0', password_len)) {
+				php_error_docref(NULL, E_WARNING, "Bcrypt password must not contain null character");
+				RETURN_NULL();
+			}
+
 			if (options && zend_symtable_find(options, "cost", 5, (void **) &option_buffer) == SUCCESS) {
 				if (Z_TYPE_PP(option_buffer) != IS_LONG) {
 					zval cast_option_buffer;
