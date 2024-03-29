@@ -334,7 +334,12 @@ PHP_FUNCTION(password_hash)
 					cost = Z_LVAL_PP(option_buffer);
 				}
 			}
-	
+
+			if (memchr(password, '\0', password_len)) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Bcrypt password must not contain null character");
+				RETURN_NULL();
+			}
+
 			if (cost < 4 || cost > 31) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid bcrypt cost parameter specified: %ld", cost);
 				RETURN_NULL();
