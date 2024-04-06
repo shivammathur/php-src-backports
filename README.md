@@ -15,6 +15,7 @@ This is a fork of `php/php-src` with security patches backported from maintained
 |7.2|[PHP-7.2-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.2-Security-backports)|[7.2.34](https://github.com/shivammathur/php-src-backports/archive/7.2.34.tar.gz)|
 |7.3|[PHP-7.3-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.3-security-backports)|[7.3.33](https://github.com/shivammathur/php-src-backports/archive/7.3.33.tar.gz)|
 |7.4|[PHP-7.4-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.4-security-backports)|[7.4.33](https://github.com/shivammathur/php-src-backports/archive/7.4.33.tar.gz)|
+|8.0|[PHP-7.4-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-8.0-security-backports)|[8.0.30](https://github.com/shivammathur/php-src-backports/archive/8.0.30.tar.gz)|
 
 ## License
 

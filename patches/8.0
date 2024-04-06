@@ -1,0 +1,2 @@
+0002-Add-minimal-OpenSSL-3.0-patch-PHP8.0.patch
+0003-Fix-bug-79589-ssl3_read_n-unexpected-eof-while-reading-PHP8.0.patch
