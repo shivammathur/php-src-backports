@@ -1,7 +1,7 @@
 # php-src-backports
 <p>
   <a href="https://github.com/shivammathur/php-src-backports" title="php-src-backports">
-    <img alt="PHP Versions Supported" src="https://img.shields.io/badge/php-5.6%20to%207.4-777bb3.svg?logo=php&logoColor=white&labelColor=555555">
+    <img alt="PHP Versions Supported" src="https://img.shields.io/badge/php-5.6%20to%208.0-777bb3.svg?logo=php&logoColor=white&labelColor=555555">
   </a>
 <p>
 
