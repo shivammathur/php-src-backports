@@ -81,7 +81,7 @@
 #define FORMAT_IPV4    4
 #define FORMAT_IPV6    6
 
-static int _php_filter_validate_ipv6(char *str, size_t str_len);
+static int _php_filter_validate_ipv6(const char *str, size_t str_len);
 
 static int php_filter_parse_int(const char *str, size_t str_len, zend_long *ret) { /* {{{ */
 	zend_long ctx_value;
@@ -532,6 +532,14 @@ static int is_userinfo_valid(char *str)
 	return 1;
 }
 
+static zend_bool php_filter_is_valid_ipv6_hostname(const char *s, size_t l)
+{
+	const char *e = s + l;
+	const char *t = e - 1;
+
+	return *s == '[' && *t == ']' && _php_filter_validate_ipv6(s + 1, l - 2);
+}
+
 void php_filter_validate_url(PHP_INPUT_FILTER_PARAM_DECL) /* {{{ */
 {
 	php_url *url;
@@ -551,7 +559,7 @@ void php_filter_validate_url(PHP_INPUT_FILTER_PARAM_DECL) /* {{{ */
 	}
 
 	if (url->scheme != NULL && (!strcasecmp(url->scheme, "http") || !strcasecmp(url->scheme, "https"))) {
-		char *e, *s, *t;
+		const char *s;
 		size_t l;
 
 		if (url->host == NULL) {
@@ -560,17 +568,14 @@ void php_filter_validate_url(PHP_INPUT_FILTER_PARAM_DECL) /* {{{ */
 
 		s = url->host;
 		l = strlen(s);
-		e = url->host + l;
-		t = e - 1;
 
-		/* An IPv6 enclosed by square brackets is a valid hostname */
-		if (*s == '[' && *t == ']' && _php_filter_validate_ipv6((s + 1), l - 2)) {
-			php_url_free(url);
-			return;
-		}
-
-		// Validate domain
-		if (!_php_filter_validate_domain(url->host, l, FILTER_FLAG_HOSTNAME)) {
+		if (
+			/* An IPv6 enclosed by square brackets is a valid hostname.*/
+			!php_filter_is_valid_ipv6_hostname(s, l) &&
+			/* Validate domain.
+			 * This includes a loose check for an IPv4 address. */
+			!_php_filter_validate_domain(url->host, l, FILTER_FLAG_HOSTNAME)
+		) {
 			php_url_free(url);
 			RETURN_VALIDATION_FAILED
 		}
@@ -701,15 +706,15 @@ static int _php_filter_validate_ipv4(char *str, size_t str_len, int *ip) /* {{{ 
 }
 /* }}} */
 
-static int _php_filter_validate_ipv6(char *str, size_t str_len) /* {{{ */
+static int _php_filter_validate_ipv6(const char *str, size_t str_len) /* {{{ */
 {
 	int compressed = 0;
 	int blocks = 0;
 	int n;
 	char *ipv4;
-	char *end;
+	const char *end;
 	int ip4elm[4];
-	char *s = str;
+	const char *s = str;
 
 	if (!memchr(str, ':', str_len)) {
 		return 0;
