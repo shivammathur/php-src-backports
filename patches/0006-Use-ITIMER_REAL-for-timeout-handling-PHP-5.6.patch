@@ -1,0 +1,38 @@
+From 272da51bfd562f5b9847c1b41eaa5d7018058490 Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Fri, 4 June 2024 13:40:00 +0530
+Subject: [PATCH] Use ITIMER_REAL for timeout handling on MacOS / Apple Silicon
+ system
+
+setitimer(ITIMER_PROF) fires too early on MacOS 14 when running on Apple
+Silicon. See https://openradar.appspot.com/radar?id=5583058442911744.
+
+Fixes GH-12814
+Closes GH-13567
+---
+ Zend/zend_execute_API.c | 6 ++++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -1296,7 +1296,9 @@ void zend_set_timeout(long seconds, int reset_signals) /* {{{ */
+ 			t_r.it_value.tv_sec = seconds;
+ 			t_r.it_value.tv_usec = t_r.it_interval.tv_sec = t_r.it_interval.tv_usec = 0;
+ 
+-#	ifdef __CYGWIN__
++#	if defined(__CYGWIN__) || (defined(__aarch64__) && defined(__APPLE__))
++			// ITIMER_PROF is broken in Apple Silicon system with MacOS >= 14
++			// See https://openradar.appspot.com/radar?id=5583058442911744.
+ 			setitimer(ITIMER_REAL, &t_r, NULL);
+ 		}
+ 		signo = SIGALRM;
+@@ -1344,7 +1346,7 @@ void zend_unset_timeout(TSRMLS_D) /* {{{ */
+ 
+ 		no_timeout.it_value.tv_sec = no_timeout.it_value.tv_usec = no_timeout.it_interval.tv_sec = no_timeout.it_interval.tv_usec = 0;
+ 
+-#ifdef __CYGWIN__
++#if defined(__CYGWIN__) || (defined(__aarch64__) && defined(__APPLE__))
+ 		setitimer(ITIMER_REAL, &no_timeout, NULL);
+ #else
+ 		setitimer(ITIMER_PROF, &no_timeout, NULL);
