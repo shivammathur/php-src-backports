@@ -1157,18 +1157,16 @@ int main(int argc, char *argv[])
 		if (cfg_get_string("cgi.redirect_status_env", &redirect_status_env) == FAILURE) {
 			redirect_status_env = NULL;
 		}
-		/* Apache will generate REDIRECT_STATUS,
-		 * Netscape and redirect.so will generate HTTP_REDIRECT_STATUS.
-		 * redirect.so and installation instructions available from
-		 * http://www.koehntopp.de/php.
-		 *   -- kk@netuse.de
-		 */
-		if (!getenv("REDIRECT_STATUS")
-			&& !getenv ("HTTP_REDIRECT_STATUS")
-			/* this is to allow a different env var to be configured
-			   in case some server does something different than above */
-			&& (!redirect_status_env || !getenv(redirect_status_env))
-			) {
+		/* This is to allow a different environment variable to be configured
+		 * in case the we cannot auto-detect which environment variable to use.
+		 * Checking this first to allow user overrides in case the environment
+		 * variable can be set by an untrusted party. */
+		if (!redirect_status_env) {
+			/* Apache will generate REDIRECT_STATUS. */
+			redirect_status_env = "REDIRECT_STATUS";
+		}
+
+		if (!getenv(redirect_status_env)) {
 			SG(sapi_headers).http_response_code = 400;
 			PUTS("<b>Security Alert!</b> The PHP CGI cannot be accessed directly.\n\n\
 <p>This PHP CGI binary was compiled with force-cgi-redirect enabled.  This\n\
