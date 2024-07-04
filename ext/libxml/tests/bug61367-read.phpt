@@ -53,7 +53,7 @@ bool(true)
 int(4)
 bool(true)
 
-Warning: DOMDocument::loadXML(): I/O warning : failed to load external entity "file:///%s/test_bug_61367-read/bad" in %s on line %d
+Warning: DOMDocument::loadXML(): I/O %s : failed to load %s in %s on line %d
 
 Warning: DOMDocument::loadXML(): Failure to process entity file in Entity, line: 4 in %s on line %d
 
