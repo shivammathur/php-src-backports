@@ -3542,7 +3542,15 @@ xmlNsPtr encode_add_ns(xmlNodePtr node, const char* ns)
 				num = ++SOAP_GLOBAL(cur_uniq_ns);
 			}
 
+			/* Starting with libxml 2.13, we don't have to do this workaround anymore, otherwise we get double-encoded
+			 * entities. See libxml2 commit f506ec66547ef9bac97a2bf306d368ecea8c0c9e. */
+#if LIBXML_VERSION < 21300
+			xmlChar *enc_ns = xmlEncodeSpecialChars(node->doc, BAD_CAST(ns));
+			xmlns = xmlNewNs(node->doc->children, enc_ns, BAD_CAST(prefix.c));
+			xmlFree(enc_ns);
+#else
 			xmlns = xmlNewNs(node->doc->children, BAD_CAST(ns), BAD_CAST(prefix.c));
+#endif
 			smart_str_free(&prefix);
 		}
 	}
