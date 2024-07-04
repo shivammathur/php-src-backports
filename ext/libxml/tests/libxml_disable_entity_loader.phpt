@@ -32,7 +32,7 @@ echo "Done\n";
 bool(true)
 bool(false)
 
-Warning: DOMDocument::loadXML(): I/O warning : failed to load external entity "%s" in %s on line %d
+Warning: DOMDocument::loadXML(): I/O %s : failed to load %s in %s on line %d
 
 Warning: DOMDocument::loadXML(): Failure to process entity xxe in Entity, line: %d in %s on line %d
 

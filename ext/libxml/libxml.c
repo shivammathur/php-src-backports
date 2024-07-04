@@ -426,7 +426,7 @@ php_libxml_input_buffer_create_filename(const char *URI, xmlCharEncoding enc)
 static xmlOutputBufferPtr
 php_libxml_output_buffer_create_filename(const char *URI,
                               xmlCharEncodingHandlerPtr encoder,
-                              int compression ATTRIBUTE_UNUSED)
+                              int compression)
 {
 	xmlOutputBufferPtr ret;
 	xmlURIPtr puri;
@@ -434,6 +434,8 @@ php_libxml_output_buffer_create_filename(const char *URI,
 	char *unescaped = NULL;
 
 	TSRMLS_FETCH();
+
+	(void) compression;
 
 	if (URI == NULL)
 		return(NULL);
