@@ -2,6 +2,7 @@
 Test DOMDocument::loadXML() detects not-well formed XML
 --SKIPIF--
 <?php
+include('skipif.inc');
 if (LIBXML_VERSION >= 21100) die('skip libxml2 test variant for version < 2.11');
 ?>
 --DESCRIPTION--
@@ -14,8 +15,6 @@ Environment variables used in the test:
 Antonio Diaz Ruiz <dejalatele@gmail.com>
 --INI--
 assert.bail=true
---SKIPIF--
-<?php include('skipif.inc'); ?>
 --ENV--
 XML_FILE=/not_well_formed2.xml
 LOAD_OPTIONS=0

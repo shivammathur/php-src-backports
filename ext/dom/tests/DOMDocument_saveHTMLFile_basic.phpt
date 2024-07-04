@@ -6,6 +6,7 @@ Knut Urdalen <knut@php.net>
 --SKIPIF--
 <?php
 require_once __DIR__ .'/skipif.inc';
+if (LIBXML_VERSION >= 21300) die("skip see https://gitlab.gnome.org/GNOME/libxml2/-/issues/756");
 ?>
 --FILE--
 <?php
