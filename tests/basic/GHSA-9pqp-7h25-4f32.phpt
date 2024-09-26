@@ -21,8 +21,10 @@ function test($boundaryLen) {
         getenv('TEST_PHP_CGI_EXECUTABLE'),
         '-C',
         '-n',
+        '-dlog_errors=1',
         __DIR__ . '/GHSA-9pqp-7h25-4f32.inc',
     ];
+    $cmd = implode(' ', $cmd);
 
     $boundary = str_repeat('A', $boundaryLen);
     $body = ""
@@ -92,11 +94,10 @@ array(1) {
 
 Boundary len: 5117
 Starting...
+PHP Warning:  Boundary too large in multipart/form-data POST data in Unknown on line 0
 X-Powered-By: %s
 Content-type: text/html; charset=UTF-8
 
-<br />
-<b>Warning</b>:  Boundary too large in multipart/form-data POST data in <b>Unknown</b> on line <b>0</b><br />
 Hello world
 array(0) {
 }
