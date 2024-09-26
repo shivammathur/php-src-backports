@@ -60,6 +60,7 @@
 
 #include "ext/standard/php_string.h"
 #include "ext/standard/info.h"
+#include "Zend/zend_exceptions.h"
 
 #ifdef HAVE_LDAP_SASL_H
 #include <sasl.h>
@@ -2648,7 +2649,12 @@ static void php_ldap_do_escape(const zend_bool *map, const char *value, size_t v
 	size_t len = 0;
 
 	for (i = 0; i < valuelen; i++) {
-		len += (map[(unsigned char) value[i]]) ? 3 : 1;
+		size_t addend = (map[(unsigned char) value[i]]) ? 3 : 1;
+		if (len > INT_MAX - addend) {
+			*result = NULL;
+			return;
+		}
+		len += addend;
 	}
 
 	(*result) = (char *) safe_emalloc_string(1, len, 1);
@@ -2714,6 +2720,11 @@ PHP_FUNCTION(ldap_escape)
 	}
 
 	php_ldap_do_escape(map, value, valuelen, &result, &resultlen);
+
+	if (UNEXPECTED(!result)) {
+		zend_throw_exception(NULL, "Argument #1 ($value) is too long", 0 TSRMLS_CC);
+		return;
+	}
 
 	RETURN_STRINGL(result, resultlen, 0);
 }
