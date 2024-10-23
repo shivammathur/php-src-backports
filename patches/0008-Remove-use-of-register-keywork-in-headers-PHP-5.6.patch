@@ -1,0 +1,124 @@
+From b9afabe8ec24fe79157a5cf2039271763404d999 Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Wed, 23 Oct 2024 10:15:53 +0000
+Subject: [PATCH] Remove use of register keyword in headers
+
+---
+ Zend/zend_hash.h             |  6 +++---
+ Zend/zend_operators.h        |  2 +-
+ ext/standard/php_smart_str.h |  4 ++--
+ main/php.h                   |  2 +-
+ main/snprintf.h              | 10 +++++-----
+ 5 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/Zend/zend_hash.h b/Zend/zend_hash.h
+index 10efa580ae..8cbda44839 100644
+--- a/Zend/zend_hash.h
++++ b/Zend/zend_hash.h
+@@ -45,7 +45,7 @@
+ 
+ typedef ulong (*hash_func_t)(const char *arKey, uint nKeyLength);
+ typedef int  (*compare_func_t)(const void *, const void * TSRMLS_DC);
+-typedef void (*sort_func_t)(void *, size_t, register size_t, compare_func_t TSRMLS_DC);
++typedef void (*sort_func_t)(void *, size_t, size_t, compare_func_t TSRMLS_DC);
+ typedef void (*dtor_func_t)(void *pDest);
+ typedef void (*copy_ctor_func_t)(void *pElement);
+ typedef void (*copy_ctor_param_func_t)(void *pElement, void *pParam);
+@@ -268,7 +268,7 @@ ZEND_API void _zend_hash_splice(HashTable *ht, uint nDataSize, copy_ctor_func_t
+ 
+ static inline ulong zend_inline_hash_func(const char *arKey, uint nKeyLength)
+ {
+-	register ulong hash = 5381;
++	ulong hash = 5381;
+ 
+ 	/* variant with the hash unrolled eight times */
+ 	for (; nKeyLength >= 8; nKeyLength -= 8) {
+@@ -313,7 +313,7 @@ END_EXTERN_C()
+ 	zend_hash_init(ht, n, NULL, ZVAL_PTR_DTOR, persistent)
+ 
+ #define ZEND_HANDLE_NUMERIC_EX(key, length, idx, func) do {					\
+-	register const char *tmp = key;											\
++	const char *tmp = key;											\
+ 																			\
+ 	if (*tmp == '-') {														\
+ 		tmp++;																\
+diff --git a/Zend/zend_operators.h b/Zend/zend_operators.h
+index 3057be4e3b..3021ece11c 100644
+--- a/Zend/zend_operators.h
++++ b/Zend/zend_operators.h
+@@ -305,7 +305,7 @@ zend_memnstr(const char *haystack, const char *needle, int needle_len, char *end
+ 
+ static inline const void *zend_memrchr(const void *s, int c, size_t n)
+ {
+-	register const unsigned char *e;
++	const unsigned char *e;
+ 
+ 	if (n <= 0) {
+ 		return NULL;
+diff --git a/ext/standard/php_smart_str.h b/ext/standard/php_smart_str.h
+index 6baa49f614..1a910a5b0f 100644
+--- a/ext/standard/php_smart_str.h
++++ b/ext/standard/php_smart_str.h
+@@ -98,7 +98,7 @@
+ 	smart_str_append_unsigned_ex((dest), (val), 0)
+ 
+ #define smart_str_appendc_ex(dest, ch, what) do {					\
+-	register size_t __nl;											\
++	size_t __nl;											\
+ 	smart_str_alloc4((dest), 1, (what), __nl);						\
+ 	(dest)->len = __nl;												\
+ 	((unsigned char *) (dest)->c)[(dest)->len - 1] = (ch);			\
+@@ -114,7 +114,7 @@
+ } while (0)
+ 
+ #define smart_str_appendl_ex(dest, src, nlen, what) do {			\
+-	register size_t __nl;											\
++	size_t __nl;											\
+ 	smart_str *__dest = (smart_str *) (dest);						\
+ 																	\
+ 	smart_str_alloc4(__dest, (nlen), (what), __nl);					\
+diff --git a/main/php.h b/main/php.h
+index c6b897d36a..273b4f3b19 100644
+--- a/main/php.h
++++ b/main/php.h
+@@ -334,7 +334,7 @@ END_EXTERN_C()
+ BEGIN_EXTERN_C()
+ PHPAPI extern int (*php_register_internal_extensions_func)(TSRMLS_D);
+ PHPAPI int php_register_internal_extensions(TSRMLS_D);
+-PHPAPI int php_mergesort(void *base, size_t nmemb, register size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC);
++PHPAPI int php_mergesort(void *base, size_t nmemb, size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC);
+ PHPAPI void php_register_pre_request_shutdown(void (*func)(void *), void *userdata);
+ PHPAPI void php_com_initialize(TSRMLS_D);
+ PHPAPI char *php_get_current_user(TSRMLS_D);
+diff --git a/main/snprintf.h b/main/snprintf.h
+index 817c4b0927..8c7a521c63 100644
+--- a/main/snprintf.h
++++ b/main/snprintf.h
+@@ -86,7 +86,7 @@ PHPAPI int ap_php_vasprintf(char **buf, const char *format, va_list ap);
+ PHPAPI int ap_php_asprintf(char **buf, const char *format, ...);
+ PHPAPI int php_sprintf (char* s, const char* format, ...) PHP_ATTRIBUTE_FORMAT(printf, 2, 3);
+ PHPAPI char * php_gcvt(double value, int ndigit, char dec_point, char exponent, char *buf);
+-PHPAPI char * php_conv_fp(register char format, register double num,
++PHPAPI char * php_conv_fp(char format, double num,
+ 		 boolean_e add_dp, int precision, char dec_point, bool_int * is_negative, char *buf, int *len);
+ 
+ END_EXTERN_C()
+@@ -152,11 +152,11 @@ typedef enum {
+ typedef WIDE_INT wide_int;
+ typedef unsigned WIDE_INT u_wide_int;
+ 
+-PHPAPI char * ap_php_conv_10(register wide_int num, register bool_int is_unsigned,
+-	   register bool_int * is_negative, char *buf_end, register int *len);
++PHPAPI char * ap_php_conv_10(wide_int num, bool_int is_unsigned,
++	   bool_int * is_negative, char *buf_end, int *len);
+ 
+-PHPAPI char * ap_php_conv_p2(register u_wide_int num, register int nbits,
+-		 char format, char *buf_end, register int *len);
++PHPAPI char * ap_php_conv_p2(u_wide_int num, int nbits,
++		 char format, char *buf_end, int *len);
+ 
+ /* The maximum precision that's allowed for float conversion. Does not include
+  * decimal separator, exponent, sign, terminator. Currently does not affect
+-- 
+2.46.2
+
