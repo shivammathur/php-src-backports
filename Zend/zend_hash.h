@@ -45,7 +45,7 @@
 
 typedef ulong (*hash_func_t)(const char *arKey, uint nKeyLength);
 typedef int  (*compare_func_t)(const void *, const void * TSRMLS_DC);
-typedef void (*sort_func_t)(void *, size_t, register size_t, compare_func_t TSRMLS_DC);
+typedef void (*sort_func_t)(void *, size_t, size_t, compare_func_t TSRMLS_DC);
 typedef void (*dtor_func_t)(void *pDest);
 typedef void (*copy_ctor_func_t)(void *pElement);
 typedef void (*copy_ctor_param_func_t)(void *pElement, void *pParam);
@@ -268,7 +268,7 @@ ZEND_API void _zend_hash_splice(HashTable *ht, uint nDataSize, copy_ctor_func_t 
 
 static inline ulong zend_inline_hash_func(const char *arKey, uint nKeyLength)
 {
-	register ulong hash = 5381;
+	ulong hash = 5381;
 
 	/* variant with the hash unrolled eight times */
 	for (; nKeyLength >= 8; nKeyLength -= 8) {
@@ -313,7 +313,7 @@ END_EXTERN_C()
 	zend_hash_init(ht, n, NULL, ZVAL_PTR_DTOR, persistent)
 
 #define ZEND_HANDLE_NUMERIC_EX(key, length, idx, func) do {					\
-	register const char *tmp = key;											\
+	const char *tmp = key;											\
 																			\
 	if (*tmp == '-') {														\
 		tmp++;																\

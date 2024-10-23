@@ -305,7 +305,7 @@ zend_memnstr(const char *haystack, const char *needle, int needle_len, char *end
 
 static inline const void *zend_memrchr(const void *s, int c, size_t n)
 {
-	register const unsigned char *e;
+	const unsigned char *e;
 
 	if (n <= 0) {
 		return NULL;
