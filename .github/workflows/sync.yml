@@ -2,6 +2,10 @@ name: Sync workflow
 on:
   workflow_dispatch:
     inputs:
+      php-versions:
+        description: 'PHP version to build'
+        default: '5.6 7.0 7.1 7.2 7.3 7.4 8.0'
+        required: true
       upstream:
         type: choice
         description: Upstream php-src repository
@@ -41,11 +45,15 @@ jobs:
           mapfile -t branches < <(git branch -r | sed 's/ *origin\///g')
           mapfile -t tags < <(git tag --sort=-refname | awk 'match($0, /^[0-9]+\.[0-9]+\.[0-9]+/)')
           cp -r patches /tmp
-          for branch in "${branches[@]}"; do
-            echo "---- $branch ----"
+          for branch in "${branches[@]}"; do            
             if [ "$branch" = "main" ]; then
               continue
             fi
+            php_version="$(echo $branch | cut -d'-' -f 2)"
+            if ! [[ "${{ inputs.php-versions }}" == *"$php_version"* ]]; then
+              continue
+            fi
+            echo "---- $branch ----"
             git checkout "$branch"
             git fetch up "$branch"
             git reset --hard up/"$branch"
@@ -58,6 +66,9 @@ jobs:
             push_ref "$branch"
           done
           for tag in "${tags[@]}"; do
+            if ! [[ "${{ inputs.php-versions }}" == *"${tag%.*}"* ]]; then
+              continue
+            fi
             echo "---- $tag ----"
             git checkout "$tag"
             suffix=""
