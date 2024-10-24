@@ -152,6 +152,7 @@ static int dblib_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, size_t unqu
 
 	size_t i;
 	char * q;
+	size_t extralen = 0;
 	*quotedlen = 0;
 
 	if (H->assume_national_character_set_strings) {
@@ -166,7 +167,7 @@ static int dblib_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, size_t unqu
 
 	/* Detect quoted length, adding extra char for doubled single quotes */
 	for (i = 0; i < unquotedlen; i++) {
-		if (unquoted[i] == '\'') ++*quotedlen;
+		if (unquoted[i] == '\'') ++extralen;
 		++*quotedlen;
 	}
 
@@ -174,6 +175,11 @@ static int dblib_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, size_t unqu
 	if (use_national_character_set) {
 		++*quotedlen; /* N prefix */
 	}
+	if (UNEXPECTED(*quotedlen > ZSTR_MAX_LEN - extralen)) {
+		return 0;
+	}
+
+	*quotedlen += extralen;
 	q = *quoted = emalloc(*quotedlen + 1); /* Add byte for terminal null */
 	if (use_national_character_set) {
 		*q++ = 'N';
