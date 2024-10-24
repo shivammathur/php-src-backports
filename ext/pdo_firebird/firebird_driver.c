@@ -290,7 +290,7 @@ free_statement:
 static int firebird_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, size_t unquotedlen, /* {{{ */
 	char **quoted, size_t *quotedlen, enum pdo_param_type paramtype)
 {
-	int qcount = 0;
+	size_t qcount = 0;
 	char const *co, *l, *r;
 	char *c;
 
@@ -304,6 +304,10 @@ static int firebird_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, size_t u
 	/* Firebird only requires single quotes to be doubled if string lengths are used */
 	/* count the number of ' characters */
 	for (co = unquoted; (co = strchr(co,'\'')); qcount++, co++);
+
+	if (UNEXPECTED(unquotedlen + 2 > ZSTR_MAX_LEN - qcount)) {
+		return 0;
+	}
 
 	*quotedlen = unquotedlen + qcount + 2;
 	*quoted = c = emalloc(*quotedlen+1);
