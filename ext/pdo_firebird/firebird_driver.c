@@ -24,6 +24,7 @@
 
 #define _GNU_SOURCE
 
+#include <limits.h>
 #include "php.h"
 #ifdef ZEND_ENGINE_2
 # include "zend_exceptions.h"
@@ -283,11 +284,15 @@ free_statement:
 static int firebird_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unquotedlen, /* {{{ */
 	char **quoted, int *quotedlen, enum pdo_param_type paramtype TSRMLS_DC)
 {
-	int qcount = 0;
+	size_t qcount = 0;
 	char const *c;
 	
 	/* Firebird only requires single quotes to be doubled if string lengths are used */
 	
+	if (unquotedlen == INT_MAX) {
+		return 0;
+	}
+
 	/* count the number of ' characters */
 	for (c = unquoted; (c = strchr(c,'\'')); qcount++, c++);
 	
@@ -296,6 +301,11 @@ static int firebird_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unqu
 	} else {
 		char const *l, *r;
 		char *c;
+		int max_len = INT_MAX - 1;
+
+		if (unquotedlen > (size_t)max_len - qcount) {
+			return 0;
+		}
 		
 		*quotedlen = unquotedlen + qcount;
 		*quoted = c = emalloc(*quotedlen+1);
