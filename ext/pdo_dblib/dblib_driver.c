@@ -23,6 +23,7 @@
 # include "config.h"
 #endif
 
+#include <limits.h>
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
@@ -145,7 +146,14 @@ static int dblib_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unquote
 {
 	pdo_dblib_db_handle *H = (pdo_dblib_db_handle *)dbh->driver_data;
 	char *q;
-	int l = 1;
+	size_t l = 1, extralen = 0;
+	int max_len = INT_MAX - 1;
+
+	if (unquotedlen == INT_MAX) {
+		*quoted = NULL;
+		*quotedlen = 0;
+		return 0;
+	}
 
 	*quoted = q = safe_emalloc(2, unquotedlen, 3);
 	*q++ = '\'';
@@ -154,13 +162,23 @@ static int dblib_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unquote
 		if (*unquoted == '\'') {
 			*q++ = '\'';
 			*q++ = '\'';
-			l += 2;
+			++l;
+			++extralen;
 		} else {
 			*q++ = *unquoted;
 			++l;
 		}
 		unquoted++;
 	}
+
+	if (l > (size_t)max_len - extralen) {
+		efree(*quoted);
+		*quoted = NULL;
+		*quotedlen = 0;
+		return 0;
+	}
+
+	l += extralen;
 
 	*q++ = '\'';
 	*q++ = '\0';
