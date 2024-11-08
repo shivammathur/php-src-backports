@@ -178,6 +178,16 @@ php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper,
 			return NULL;
 		}
 
+		/* Should we send the entire path in the request line, default to no. */
+		if (context && php_stream_context_get_option(context, "http", "request_fulluri", &tmpzval) == SUCCESS) {
+			zval ztmp = **tmpzval;
+
+			zval_copy_ctor(&ztmp);
+			convert_to_boolean(&ztmp);
+			request_fulluri = Z_BVAL(ztmp) ? 1 : 0;
+			zval_dtor(&ztmp);
+		}
+
 		use_ssl = resource->scheme && (strlen(resource->scheme) > 4) && resource->scheme[4] == 's';
 		/* choose default ports */
 		if (use_ssl && resource->port == 0)
@@ -195,6 +205,13 @@ php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper,
 		} else {
 			transport_len = spprintf(&transport_string, 0, "%s://%s:%d", use_ssl ? "ssl" : "tcp", resource->host, resource->port);
 		}
+	}
+
+	if (request_fulluri && (strchr(path, '\n') != NULL || strchr(path, '\r') != NULL)) {
+		php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, "HTTP wrapper full URI path does not allow CR or LF characters");
+		php_url_free(resource);
+		efree(transport_string);
+		return NULL;
 	}
 
 	if (context && php_stream_context_get_option(context, wrapper->wops->label, "timeout", &tmpzval) == SUCCESS) {
@@ -380,18 +397,6 @@ finish:
 		scratch_len = strlen(path) + 29 + protocol_version_len;
 		scratch = emalloc(scratch_len);
 		strncpy(scratch, "GET ", scratch_len);
-	}
-
-	/* Should we send the entire path in the request line, default to no. */
-	if (!request_fulluri &&
-		context &&
-		php_stream_context_get_option(context, "http", "request_fulluri", &tmpzval) == SUCCESS) {
-		zval ztmp = **tmpzval;
-
-		zval_copy_ctor(&ztmp);
-		convert_to_boolean(&ztmp);
-		request_fulluri = Z_BVAL(ztmp) ? 1 : 0;
-		zval_dtor(&ztmp);
 	}
 
 	if (request_fulluri) {
