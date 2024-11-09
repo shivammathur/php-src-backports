@@ -1873,6 +1873,8 @@ static void php_cli_server_client_populate_request_info(const php_cli_server_cli
 	request_info->auth_user = request_info->auth_password = request_info->auth_digest = NULL;
 	if (SUCCESS == zend_hash_find(&client->request.headers, "content-type", sizeof("content-type"), (void**)&val)) {
 		request_info->content_type = *val;
+	} else {
+		request_info->content_type = NULL;
 	}
 } /* }}} */
 
