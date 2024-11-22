@@ -211,7 +211,7 @@ static php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper,
 	if (request_fulluri && (strchr(path, '\n') != NULL || strchr(path, '\r') != NULL)) {
 		php_stream_wrapper_log_error(wrapper, options, "HTTP wrapper full URI path does not allow CR or LF characters");
 		php_url_free(resource);
-		zend_string_release(transport_string);
+		efree(transport_string);
 		return NULL;
 	}
 
