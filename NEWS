@@ -1,6 +1,22 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+Backported from 8.1.31
+
+- CLI:
+  . Fixed bug GHSA-4w77-75f9-2c8w (Heap-Use-After-Free in sapi_read_post_data
+    Processing in CLI SAPI Interface). (nielsdos)
+
+- LDAP:
+  . Fixed bug GHSA-g665-fm4p-vhff (OOB access in ldap_escape). (CVE-2024-8932)
+    (nielsdos)
+
+- Streams:
+  . Fixed bug GHSA-c5f2-jwm7-mmq2 (Configuring a proxy in a stream context
+    might allow for CRLF injection in URIs). (CVE-2024-11234) (Jakub Zelenka)
+  . Fixed bug GHSA-r977-prxv-hc43 (Single byte overread with
+    convert.quoted-printable-decode filter). (CVE-2024-11233) (nielsdos)
+
 Backported from 8.1.30
 
 - CGI:
