@@ -224,6 +224,24 @@ static void zend_interned_strings_restore_int(TSRMLS_D)
 #endif
 }
 
+ZEND_API char *zend_string_concat3(
+		const char *str1, size_t str1_len,
+		const char *str2, size_t str2_len,
+		const char *str3, size_t str3_len,
+    	size_t *new_len)
+{
+	size_t len = str1_len + str2_len + str3_len;
+	char *res = (char *) emalloc(len + 1);
+
+	memcpy(res, str1, str1_len);
+	memcpy(res + str1_len, str2, str2_len);
+	memcpy(res + str1_len + str2_len, str3, str3_len);
+	res[len] = '\0';
+	if (new_len)
+		*new_len = len;
+	return res;
+}
+
 /*
  * Local variables:
  * tab-width: 4

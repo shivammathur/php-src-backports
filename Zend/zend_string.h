@@ -30,6 +30,13 @@ ZEND_API extern void (*zend_interned_strings_restore)(TSRMLS_D);
 
 void zend_interned_strings_init(TSRMLS_D);
 void zend_interned_strings_dtor(TSRMLS_D);
+
+ZEND_API char *zend_string_concat3(
+		const char *str1, size_t str1_len,
+		const char *str2, size_t str2_len,
+		const char *str3, size_t str3_len,
+		size_t *new_len);
+
 END_EXTERN_C()
 
 #ifndef ZTS
