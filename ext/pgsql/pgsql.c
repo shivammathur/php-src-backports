@@ -783,10 +783,16 @@ static char* php_pgsql_PQescapeInternal(PGconn *conn, const char *str, size_t le
 
 		if (safe) {
 			char *tmp = (char *)safe_emalloc(len, 2, 1);
+			int escape_error = 0;
 			*rp++ = '\'';
 			/* PQescapeString does not escape \, but it handles multibyte chars safely.
 			   This escape is incompatible with PQescapeLiteral. */
-			new_len = PQescapeStringConn(conn, tmp, str, len, NULL);
+			new_len = PQescapeStringConn(conn, tmp, str, len, &escape_error);
+			if (escape_error) {
+				efree(tmp);
+				efree(result);
+				return NULL;
+			}
 			strncpy(rp, tmp, new_len);
 			efree(tmp);
 			rp += new_len;
@@ -4160,8 +4166,14 @@ PHP_FUNCTION(pg_escape_string)
 	to = (char *) safe_emalloc(from_len, 2, 1);
 #ifdef HAVE_PQESCAPE_CONN
 	if (pgsql_link != NULL || id != -1) {
+		int escape_error = 0;
 		ZEND_FETCH_RESOURCE2(pgsql, PGconn *, &pgsql_link, id, "PostgreSQL link", le_link, le_plink);
-		to_len = (int) PQescapeStringConn(pgsql, to, from, (size_t)from_len, NULL);
+		to_len = (int) PQescapeStringConn(pgsql, to, from, (size_t)from_len, &escape_error);
+		if (escape_error) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Escaping string failed");
+			efree(to);
+			RETURN_FALSE;
+		}
 	} else
 #endif
 		to_len = (int) PQescapeString(to, from, (size_t)from_len);
@@ -4205,6 +4217,11 @@ PHP_FUNCTION(pg_escape_bytea)
 	} else
 #endif
 		to = (char *)PQescapeBytea((unsigned char*)from, from_len, &to_len);
+
+	if (to == NULL) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Escaping value failed");
+		RETURN_FALSE;
+	}
 
 	RETVAL_STRINGL(to, to_len-1, 1); /* to_len includes addtional '\0' */
 	PQfreemem(to);
@@ -5093,7 +5110,7 @@ PHP_PGSQL_API int php_pgsql_meta_data(PGconn *pg_link, const char *table_name, z
 	char *escaped;
 	smart_str querystr = {0};
 	size_t new_len;
-	int i, num_rows;
+	int i, num_rows, escape_error = 0;
 	zval *elem;
 
 	if (!*table_name) {
@@ -5119,7 +5136,14 @@ PHP_PGSQL_API int php_pgsql_meta_data(PGconn *pg_link, const char *table_name, z
 			"FROM pg_class as c, pg_attribute a, pg_type t, pg_namespace n "
 			"WHERE a.attnum > 0 AND a.attrelid = c.oid AND c.relname = '");
 	escaped = (char *)safe_emalloc(strlen(tmp_name2), 2, 1);
-	new_len = PQescapeStringConn(pg_link, escaped, tmp_name2, strlen(tmp_name2), NULL);
+	new_len = PQescapeStringConn(pg_link, escaped, tmp_name2, strlen(tmp_name2), &escape_error);
+	if (escape_error) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Escaping table name '%s' failed", table_name);
+		efree(escaped);
+		efree(src);
+		smart_str_free(&querystr);
+		return FAILURE;
+	}
 	if (new_len) {
 		smart_str_appendl(&querystr, escaped, new_len);
 	}
@@ -5127,7 +5151,14 @@ PHP_PGSQL_API int php_pgsql_meta_data(PGconn *pg_link, const char *table_name, z
 
 	smart_str_appends(&querystr, "' AND c.relnamespace = n.oid AND n.nspname = '");
 	escaped = (char *)safe_emalloc(strlen(tmp_name), 2, 1);
-	new_len = PQescapeStringConn(pg_link, escaped, tmp_name, strlen(tmp_name), NULL);
+	new_len = PQescapeStringConn(pg_link, escaped, tmp_name, strlen(tmp_name), &escape_error);
+	if (escape_error) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Escaping table namespace '%s' failed", table_name);
+		efree(escaped);
+		efree(src);
+		smart_str_free(&querystr);
+		return FAILURE;
+	}
 	if (new_len) {
 		smart_str_appendl(&querystr, escaped, new_len);
 	}
@@ -5410,7 +5441,7 @@ PHP_PGSQL_API int php_pgsql_convert(PGconn *pg_link, const char *table_name, con
 	uint field_len = -1;
 	ulong num_idx = -1;
 	zval *meta, **def, **type, **not_null, **has_default, **is_enum, **val, *new_val;
-	int key_type, err = 0, skip_field;
+	int key_type, err = 0, escape_err = 0, skip_field;
 	php_pgsql_data_type data_type;
 
 	assert(pg_link != NULL);
@@ -5637,9 +5668,16 @@ PHP_PGSQL_API int php_pgsql_convert(PGconn *pg_link, const char *table_name, con
 						}
 						else {
 							char *tmp;
-							Z_TYPE_P(new_val) = IS_STRING;
+							size_t tmp_len;
 							tmp = (char *)safe_emalloc(Z_STRLEN_PP(val), 2, 1);
-							Z_STRLEN_P(new_val) = (int)PQescapeStringConn(pg_link, tmp, Z_STRVAL_PP(val), Z_STRLEN_PP(val), NULL);
+							tmp_len = PQescapeStringConn(pg_link, tmp, Z_STRVAL_PP(val), Z_STRLEN_PP(val), &escape_err);
+							if (escape_err) {
+								efree(tmp);
+								err = 1;
+								break;
+							}
+							Z_TYPE_P(new_val) = IS_STRING;
+							Z_STRLEN_P(new_val) = (int)tmp_len;
 							Z_STRVAL_P(new_val) = tmp;
 							php_pgsql_add_quotes(new_val, 1 TSRMLS_CC);
 						}
@@ -5664,7 +5702,11 @@ PHP_PGSQL_API int php_pgsql_convert(PGconn *pg_link, const char *table_name, con
 				}
 				PGSQL_CONV_CHECK_IGNORE();
 				if (err) {
-					php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Expects NULL, string, long or double value for PostgreSQL '%s' (%s)", Z_STRVAL_PP(type), field);
+					if (escape_err) {
+						php_error_docref(NULL TSRMLS_CC, E_NOTICE, "String value escaping failed for PostgreSQL '%s' (%s)", Z_STRVAL_PP(type), field);
+					} else {
+						php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Expects NULL, string, long or double value for PostgreSQL '%s' (%s)", Z_STRVAL_PP(type), field);
+					}
 				}
 				break;
 
@@ -5931,6 +5973,11 @@ PHP_PGSQL_API int php_pgsql_convert(PGconn *pg_link, const char *table_name, con
 #else
 							tmp = PQescapeBytea(Z_STRVAL_PP(val), (unsigned char *)Z_STRLEN_PP(val), &to_len);
 #endif
+							if (tmp == NULL) {
+								escape_err = 1;
+								err = 1;
+								break;
+							}
 							Z_TYPE_P(new_val) = IS_STRING;
 							Z_STRLEN_P(new_val) = to_len-1; /* PQescapeBytea's to_len includes additional '\0' */
 							Z_STRVAL_P(new_val) = emalloc(to_len);
@@ -5964,7 +6011,11 @@ PHP_PGSQL_API int php_pgsql_convert(PGconn *pg_link, const char *table_name, con
 				}
 				PGSQL_CONV_CHECK_IGNORE();
 				if (err) {
-					php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Expects NULL, string, long or double value for PostgreSQL '%s' (%s)", Z_STRVAL_PP(type), field);
+					if (escape_err) {
+						php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Binary value escaping failed for PostgreSQL '%s' (%s)", Z_STRVAL_PP(type), field);
+					} else {
+						php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Expects NULL, string, long or double value for PostgreSQL '%s' (%s)", Z_STRVAL_PP(type), field);
+					}
 				}
 				break;
 				
@@ -6035,6 +6086,13 @@ PHP_PGSQL_API int php_pgsql_convert(PGconn *pg_link, const char *table_name, con
 				add_assoc_zval(result, field, new_val);
 			} else {
 				escaped = PGSQLescapeIdentifier(pg_link, field, field_len);
+				if (escaped == NULL) {
+					php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Escaping field '%s' failed", field);
+					zval_dtor(new_val);
+					FREE_ZVAL(new_val);
+					err = 1;
+					break; /* break out for() */
+				}
 				add_assoc_zval(result, escaped, new_val);
 				PGSQLfree(escaped);
 			}
@@ -6112,7 +6170,7 @@ static int do_exec(smart_str *querystr, int expect, PGconn *pg_link, ulong opt T
 	return -1;
 }
 
-static inline void build_tablename(smart_str *querystr, PGconn *pg_link, const char *table)
+static inline int build_tablename(smart_str *querystr, PGconn *pg_link, const char *table TSRMLS_DC)
 {
 	char *table_copy, *escaped, *tmp;
 	const char *token;
@@ -6129,6 +6187,11 @@ static inline void build_tablename(smart_str *querystr, PGconn *pg_link, const c
 		smart_str_appendl(querystr, token, len);
 	} else {
 		escaped = PGSQLescapeIdentifier(pg_link, token, len);
+		if (escaped == NULL) {
+			php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Failed to escape table name '%s'", table);
+			efree(table_copy);
+			return FAILURE;
+		}
 		smart_str_appends(querystr, escaped);
 		PGSQLfree(escaped);
 	}
@@ -6140,12 +6203,18 @@ static inline void build_tablename(smart_str *querystr, PGconn *pg_link, const c
 			smart_str_appendl(querystr, tmp, len);
 		} else {
 			escaped = PGSQLescapeIdentifier(pg_link, tmp, len);
+			if (escaped == NULL) {
+				php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Failed to escape table name '%s'", table);
+				efree(table_copy);
+				return FAILURE;
+			}
 			smart_str_appendc(querystr, '.');
 			smart_str_appends(querystr, escaped);
 			PGSQLfree(escaped);
 		}
 	}
 	efree(table_copy);
+	return SUCCESS;
 }
 
 /* {{{ php_pgsql_insert
@@ -6167,7 +6236,9 @@ PHP_PGSQL_API int php_pgsql_insert(PGconn *pg_link, const char *table, zval *var
 
 	if (zend_hash_num_elements(Z_ARRVAL_P(var_array)) == 0) {
 		smart_str_appends(&querystr, "INSERT INTO ");
-		build_tablename(&querystr, pg_link, table);
+		if (build_tablename(&querystr, pg_link, table TSRMLS_CC) == FAILURE) {
+			goto cleanup;
+		}
 		smart_str_appends(&querystr, " DEFAULT VALUES");
 
 		goto no_values;
@@ -6184,7 +6255,9 @@ PHP_PGSQL_API int php_pgsql_insert(PGconn *pg_link, const char *table, zval *var
 	}
 
 	smart_str_appends(&querystr, "INSERT INTO ");
-	build_tablename(&querystr, pg_link, table);
+	if (build_tablename(&querystr, pg_link, table TSRMLS_CC) == FAILURE) {
+		goto cleanup;
+	}
 	smart_str_appends(&querystr, " (");
 
 	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(var_array), &pos);
@@ -6373,7 +6446,9 @@ PHP_PGSQL_API int php_pgsql_update(PGconn *pg_link, const char *table, zval *var
 	}
 
 	smart_str_appends(&querystr, "UPDATE ");
-	build_tablename(&querystr, pg_link, table);
+	if (build_tablename(&querystr, pg_link, table TSRMLS_CC) == FAILURE) {
+		goto cleanup;
+	}
 	smart_str_appends(&querystr, " SET ");
 
 	if (build_assignment_string(&querystr, Z_ARRVAL_P(var_array), 0, ",", 1 TSRMLS_CC))
@@ -6474,7 +6549,9 @@ PHP_PGSQL_API int php_pgsql_delete(PGconn *pg_link, const char *table, zval *ids
 	}
 
 	smart_str_appends(&querystr, "DELETE FROM ");
-	build_tablename(&querystr, pg_link, table);
+	if (build_tablename(&querystr, pg_link, table TSRMLS_CC) == FAILURE) {
+		goto cleanup;
+	}
 	smart_str_appends(&querystr, " WHERE ");
 
 	if (build_assignment_string(&querystr, Z_ARRVAL_P(ids_array), 1, " AND ", sizeof(" AND ")-1 TSRMLS_CC))
@@ -6610,7 +6687,9 @@ PHP_PGSQL_API int php_pgsql_select(PGconn *pg_link, const char *table, zval *ids
 	}
 
 	smart_str_appends(&querystr, "SELECT * FROM ");
-	build_tablename(&querystr, pg_link, table);
+	if (build_tablename(&querystr, pg_link, table TSRMLS_CC) == FAILURE) {
+		goto cleanup;
+	}
 	smart_str_appends(&querystr, " WHERE ");
 
 	if (build_assignment_string(&querystr, Z_ARRVAL_P(ids_array), 1, " AND ", sizeof(" AND ")-1 TSRMLS_CC))
