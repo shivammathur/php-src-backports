@@ -322,6 +322,7 @@ static int pgsql_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unquote
 	unsigned char *escaped;
 	pdo_pgsql_db_handle *H = (pdo_pgsql_db_handle *)dbh->driver_data;
 	size_t tmp_len;
+	int err = 0;
 	
 	switch (paramtype) {
 		case PDO_PARAM_LOB:
@@ -331,6 +332,9 @@ static int pgsql_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unquote
 #else
 			escaped = PQescapeBytea((unsigned char *)unquoted, (size_t)unquotedlen, &tmp_len);
 #endif
+			if (escaped == NULL) {
+				return 0;
+			}
 			*quotedlen = (int)tmp_len + 1;
 			*quoted = emalloc(*quotedlen + 1);
 			memcpy((*quoted)+1, escaped, *quotedlen-2);
@@ -345,8 +349,13 @@ static int pgsql_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, int unquote
 #ifndef HAVE_PQESCAPE_CONN
 			*quotedlen = PQescapeString(*quoted + 1, unquoted, (size_t)unquotedlen);
 #else
-			*quotedlen = PQescapeStringConn(H->server, *quoted + 1, unquoted, (size_t)unquotedlen, NULL);
+			*quotedlen = PQescapeStringConn(H->server, *quoted + 1, unquoted, (size_t)unquotedlen, &err);
 #endif
+			if (err) {
+				efree(*quoted);
+				*quoted = NULL;
+				return 0;
+			}
 			(*quoted)[*quotedlen + 1] = '\'';
 			(*quoted)[*quotedlen + 2] = '\0';
 			*quotedlen += 2;
