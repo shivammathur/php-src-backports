@@ -54,7 +54,7 @@ if test "$PHP_PDO_SQLITE" != "no"; then
     PHP_ADD_INCLUDE($PDO_SQLITE_DIR/include)
 
     LIBNAME=sqlite3
-    LIBSYMBOL=sqlite3_open
+    LIBSYMBOL=sqlite3_prepare_v2
 
     PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
     [
