@@ -864,7 +864,7 @@ PS_SERIALIZER_DECODE_FUNC(php_serialize) /* {{{ */
 
 	PHP_VAR_UNSERIALIZE_INIT(var_hash);
 	ALLOC_INIT_ZVAL(session_vars);
-	if (php_var_unserialize(&session_vars, &val, endptr, &var_hash TSRMLS_CC)) {
+	if (php_var_unserialize(&session_vars, (const unsigned char **)&val, (const unsigned char *)endptr, &var_hash TSRMLS_CC)) {
 		var_push_dtor(&var_hash, &session_vars);
 	}
 

@@ -437,6 +437,8 @@ file_printedlen(const struct magic_set *ms)
 	return ms->o.buf == NULL ? 0 : strlen(ms->o.buf);
 }
 
+
+protected int
 file_replace(struct magic_set *ms, const char *pat, const char *rep)
 {
 	zval *patt;

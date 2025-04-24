@@ -1351,61 +1351,6 @@ AC_DEFUN([PHP_MISSING_TIME_R_DECL],[
 ])
 
 dnl
-dnl PHP_READDIR_R_TYPE
-dnl 
-AC_DEFUN([PHP_READDIR_R_TYPE],[
-  dnl HAVE_READDIR_R is also defined by libmysql
-  AC_CHECK_FUNC(readdir_r,ac_cv_func_readdir_r=yes,ac_cv_func_readdir=no)
-  if test "$ac_cv_func_readdir_r" = "yes"; then
-  AC_CACHE_CHECK(for type of readdir_r, ac_cv_what_readdir_r,[
-    AC_TRY_RUN([
-#define _REENTRANT
-#include <sys/types.h>
-#include <dirent.h>
-
-#ifndef PATH_MAX
-#define PATH_MAX 1024
-#endif
-
-main() {
-  DIR *dir;
-  char entry[sizeof(struct dirent)+PATH_MAX];
-  struct dirent *pentry = (struct dirent *) &entry;
-
-  dir = opendir("/");
-  if (!dir) 
-    exit(1);
-  if (readdir_r(dir, (struct dirent *) entry, &pentry) == 0)
-    exit(0);
-  exit(1);
-}
-    ],[
-      ac_cv_what_readdir_r=POSIX
-    ],[
-      AC_TRY_CPP([
-#define _REENTRANT
-#include <sys/types.h>
-#include <dirent.h>
-int readdir_r(DIR *, struct dirent *);
-        ],[
-          ac_cv_what_readdir_r=old-style
-        ],[
-          ac_cv_what_readdir_r=none
-      ])
-    ],[
-      ac_cv_what_readdir_r=none
-   ])
-  ])
-    case $ac_cv_what_readdir_r in
-    POSIX)
-      AC_DEFINE(HAVE_POSIX_READDIR_R,1,[whether you have POSIX readdir_r]);;
-    old-style)
-      AC_DEFINE(HAVE_OLD_READDIR_R,1,[whether you have old-style readdir_r]);;
-    esac
-  fi
-])
-
-dnl
 dnl PHP_TM_GMTOFF
 dnl 
 AC_DEFUN([PHP_TM_GMTOFF],[
@@ -1770,51 +1715,50 @@ AC_TRY_COMPILE([
       cookie_io_functions_t=cookie_io_functions_t
       have_fopen_cookie=yes
 
-dnl even newer glibcs have a different seeker definition...
-AC_TRY_RUN([
+dnl Even newer glibcs have a different seeker definition.
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #define _GNU_SOURCE
 #include <stdio.h>
 
 struct cookiedata {
-  __off64_t pos;
+  off64_t pos;
 };
 
-__ssize_t reader(void *cookie, char *buffer, size_t size)
+ssize_t reader(void *cookie, char *buffer, size_t size)
 { return size; }
-__ssize_t writer(void *cookie, const char *buffer, size_t size)
+ssize_t writer(void *cookie, const char *buffer, size_t size)
 { return size; }
 int closer(void *cookie)
 { return 0; }
-int seeker(void *cookie, __off64_t *position, int whence)
+int seeker(void *cookie, off64_t *position, int whence)
 { ((struct cookiedata*)cookie)->pos = *position; return 0; }
 
 cookie_io_functions_t funcs = {reader, writer, seeker, closer};
 
-main() {
+int main() {
   struct cookiedata g = { 0 };
   FILE *fp = fopencookie(&g, "r", funcs);
 
   if (fp && fseek(fp, 8192, SEEK_SET) == 0 && g.pos == 8192)
-    exit(0);
-  exit(1);
+    return 0;
+  return 1;
 }
 
-], [
+]])], [
   cookie_io_functions_use_off64_t=yes
 ], [
   cookie_io_functions_use_off64_t=no
 ], [
   cookie_io_functions_use_off64_t=no
 ])
-    
+
     else
 
-dnl older glibc versions (up to 2.1.2 ?)
-dnl call it _IO_cookie_io_functions_t
-AC_TRY_COMPILE([
+dnl Older glibc versions (up to 2.1.2?) call it _IO_cookie_io_functions_t.
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #define _GNU_SOURCE
 #include <stdio.h>
-], [ _IO_cookie_io_functions_t cookie; ], [have_IO_cookie_io_functions_t=yes], [])
+]], [[_IO_cookie_io_functions_t cookie;]])], [have_IO_cookie_io_functions_t=yes], [])
       if test "$have_cookie_io_functions_t" = "yes" ; then
         cookie_io_functions_t=_IO_cookie_io_functions_t
         have_fopen_cookie=yes

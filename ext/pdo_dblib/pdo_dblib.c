@@ -206,8 +206,8 @@ PHP_MINIT_FUNCTION(pdo_dblib)
 	 */
 
 #if !PHP_DBLIB_IS_MSSQL
-	dberrhandle(error_handler);
-	dbmsghandle(msg_handler);
+	dberrhandle((EHANDLEFUNC) error_handler);
+	dbmsghandle((MHANDLEFUNC) msg_handler);
 #endif
 
 	return SUCCESS;

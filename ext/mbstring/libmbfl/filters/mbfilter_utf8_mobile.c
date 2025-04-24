@@ -183,6 +183,7 @@ const struct mbfl_convert_vtbl vtbl_wchar_utf8_sb = {
 };
 
 #define CK(statement)	do { if ((statement) < 0) return (-1); } while (0)
+int mbfl_filt_put_invalid_char(int c, mbfl_convert_filter *filter);
 
 /*
  * UTF-8 => wchar
@@ -207,7 +208,7 @@ retry:
 			filter->status = 0x30;
 			filter->cache = c & 0x7;
 		} else {
-			mbfl_filt_put_invalid_char(c, filter);
+			CK(mbfl_filt_put_invalid_char(c, filter));
 		}
 		break;
 	case 0x10: /* 2byte code 2nd char: 0x80-0xbf */
@@ -237,7 +238,7 @@ retry:
 			}
 			CK((*filter->output_function)(s, filter->data));
 		} else {
-			mbfl_filt_put_invalid_char(filter->cache, filter);
+			CK(mbfl_filt_put_invalid_char(filter->cache, filter));
 			goto retry;			
 		}
 		break;
@@ -252,7 +253,7 @@ retry:
 			filter->cache = s;
 			filter->status++;
 		} else {
-			mbfl_filt_put_invalid_char(filter->cache, filter);
+			CK(mbfl_filt_put_invalid_char(filter->cache, filter));
 			goto retry;						
 		}
 		break;
@@ -267,7 +268,7 @@ retry:
 			filter->cache = s;
 			filter->status++;
 		} else {
-			mbfl_filt_put_invalid_char(filter->cache, filter);
+			CK(mbfl_filt_put_invalid_char(filter->cache, filter));
 			goto retry;						
 		}
 		break;
@@ -276,7 +277,7 @@ retry:
 			filter->cache = (filter->cache<<6) | (c & 0x3f);
 			filter->status++;
 		} else {
-			mbfl_filt_put_invalid_char(filter->cache, filter);
+			CK(mbfl_filt_put_invalid_char(filter->cache, filter));
 			goto retry;						
 		}
 		break;

@@ -1,3 +1,4 @@
+%require "3.0"
 %{
 /*
    +----------------------------------------------------------------------+
@@ -44,7 +45,8 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 
 %}
 
-%pure_parser
+%define api.pure full
+%define parse.error verbose
 %expect 3
 
 %code requires {

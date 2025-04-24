@@ -1068,7 +1068,7 @@ static void php_mssql_get_column_content_without_type(mssql_link *mssql_ptr,int 
 		column_type == SQLBINARY ||
 		column_type == SQLIMAGE) {
 		DBBINARY *bin;
-		unsigned char *res_buf;
+		char *res_buf;
 		int res_length = dbdatlen(mssql_ptr->link, offset);
 
 		if (res_length == 0) {
@@ -1079,14 +1079,14 @@ static void php_mssql_get_column_content_without_type(mssql_link *mssql_ptr,int 
 			return;
 		}
 
-		res_buf = (unsigned char *) emalloc(res_length+1);
+		res_buf = (char *) emalloc(res_length+1);
 		bin = ((DBBINARY *)dbdata(mssql_ptr->link, offset));
 		res_buf[res_length] = '\0';
 		memcpy(res_buf, bin, res_length);
 		ZVAL_STRINGL(result, res_buf, res_length, 0);
 	}
 	else if  (dbwillconvert(coltype(offset),SQLCHAR)) {
-		unsigned char *res_buf;
+		char *res_buf;
 		DBDATEREC dateinfo;	
 		int res_length = dbdatlen(mssql_ptr->link,offset);
 
@@ -1108,7 +1108,7 @@ static void php_mssql_get_column_content_without_type(mssql_link *mssql_ptr,int 
 					break;
 			}
 			
-			res_buf = (unsigned char *) emalloc(res_length+1);
+			res_buf = (char *) emalloc(res_length+1);
 			res_length = dbconvert(NULL,coltype(offset),dbdata(mssql_ptr->link,offset), res_length, SQLCHAR, res_buf, -1);
 			res_buf[res_length] = '\0';
 		} else {
