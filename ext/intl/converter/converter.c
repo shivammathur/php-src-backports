@@ -18,6 +18,8 @@
 #include "zend_exceptions.h"
 
 #include <unicode/utypes.h>
+#include <unicode/utf8.h>
+#include <unicode/utf16.h>
 #include <unicode/ucnv.h>
 #include <unicode/ustring.h>
 

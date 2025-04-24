@@ -24,6 +24,7 @@
 #include "normalizer_class.h"
 #include "normalizer_normalize.h"
 #include "intl_convert.h"
+#include <unicode/utf8.h>
 
 /* {{{ proto string Normalizer::normalize( string $input [, string $form = FORM_C] )
  * Normalize a string. }}} */

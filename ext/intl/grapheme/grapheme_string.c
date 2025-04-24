@@ -24,6 +24,7 @@
 #include "grapheme_util.h"
 
 #include <unicode/utypes.h>
+#include <unicode/utf8.h>
 #include <unicode/ucol.h>
 #include <unicode/ustring.h>
 #include <unicode/ubrk.h>
@@ -860,10 +861,10 @@ PHP_FUNCTION(grapheme_extract)
 	pstr = str + start;
 
 	/* just in case pstr points in the middle of a character, move forward to the start of the next char */
-	if ( !UTF8_IS_SINGLE(*pstr) && !U8_IS_LEAD(*pstr) ) {
+	if ( !U8_IS_SINGLE(*pstr) && !U8_IS_LEAD(*pstr) ) {
 		unsigned char *str_end = str + str_len;
 
-		while ( !UTF8_IS_SINGLE(*pstr) && !U8_IS_LEAD(*pstr) ) {
+		while ( !U8_IS_SINGLE(*pstr) && !U8_IS_LEAD(*pstr) ) {
 			pstr++;
 			if ( pstr >= str_end ) {
 				intl_error_set( NULL, U_ILLEGAL_ARGUMENT_ERROR,

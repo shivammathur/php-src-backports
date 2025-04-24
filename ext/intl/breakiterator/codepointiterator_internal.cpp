@@ -31,6 +31,8 @@ typedef union {
 
 using namespace PHP;
 
+using icu::UCharCharacterIterator;
+
 UOBJECT_DEFINE_RTTI_IMPLEMENTATION(CodePointBreakIterator);
 
 CodePointBreakIterator::CodePointBreakIterator()

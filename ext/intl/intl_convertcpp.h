@@ -25,6 +25,8 @@
 
 #include <unicode/unistr.h>
 
+using icu::UnicodeString;
+
 int intl_stringFromChar(UnicodeString &ret, char *str, int32_t str_len, UErrorCode *status);
 
 int intl_charFromString(const UnicodeString &from, char **res, int *res_len, UErrorCode *status);

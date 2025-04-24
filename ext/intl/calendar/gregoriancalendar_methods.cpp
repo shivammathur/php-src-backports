@@ -23,6 +23,8 @@
 #include <unicode/locid.h>
 #include <unicode/calendar.h>
 #include <unicode/gregocal.h>
+#include <unicode/ustring.h>
+
 extern "C" {
 #include "../php_intl.h"
 #define USE_TIMEZONE_POINTER 1
@@ -31,6 +33,11 @@ extern "C" {
 #include "calendar_class.h"
 #include <ext/date/php_date.h>
 }
+
+using icu::GregorianCalendar;
+using icu::Locale;
+using icu::UnicodeString;
+using icu::StringPiece;
 
 static inline GregorianCalendar *fetch_greg(Calendar_object *co) {
 	return (GregorianCalendar*)co->ucal;

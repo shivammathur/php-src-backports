@@ -69,6 +69,7 @@ U_CFUNC void zoi_with_current_get_current_data(zend_object_iterator *iter, zval 
 U_CFUNC void zoi_with_current_invalidate_current(zend_object_iterator *iter TSRMLS_DC);
 
 #ifdef __cplusplus
+using icu::StringEnumeration;
 U_CFUNC void IntlIterator_from_StringEnumeration(StringEnumeration *se, zval *object TSRMLS_DC);
 #endif
 

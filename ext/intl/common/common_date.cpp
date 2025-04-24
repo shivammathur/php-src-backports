@@ -25,6 +25,9 @@ extern "C" {
 #include <ext/date/php_date.h>
 }
 
+using icu::TimeZone;
+using icu::UnicodeString;
+
 #ifndef INFINITY
 #define INFINITY (DBL_MAX+DBL_MAX)
 #endif
