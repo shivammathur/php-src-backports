@@ -2699,7 +2699,17 @@ static zend_object_value display_disabled_class(zend_class_entry *class_type TSR
 {
 	zend_object_value retval;
 	zend_object *intern;
+       int i;
 	retval = zend_objects_new(&intern, class_type TSRMLS_CC);
+
+	/* Initialize default properties */
+	if (EXPECTED(class_type->default_properties_count != 0)) {
+		intern->properties_table = emalloc(sizeof(zval*) * class_type->default_properties_count);
+		for (i = 0; i < class_type->default_properties_count; i++) {
+			intern->properties_table[i] = NULL;
+		}
+	}
+
 	zend_error(E_WARNING, "%s() has been disabled for security reasons", class_type->name);
 	return retval;
 }
