@@ -1032,7 +1032,7 @@ zend_module_entry php_zlib_module_entry = {
 	PHP_MINFO(zlib),
 	"2.0",
 	PHP_MODULE_GLOBALS(zlib),
-	ZEND_MODULE_GLOBALS_CTOR_N(zlib),
+	PHP_GINIT(zlib),
 	NULL,
 	NULL,
 	STANDARD_MODULE_PROPERTIES_EX
