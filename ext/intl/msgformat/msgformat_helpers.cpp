@@ -27,6 +27,7 @@
 #include <unicode/timezone.h>
 #include <unicode/datefmt.h>
 #include <unicode/calendar.h>
+#include <unicode/strenum.h>
 
 #include <vector>
 
@@ -45,6 +46,7 @@ extern "C" {
 
 #if U_ICU_VERSION_MAJOR_NUM * 10 + U_ICU_VERSION_MINOR_NUM >= 48
 #define HAS_MESSAGE_PATTERN 1
+#define HAS_MISALLOCATE_MEMORY_BUG 1
 #endif
 
 U_NAMESPACE_BEGIN
@@ -344,6 +346,26 @@ static void umsg_set_timezone(MessageFormatter_object *mfo,
 	if (mfo->mf_data.tz_set) {
 		return; /* already done */
 	}
+
+#ifdef HAS_MISALLOCATE_MEMORY_BUG
+	/* There is a bug in ICU which prevents MessageFormatter::getFormats()
+	   to handle more than 10 formats correctly. The enumerator could be
+	   used to walk through the present formatters using getFormat(), which
+	   however seems to provide just a readonly access. This workaround
+	   prevents crash when there are > 10 formats but doesn't set any error.
+	   As a result, only DateFormatters with > 10 subformats are affected.
+	   This workaround should be ifdef'd out, when the bug has been fixed
+	   in ICU. */
+	icu::StringEnumeration* fnames = mf->getFormatNames(err.code);
+	if (!fnames || U_FAILURE(err.code)) {
+		return;
+	}
+	count = fnames->count(err.code);
+	delete fnames;
+	if (count > 10) {
+		return;
+	}
+#endif
 
 	formats = mf->getFormats(count);
 	
