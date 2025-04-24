@@ -336,7 +336,7 @@ static void load_wsdl_ex(zval *this_ptr, char *struri, sdlCtx *ctx, int include 
 	sdl_restore_uri_credentials(ctx TSRMLS_CC);
 	
 	if (!wsdl) {
-		xmlErrorPtr xmlErrorPtr = xmlGetLastError();
+		const xmlError *xmlErrorPtr = xmlGetLastError();
 
 		if (xmlErrorPtr) {
 			soap_error2(E_ERROR, "Parsing WSDL: Couldn't load from '%s' : %s", struri, xmlErrorPtr->message);
