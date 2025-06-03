@@ -4500,8 +4500,10 @@ static xmlNodePtr serialize_zval(zval *val, sdlParamPtr param, char *paramName, 
 		enc = NULL;
 	}
 	xmlParam = master_to_xml(enc, val, style, parent TSRMLS_CC);
-	if (!strcmp((char*)xmlParam->name, "BOGUS")) {
-		xmlNodeSetName(xmlParam, BAD_CAST(paramName));
+	if (xmlParam != NULL) {
+		if (xmlParam->name == NULL || strcmp((char*) xmlParam->name, "BOGUS") == 0) {
+			xmlNodeSetName(xmlParam, BAD_CAST(paramName));
+		}
 	}
 	return xmlParam;
 }
