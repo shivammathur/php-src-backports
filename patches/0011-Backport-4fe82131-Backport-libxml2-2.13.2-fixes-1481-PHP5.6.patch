@@ -1,0 +1,313 @@
+From 1b634f3375efd380f139f89218fc2d8966023617 Mon Sep 17 00:00:00 2001
+From: Niels Dossche <7771979+nielsdos@users.noreply.github.com>
+Date: Thu, 4 Jul 2024 06:29:50 -0700
+Subject: [PATCH] From: Niels Dossche
+ <7771979+nielsdos@users.noreply.github.com> Date: Thu, 4 Jul 2024 06:29:50
+ -0700 Subject: Backport 4fe82131: Backport libxml2 2.13.2 fixes (#14816)
+
+Backproted from https://github.com/php/php-src/pull/14789
+
+(cherry picked from commit bb46b4b799b583528025a775af45308133bfd4c1)
+(cherry picked from commit 6cb68826aaf68ffe8c70c8782450c38970236040)
+---
+ ext/dom/document.c                              |  6 ++++--
+ .../tests/DOMDocument_loadHTMLfile_error1.phpt  |  2 +-
+ .../DOMDocument_relaxNGValidate_error2.phpt     |  2 +-
+ .../tests/DOMDocument_saveHTMLFile_basic.phpt   |  1 +
+ .../DOMDocument_saveHTMLFile_formatOutput.phpt  |  1 +
+ .../DOMDocument_schemaValidate_error5.phpt      |  2 +-
+ ext/dom/tests/dom_create_element.phpt           | 17 ++++++-----------
+ ext/libxml/libxml.c                             |  4 +++-
+ ext/libxml/tests/bug61367-read.phpt             |  2 +-
+ .../tests/libxml_disable_entity_loader.phpt     |  2 +-
+ ext/simplexml/tests/bug79971_1.phpt             |  2 +-
+ ext/soap/php_encoding.c                         |  8 ++++++++
+ ext/soap/php_xml.c                              |  8 +++-----
+ ext/soap/tests/bugs/bug42151.phpt               |  4 ++--
+ ext/xml/compat.c                                |  3 +--
+ ext/xmlwriter/php_xmlwriter.c                   |  3 ++-
+ 16 files changed, 37 insertions(+), 30 deletions(-)
+
+diff --git a/ext/dom/document.c b/ext/dom/document.c
+index 74f6ad0de3..fbf3d659d5 100644
+--- a/ext/dom/document.c
++++ b/ext/dom/document.c
+@@ -1576,11 +1576,13 @@ static xmlDocPtr dom_document_parser(zval *id, int mode, char *source, int sourc
+ 	if (keep_blanks == 0 && ! (options & XML_PARSE_NOBLANKS)) {
+ 		options |= XML_PARSE_NOBLANKS;
+ 	}
++	if (recover) {
++		options |= XML_PARSE_RECOVER;
++	}
+ 
+ 	php_libxml_sanitize_parse_ctxt_options(ctxt);
+ 	xmlCtxtUseOptions(ctxt, options);
+ 
+-	ctxt->recovery = recover;
+ 	if (recover) {
+ 		old_error_reporting = EG(error_reporting);
+ 		EG(error_reporting) = old_error_reporting | E_WARNING;
+@@ -1590,7 +1592,7 @@ static xmlDocPtr dom_document_parser(zval *id, int mode, char *source, int sourc
+ 
+ 	if (ctxt->wellFormed || recover) {
+ 		ret = ctxt->myDoc;
+-		if (ctxt->recovery) {
++		if (recover) {
+ 			EG(error_reporting) = old_error_reporting;
+ 		}
+ 		/* If loading from memory, set the base reference uri for the document */
+diff --git a/ext/dom/tests/DOMDocument_loadHTMLfile_error1.phpt b/ext/dom/tests/DOMDocument_loadHTMLfile_error1.phpt
+index aee51966a3..1512ec6cc9 100644
+--- a/ext/dom/tests/DOMDocument_loadHTMLfile_error1.phpt
++++ b/ext/dom/tests/DOMDocument_loadHTMLfile_error1.phpt
+@@ -15,4 +15,4 @@ $result = $doc->loadHTMLFile(dirname(__FILE__) . "/ffff/test.html");
+ assert('$result === false');
+ ?>
+ --EXPECTF--
+-%r(PHP ){0,1}%rWarning: DOMDocument::loadHTMLFile(): I/O warning : failed to load external entity %s
++%r(PHP ){0,1}%rWarning: DOMDocument::loadHTMLFile(): I/O %s
+diff --git a/ext/dom/tests/DOMDocument_relaxNGValidate_error2.phpt b/ext/dom/tests/DOMDocument_relaxNGValidate_error2.phpt
+index 7c5f8901e7..bac5754bf5 100644
+--- a/ext/dom/tests/DOMDocument_relaxNGValidate_error2.phpt
++++ b/ext/dom/tests/DOMDocument_relaxNGValidate_error2.phpt
+@@ -23,7 +23,7 @@ var_dump($result);
+ ?>
+ --EXPECTF--
+ 
+-Warning: DOMDocument::relaxNGValidate(): I/O warning : failed to load external entity "%s/foo.rng" in %s on line %d
++Warning: DOMDocument::relaxNGValidate(): I/O %s : failed to load %s
+ 
+ Warning: DOMDocument::relaxNGValidate(): xmlRelaxNGParse: could not load %s/foo.rng in %s on line %d
+ 
+diff --git a/ext/dom/tests/DOMDocument_saveHTMLFile_basic.phpt b/ext/dom/tests/DOMDocument_saveHTMLFile_basic.phpt
+index dd0824b0d1..3ac12e70fb 100644
+--- a/ext/dom/tests/DOMDocument_saveHTMLFile_basic.phpt
++++ b/ext/dom/tests/DOMDocument_saveHTMLFile_basic.phpt
+@@ -6,6 +6,7 @@ Knut Urdalen <knut@php.net>
+ --SKIPIF--
+ <?php
+ require_once dirname(__FILE__) .'/skipif.inc';
++if (LIBXML_VERSION >= 21300) die("skip see https://gitlab.gnome.org/GNOME/libxml2/-/issues/756");
+ ?>
+ --FILE--
+ <?php
+diff --git a/ext/dom/tests/DOMDocument_saveHTMLFile_formatOutput.phpt b/ext/dom/tests/DOMDocument_saveHTMLFile_formatOutput.phpt
+index 5aece3780a..52c9053c4e 100644
+--- a/ext/dom/tests/DOMDocument_saveHTMLFile_formatOutput.phpt
++++ b/ext/dom/tests/DOMDocument_saveHTMLFile_formatOutput.phpt
+@@ -6,6 +6,7 @@ Knut Urdalen <knut@php.net>
+ --SKIPIF--
+ <?php
+ require_once dirname(__FILE__) .'/skipif.inc';
++if (LIBXML_VERSION >= 21300) die("skip see https://gitlab.gnome.org/GNOME/libxml2/-/issues/756");
+ ?>
+ --FILE--
+ <?php
+diff --git a/ext/dom/tests/DOMDocument_schemaValidate_error5.phpt b/ext/dom/tests/DOMDocument_schemaValidate_error5.phpt
+index d5743bc6cf..680289dc80 100644
+--- a/ext/dom/tests/DOMDocument_schemaValidate_error5.phpt
++++ b/ext/dom/tests/DOMDocument_schemaValidate_error5.phpt
+@@ -17,7 +17,7 @@ var_dump($result);
+ 
+ ?>
+ --EXPECTF--
+-Warning: DOMDocument::schemaValidate(): I/O warning : failed to load external entity "%snon-existent-file" in %s.php on line %d
++Warning: DOMDocument::schemaValidate(): I/O %s : failed to load %s
+ 
+ Warning: DOMDocument::schemaValidate(): Failed to locate the main schema resource at '%s/non-existent-file'. in %s.php on line %d
+ 
+diff --git a/ext/dom/tests/dom_create_element.phpt b/ext/dom/tests/dom_create_element.phpt
+index 3f307099bb..61b1497c69 100644
+--- a/ext/dom/tests/dom_create_element.phpt
++++ b/ext/dom/tests/dom_create_element.phpt
+@@ -251,15 +251,12 @@ try {
+     print $e->getMessage() . "\n";
+ }
+ 
+-/* This isn't because the xml namespace isn't there and we can't create it */
+-print "29 DOMElement::__construct('xml:valid', '', 'http://www.w3.org/XML/1998/namespace')\n";
+-try {
+-    $element = new DomElement('xml:valid', '', 'http://www.w3.org/XML/1998/namespace');
+-    print "valid\n";
+-} catch (Exception $e) {
+-    print $e->getMessage() . "\n";
+-}
+-
++/* There used to be a 29 here that tested DOMElement::__construct('xml:valid', '',
++ * 'http://www.w3.org/XML/1998/namespace'). In libxml2 version 2.12 or prior this
++ * didn't work because the xml namespace isn't there and you can't create it without
++ * a document. Starting from libxml2 version 2.13 it does actually work because the
++ * XML namespace is statically defined. The behaviour from version 2.13 is actually
++ * the desired behaviour anyway. */
+ 
+ /* the qualifiedName or its prefix is "xmlns" and the  namespaceURI is 
+    different from  "http://www.w3.org/2000/xmlns/" */
+@@ -378,8 +375,6 @@ Namespace Error
+ Namespace Error
+ 28 DOMDocument::createElementNS('http://www.w3.org/XML/1998/namespace', 'xml:valid')
+ valid
+-29 DOMElement::__construct('xml:valid', '', 'http://www.w3.org/XML/1998/namespace')
+-Namespace Error
+ 30 DOMDocument::createElementNS('http://wrong.namespaceURI.com', 'xmlns:valid')
+ Namespace Error
+ 31 DOMElement::__construct('xmlns:valid', '', 'http://wrong.namespaceURI.com')
+diff --git a/ext/libxml/libxml.c b/ext/libxml/libxml.c
+index 02453ffb36..7c776c8b26 100644
+--- a/ext/libxml/libxml.c
++++ b/ext/libxml/libxml.c
+@@ -426,7 +426,7 @@ php_libxml_input_buffer_create_filename(const char *URI, xmlCharEncoding enc)
+ static xmlOutputBufferPtr
+ php_libxml_output_buffer_create_filename(const char *URI,
+                               xmlCharEncodingHandlerPtr encoder,
+-                              int compression ATTRIBUTE_UNUSED)
++                              int compression)
+ {
+ 	xmlOutputBufferPtr ret;
+ 	xmlURIPtr puri;
+@@ -435,6 +435,8 @@ php_libxml_output_buffer_create_filename(const char *URI,
+ 
+ 	TSRMLS_FETCH();
+ 
++	(void) compression;
++
+ 	if (URI == NULL)
+ 		return(NULL);
+ 
+diff --git a/ext/libxml/tests/bug61367-read.phpt b/ext/libxml/tests/bug61367-read.phpt
+index b4ecaa0324..3ae51fb65d 100644
+--- a/ext/libxml/tests/bug61367-read.phpt
++++ b/ext/libxml/tests/bug61367-read.phpt
+@@ -53,7 +53,7 @@ bool(true)
+ int(4)
+ bool(true)
+ 
+-Warning: DOMDocument::loadXML(): I/O warning : failed to load external entity "file:///%s/test_bug_61367-read/bad" in %s on line %d
++Warning: DOMDocument::loadXML(): I/O %s : failed to load %s in %s on line %d
+ 
+ Warning: DOMDocument::loadXML(): Failure to process entity file in Entity, line: 4 in %s on line %d
+ 
+diff --git a/ext/libxml/tests/libxml_disable_entity_loader.phpt b/ext/libxml/tests/libxml_disable_entity_loader.phpt
+index 6477543fb2..e43413bacf 100644
+--- a/ext/libxml/tests/libxml_disable_entity_loader.phpt
++++ b/ext/libxml/tests/libxml_disable_entity_loader.phpt
+@@ -32,7 +32,7 @@ echo "Done\n";
+ bool(true)
+ bool(false)
+ 
+-Warning: DOMDocument::loadXML(): I/O warning : failed to load external entity "%s" in %s on line %d
++Warning: DOMDocument::loadXML(): I/O %s : failed to load %s in %s on line %d
+ 
+ Warning: DOMDocument::loadXML(): Failure to process entity xxe in Entity, line: %d in %s on line %d
+ 
+diff --git a/ext/simplexml/tests/bug79971_1.phpt b/ext/simplexml/tests/bug79971_1.phpt
+index 464112c99e..1cce84c1dd 100644
+--- a/ext/simplexml/tests/bug79971_1.phpt
++++ b/ext/simplexml/tests/bug79971_1.phpt
+@@ -20,7 +20,7 @@ var_dump($sxe->asXML("$uri.out%00foo"));
+ --EXPECTF--
+ Warning: simplexml_load_file(): URI must not contain percent-encoded NUL bytes in %s on line %d
+ 
+-Warning: simplexml_load_file(): I/O warning : failed to load external entity "%s/bug79971_1.xml%00foo" in %s on line %d
++Warning: simplexml_load_file(): I/O warning : failed to load %s
+ bool(false)
+ 
+ Warning: SimpleXMLElement::asXML(): URI must not contain percent-encoded NUL bytes in %s on line %d
+diff --git a/ext/soap/php_encoding.c b/ext/soap/php_encoding.c
+index 0f85ddde1b..dd9b51aab3 100644
+--- a/ext/soap/php_encoding.c
++++ b/ext/soap/php_encoding.c
+@@ -3542,7 +3542,15 @@ xmlNsPtr encode_add_ns(xmlNodePtr node, const char* ns)
+ 				num = ++SOAP_GLOBAL(cur_uniq_ns);
+ 			}
+ 
++			/* Starting with libxml 2.13, we don't have to do this workaround anymore, otherwise we get double-encoded
++			 * entities. See libxml2 commit f506ec66547ef9bac97a2bf306d368ecea8c0c9e. */
++#if LIBXML_VERSION < 21300
++			xmlChar *enc_ns = xmlEncodeSpecialChars(node->doc, BAD_CAST(ns));
++			xmlns = xmlNewNs(node->doc->children, enc_ns, BAD_CAST(prefix.c));
++			xmlFree(enc_ns);
++#else
+ 			xmlns = xmlNewNs(node->doc->children, BAD_CAST(ns), BAD_CAST(prefix.c));
++#endif
+ 			smart_str_free(&prefix);
+ 		}
+ 	}
+diff --git a/ext/soap/php_xml.c b/ext/soap/php_xml.c
+index 36d303c8b7..c726bc3fba 100644
+--- a/ext/soap/php_xml.c
++++ b/ext/soap/php_xml.c
+@@ -95,15 +95,14 @@ xmlDocPtr soap_xmlParseFile(const char *filename TSRMLS_DC)
+ 		zend_bool old;
+ 
+ 		php_libxml_sanitize_parse_ctxt_options(ctxt);
++		/* TODO: In libxml2 2.14.0 change this to the new options API so we don't rely on deprecated APIs. */
+ 		ctxt->keepBlanks = 0;
++		ctxt->options |= XML_PARSE_HUGE;
+ 		ctxt->sax->ignorableWhitespace = soap_ignorableWhitespace;
+ 		ctxt->sax->comment = soap_Comment;
+ 		ctxt->sax->warning = NULL;
+ 		ctxt->sax->error = NULL;
+ 		/*ctxt->sax->fatalError = NULL;*/
+-#if LIBXML_VERSION >= 20703
+-		ctxt->options |= XML_PARSE_HUGE;
+-#endif
+ 		old = php_libxml_disable_entity_loader(1 TSRMLS_CC);
+ 		xmlParseDocument(ctxt);
+ 		php_libxml_disable_entity_loader(old TSRMLS_CC);
+@@ -152,9 +151,8 @@ xmlDocPtr soap_xmlParseMemory(const void *buf, size_t buf_size)
+ 		ctxt->sax->warning = NULL;
+ 		ctxt->sax->error = NULL;
+ 		/*ctxt->sax->fatalError = NULL;*/
+-#if LIBXML_VERSION >= 20703
++		/* TODO: In libxml2 2.14.0 change this to the new options API so we don't rely on deprecated APIs. */
+ 		ctxt->options |= XML_PARSE_HUGE;
+-#endif
+ 		old = php_libxml_disable_entity_loader(1 TSRMLS_CC);
+ 		xmlParseDocument(ctxt);
+ 		php_libxml_disable_entity_loader(old TSRMLS_CC);
+diff --git a/ext/soap/tests/bugs/bug42151.phpt b/ext/soap/tests/bugs/bug42151.phpt
+index ee53e6d525..8920f8b5d7 100644
+--- a/ext/soap/tests/bugs/bug42151.phpt
++++ b/ext/soap/tests/bugs/bug42151.phpt
+@@ -25,8 +25,8 @@ try {
+ }
+ echo "ok\n";
+ ?>
+---EXPECT--
+-SOAP-ERROR: Parsing WSDL: Couldn't load from 'httpx://' : failed to load external entity "httpx://"
++--EXPECTF--
++SOAP-ERROR: Parsing WSDL: Couldn't load from 'httpx://' : I/O %s : failed to load %s
+ 
+ ok
+ I don't get executed either.
+diff --git a/ext/xml/compat.c b/ext/xml/compat.c
+index 312be873f4..d7ac511a1c 100644
+--- a/ext/xml/compat.c
++++ b/ext/xml/compat.c
+@@ -759,8 +759,7 @@ XML_GetCurrentByteCount(XML_Parser parser)
+ {
+ 	/* WARNING: this is identical to ByteIndex; it should probably
+ 	 * be different */
+-	return parser->parser->input->consumed +
+-			(parser->parser->input->cur - parser->parser->input->base);
++	return XML_GetCurrentByteIndex(parser);
+ }
+ 
+ PHPAPI const XML_Char *XML_ExpatVersion(void)
+diff --git a/ext/xmlwriter/php_xmlwriter.c b/ext/xmlwriter/php_xmlwriter.c
+index f726caa5c1..0990832815 100644
+--- a/ext/xmlwriter/php_xmlwriter.c
++++ b/ext/xmlwriter/php_xmlwriter.c
+@@ -1916,7 +1916,8 @@ static void php_xmlwriter_flush(INTERNAL_FUNCTION_PARAMETERS, int force_string)
+ 		}
+ 		output_bytes = xmlTextWriterFlush(ptr);
+ 		if (buffer) {
+-			RETVAL_STRING((char *) buffer->content, 1);
++			const xmlChar *content = xmlBufferContent(buffer);
++			RETVAL_STRING((char *) content, 1);
+ 			if (empty) {
+ 				xmlBufferEmpty(buffer);
+ 			}
+-- 
+2.50.1 (Apple Git-155)
+

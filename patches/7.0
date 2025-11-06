@@ -4,3 +4,4 @@
 0006-Use-ITIMER_REAL-for-timeout-handling-PHP-7.0.patch
 0007-Fix-PEAR-installation-with-libxml2.13.patch
 0008-Remove-use-of-register-keywork-in-headers-PHP-7.0.patch
+0011-Backport-4fe82131-Backport-libxml2-2.13.2-fixes-1481-PHP7.0.patch
