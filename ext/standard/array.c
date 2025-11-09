@@ -3836,7 +3836,7 @@ static inline void php_array_merge_or_replace_wrapper(INTERNAL_FUNCTION_PARAMETE
 	} else {
 		zval *src_entry;
 		HashTable *src, *dest;
-		uint32_t count = 0;
+		uint64_t count = 0;
 
 		for (i = 0; i < argc; i++) {
 			zval *arg = args + i;
@@ -3846,6 +3846,11 @@ static inline void php_array_merge_or_replace_wrapper(INTERNAL_FUNCTION_PARAMETE
 				RETURN_NULL();
 			}
 			count += zend_hash_num_elements(Z_ARRVAL_P(arg));
+		}
+
+		if (UNEXPECTED(count >= HT_MAX_SIZE)) {
+			zend_throw_error(NULL, "The total number of elements must be lower than %u", HT_MAX_SIZE);
+			return;
 		}
 
 		arg = args;
