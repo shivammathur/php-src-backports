@@ -2850,7 +2850,7 @@ static zval *to_zval_map(encodeTypePtr type, xmlNodePtr data TSRMLS_DC)
 			}
 
 			xmlValue = get_node(item->children, "value");
-			if (!xmlKey) {
+			if (!xmlValue) {
 				soap_error0(E_ERROR,  "Encoding: Can't decode apache map, missing value");
 			}
 
