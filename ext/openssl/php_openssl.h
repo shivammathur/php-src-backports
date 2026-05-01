@@ -48,6 +48,8 @@ extern zend_module_entry openssl_module_entry;
 #endif
 #endif
 
+#define PHP_OPENSSL_ERR_BUFFER_SIZE 16
+
 #define OPENSSL_RAW_DATA 1
 #define OPENSSL_ZERO_PADDING 2
 #define OPENSSL_DONT_ZERO_PAD_KEY 4
@@ -69,7 +71,7 @@ extern zend_module_entry openssl_module_entry;
 #include <openssl/err.h>
 
 struct php_openssl_errors {
-	int buffer[ERR_NUM_ERRORS];
+	int buffer[PHP_OPENSSL_ERR_BUFFER_SIZE];
 	int top;
 	int bottom;
 };
