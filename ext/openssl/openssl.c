@@ -47,6 +47,10 @@
 #include <openssl/crypto.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
+#define ASN1_STRING_get0_data ASN1_STRING_data
+#endif
 #include <openssl/conf.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
@@ -667,7 +671,7 @@ static void add_assoc_name_entry(zval * val, char * key, X509_NAME * name, int s
 		if (ASN1_STRING_type(str) != V_ASN1_UTF8STRING) {
 			to_add_len = ASN1_STRING_to_UTF8(&to_add, str);
 		} else {
-			to_add = ASN1_STRING_data(str);
+			to_add = ASN1_STRING_get0_data(str);
 			to_add_len = ASN1_STRING_length(str);
 		}
 
@@ -696,7 +700,7 @@ static void add_assoc_name_entry(zval * val, char * key, X509_NAME * name, int s
 
 static void add_assoc_asn1_string(zval * val, char * key, ASN1_STRING * str) /* {{{ */
 {
-	add_assoc_stringl(val, key, (char *)str->data, str->length, 1);
+	add_assoc_stringl(val, key, (char *)ASN1_STRING_get0_data(str), ASN1_STRING_length(str), 1);
 }
 /* }}} */
 
@@ -720,22 +724,22 @@ static time_t asn1_time_to_time_t(ASN1_UTCTIME * timestr TSRMLS_DC) /* {{{ */
 		return (time_t)-1;
 	}
 
-	if (ASN1_STRING_length(timestr) != strlen((const char*)ASN1_STRING_data(timestr))) {
+	if (ASN1_STRING_length(timestr) != strlen((const char*)ASN1_STRING_get0_data(timestr))) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "illegal length in timestamp");
 		return (time_t)-1;
 	}
 
 	if (ASN1_STRING_length(timestr) < 13) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "unable to parse time string %s correctly", timestr->data);
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
 		return (time_t)-1;
 	}
 
 	if (ASN1_STRING_type(timestr) == V_ASN1_GENERALIZEDTIME && ASN1_STRING_length(timestr) < 15) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "unable to parse time string %s correctly", timestr->data);
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
 		return (time_t)-1;
 	}
 
-	strbuf = estrdup((char *)ASN1_STRING_data(timestr));
+	strbuf = estrdup((char *)ASN1_STRING_get0_data(timestr));
 
 	memset(&thetime, 0, sizeof(thetime));
 
@@ -1264,7 +1268,9 @@ PHP_MINIT_FUNCTION(openssl)
 	}
 
 	php_stream_xport_register("ssl", php_openssl_ssl_socket_factory TSRMLS_CC);
+#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
 	php_stream_xport_register("sslv3", php_openssl_ssl_socket_factory TSRMLS_CC);
+#endif
 #ifndef OPENSSL_NO_SSL2
 	php_stream_xport_register("sslv2", php_openssl_ssl_socket_factory TSRMLS_CC);
 #endif
@@ -1321,7 +1327,9 @@ PHP_MSHUTDOWN_FUNCTION(openssl)
 #ifndef OPENSSL_NO_SSL2
 	php_stream_xport_unregister("sslv2" TSRMLS_CC);
 #endif
+#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
 	php_stream_xport_unregister("sslv3" TSRMLS_CC);
+#endif
 	php_stream_xport_unregister("tls" TSRMLS_CC);
 	php_stream_xport_unregister("tlsv1.0" TSRMLS_CC);
 #if OPENSSL_VERSION_NUMBER >= 0x10001001L
@@ -1736,7 +1744,7 @@ PHP_FUNCTION(openssl_spki_export_challenge)
 		goto cleanup;
 	}
 
-	RETVAL_STRING((char *) ASN1_STRING_data(spki->spkac->challenge), 1);
+	RETVAL_STRING((char *) ASN1_STRING_get0_data(spki->spkac->challenge), 1);
 	goto cleanup;
 
 cleanup:
@@ -1916,8 +1924,8 @@ static int openssl_x509v3_subjectAltName(BIO *bio, X509_EXTENSION *extension)
 	}
 
 	extension_data = X509_EXTENSION_get_data(extension);
-	p = extension_data->data;
-	length = extension_data->length;
+	p = ASN1_STRING_get0_data(extension_data);
+	length = ASN1_STRING_length(extension_data);
 	if (method->it) {
 		names = (GENERAL_NAMES*)(ASN1_item_d2i(NULL, &p, length,
 						       ASN1_ITEM_ptr(method->it)));
@@ -1937,19 +1945,19 @@ static int openssl_x509v3_subjectAltName(BIO *bio, X509_EXTENSION *extension)
 				case GEN_EMAIL:
 					BIO_puts(bio, "email:");
 					as = name->d.rfc822Name;
-					BIO_write(bio, ASN1_STRING_data(as),
+					BIO_write(bio, ASN1_STRING_get0_data(as),
 						  ASN1_STRING_length(as));
 					break;
 				case GEN_DNS:
 					BIO_puts(bio, "DNS:");
 					as = name->d.dNSName;
-					BIO_write(bio, ASN1_STRING_data(as),
+					BIO_write(bio, ASN1_STRING_get0_data(as),
 						  ASN1_STRING_length(as));
 					break;
 				case GEN_URI:
 					BIO_puts(bio, "URI:");
 					as = name->d.uniformResourceIdentifier;
-					BIO_write(bio, ASN1_STRING_data(as),
+					BIO_write(bio, ASN1_STRING_get0_data(as),
 						  ASN1_STRING_length(as));
 					break;
 				default:
