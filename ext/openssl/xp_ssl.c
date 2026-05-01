@@ -34,6 +34,10 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
+#define ASN1_STRING_get0_data ASN1_STRING_data
+#endif
+
 #if OPENSSL_VERSION_NUMBER >= 0x10002000L
 #include <openssl/bn.h>
 #include <openssl/dh.h>
@@ -89,7 +93,7 @@
 #define HAVE_SEC_LEVEL 1
 #endif
 
-#ifndef OPENSSL_NO_SSL3
+#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
 #define HAVE_SSL3 1
 #define PHP_OPENSSL_MIN_PROTO_VERSION STREAM_CRYPTO_METHOD_SSLv3
 #else
@@ -456,12 +460,12 @@ static zend_bool php_openssl_matches_san_list(
 			}
 			OPENSSL_free(cert_name);
 		} else if (san->type == GEN_IPADD) {
-			if (san->d.iPAddress->length == 4) {
+			if (ASN1_STRING_length(san->d.iPAddress) == 4) {
 				sprintf(ipbuffer, "%d.%d.%d.%d",
-					san->d.iPAddress->data[0],
-					san->d.iPAddress->data[1],
-					san->d.iPAddress->data[2],
-					san->d.iPAddress->data[3]
+					ASN1_STRING_get0_data(san->d.iPAddress)[0],
+					ASN1_STRING_get0_data(san->d.iPAddress)[1],
+					ASN1_STRING_get0_data(san->d.iPAddress)[2],
+					ASN1_STRING_get0_data(san->d.iPAddress)[3]
 				);
 				if (strcasecmp(subject_name, (const char*)ipbuffer) == 0) {
 					sk_GENERAL_NAME_pop_free(alt_names, GENERAL_NAME_free);
