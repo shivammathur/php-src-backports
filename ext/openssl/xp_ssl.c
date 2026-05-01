@@ -37,6 +37,10 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
+#define ASN1_STRING_get0_data ASN1_STRING_data
+#endif
+
 #if OPENSSL_VERSION_NUMBER >= 0x10002000L
 #include <openssl/bn.h>
 #include <openssl/dh.h>
@@ -56,7 +60,7 @@
 #include <sys/select.h>
 #endif
 
-#ifndef OPENSSL_NO_SSL3
+#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
 #define HAVE_SSL3 1
 #endif
 
@@ -422,12 +426,12 @@ static zend_bool matches_san_list(X509 *peer, const char *subject_name) /* {{{ *
 			}
 			OPENSSL_free(cert_name);
 		} else if (san->type == GEN_IPADD) {
-			if (san->d.iPAddress->length == 4) {
+			if (ASN1_STRING_length(san->d.iPAddress) == 4) {
 				sprintf(ipbuffer, "%d.%d.%d.%d",
-					san->d.iPAddress->data[0],
-					san->d.iPAddress->data[1],
-					san->d.iPAddress->data[2],
-					san->d.iPAddress->data[3]
+					ASN1_STRING_get0_data(san->d.iPAddress)[0],
+					ASN1_STRING_get0_data(san->d.iPAddress)[1],
+					ASN1_STRING_get0_data(san->d.iPAddress)[2],
+					ASN1_STRING_get0_data(san->d.iPAddress)[3]
 				);
 				if (strcasecmp(subject_name, (const char*)ipbuffer) == 0) {
 					return 1;
@@ -949,10 +953,18 @@ static const SSL_METHOD *php_select_crypto_method(zend_long method_value, int is
 		return NULL;
 #endif
 	} else if (method_value == STREAM_CRYPTO_METHOD_TLSv1_0) {
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L
+		return is_client ? TLS_client_method() : TLS_server_method();
+#else
 		return is_client ? TLSv1_client_method() : TLSv1_server_method();
+#endif
 	} else if (method_value == STREAM_CRYPTO_METHOD_TLSv1_1) {
 #ifdef HAVE_TLS11
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L
+		return is_client ? TLS_client_method() : TLS_server_method();
+#else
 		return is_client ? TLSv1_1_client_method() : TLSv1_1_server_method();
+#endif
 #else
 		php_error_docref(NULL, E_WARNING,
 				"TLSv1.1 unavailable in the OpenSSL library against which PHP is linked");
@@ -960,7 +972,11 @@ static const SSL_METHOD *php_select_crypto_method(zend_long method_value, int is
 #endif
 	} else if (method_value == STREAM_CRYPTO_METHOD_TLSv1_2) {
 #ifdef HAVE_TLS12
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L
+		return is_client ? TLS_client_method() : TLS_server_method();
+#else
 		return is_client ? TLSv1_2_client_method() : TLSv1_2_server_method();
+#endif
 #else
 		php_error_docref(NULL, E_WARNING,
 				"TLSv1.2 unavailable in the OpenSSL library against which PHP is linked");
@@ -1524,6 +1540,17 @@ int php_openssl_setup_crypto(php_stream *stream,
 		php_error_docref(NULL, E_WARNING, "SSL context creation failure");
 		return FAILURE;
 	}
+
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L
+	if ((method_flags & (method_flags - 1)) == 0) {
+		int version = method_flags == STREAM_CRYPTO_METHOD_TLSv1_0 ? TLS1_VERSION :
+			(method_flags == STREAM_CRYPTO_METHOD_TLSv1_1 ? TLS1_1_VERSION : TLS1_2_VERSION);
+		if (!SSL_CTX_set_min_proto_version(sslsock->ctx, version) ||
+			!SSL_CTX_set_max_proto_version(sslsock->ctx, version)) {
+			return FAILURE;
+		}
+	}
+#endif
 
 	if (GET_VER_OPT("no_ticket") && zend_is_true(val)) {
 		ssl_ctx_options |= SSL_OP_NO_TICKET;
