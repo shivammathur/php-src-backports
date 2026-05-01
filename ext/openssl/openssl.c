@@ -740,9 +740,9 @@ void php_openssl_store_errors()
 	errors = OPENSSL_G(errors);
 
 	do {
-		errors->top = (errors->top + 1) % ERR_NUM_ERRORS;
+		errors->top = (errors->top + 1) % PHP_OPENSSL_ERR_BUFFER_SIZE;
 		if (errors->top == errors->bottom) {
-			errors->bottom = (errors->bottom + 1) % ERR_NUM_ERRORS;
+			errors->bottom = (errors->bottom + 1) % PHP_OPENSSL_ERR_BUFFER_SIZE;
 		}
 		errors->buffer[errors->top] = error_code;
 	} while ((error_code = ERR_get_error()));
@@ -920,7 +920,7 @@ static void php_openssl_add_assoc_name_entry(zval * val, char * key, X509_NAME *
 
 static void php_openssl_add_assoc_asn1_string(zval * val, char * key, ASN1_STRING * str) /* {{{ */
 {
-	add_assoc_stringl(val, key, (char *)str->data, str->length);
+	add_assoc_stringl(val, key, (const char *)ASN1_STRING_get0_data(str), ASN1_STRING_length(str));
 }
 /* }}} */
 
@@ -953,12 +953,12 @@ static time_t php_openssl_asn1_time_to_time_t(ASN1_UTCTIME * timestr) /* {{{ */
 	}
 
 	if (timestr_len < 13 && timestr_len != 11) {
-		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", timestr->data);
+		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
 		return (time_t)-1;
 	}
 
 	if (ASN1_STRING_type(timestr) == V_ASN1_GENERALIZEDTIME && timestr_len < 15) {
-		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", timestr->data);
+		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
 		return (time_t)-1;
 	}
 
@@ -1552,7 +1552,7 @@ PHP_MINIT_FUNCTION(openssl)
 	}
 
 	php_stream_xport_register("ssl", php_openssl_ssl_socket_factory);
-#ifndef OPENSSL_NO_SSL3
+#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
 	php_stream_xport_register("sslv3", php_openssl_ssl_socket_factory);
 #endif
 	php_stream_xport_register("tls", php_openssl_ssl_socket_factory);
@@ -1625,7 +1625,7 @@ PHP_MSHUTDOWN_FUNCTION(openssl)
 	php_unregister_url_stream_wrapper("ftps");
 
 	php_stream_xport_unregister("ssl");
-#ifndef OPENSSL_NO_SSL3
+#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
 	php_stream_xport_unregister("sslv3");
 #endif
 	php_stream_xport_unregister("tls");
@@ -2251,8 +2251,8 @@ static int openssl_x509v3_subjectAltName(BIO *bio, X509_EXTENSION *extension)
 	}
 
 	extension_data = X509_EXTENSION_get_data(extension);
-	p = extension_data->data;
-	length = extension_data->length;
+	p = ASN1_STRING_get0_data(extension_data);
+	length = ASN1_STRING_length(extension_data);
 	if (method->it) {
 		names = (GENERAL_NAMES*) (ASN1_item_d2i(NULL, &p, length,
 			ASN1_ITEM_ptr(method->it)));
@@ -5931,7 +5931,7 @@ PHP_FUNCTION(openssl_error_string)
 		RETURN_FALSE;
 	}
 
-	OPENSSL_G(errors)->bottom = (OPENSSL_G(errors)->bottom + 1) % ERR_NUM_ERRORS;
+	OPENSSL_G(errors)->bottom = (OPENSSL_G(errors)->bottom + 1) % PHP_OPENSSL_ERR_BUFFER_SIZE;
 	val = OPENSSL_G(errors)->buffer[OPENSSL_G(errors)->bottom];
 
 	if (val) {
