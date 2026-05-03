@@ -380,6 +380,8 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 		if (full_syntax) {
 			int i, len, first;
 			char *query_string;
+			char *request_uri_str;
+			int uri_len;
 			struct timeval duration, now;
 #ifdef HAVE_FPM_LQ
 			float cpu;
@@ -406,13 +408,23 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 					}
 				}
 
+				request_uri_str = NULL;
+				uri_len = 0;
+				if (proc.request_uri[0] != '\0') {
+					if (!encode) {
+						request_uri_str = proc.request_uri;
+					} else {
+						request_uri_str = php_escape_html_entities_ex((unsigned char *)proc.request_uri, strlen(proc.request_uri), &uri_len, 1, ENT_HTML_IGNORE_ERRORS | ENT_COMPAT, NULL, 1 TSRMLS_CC);
+					}
+				}
+
 				query_string = NULL;
 				len = 0;
 				if (proc.query_string[0] != '\0') {
 					if (!encode) {
 						query_string = proc.query_string;
 					} else {
-						query_string = php_escape_html_entities_ex((unsigned char *)proc.query_string, strlen(proc.query_string), &len, 1, ENT_HTML_IGNORE_ERRORS & ENT_COMPAT, NULL, 1 TSRMLS_CC);
+						query_string = php_escape_html_entities_ex((unsigned char *)proc.query_string, strlen(proc.query_string), &len, 1, ENT_HTML_IGNORE_ERRORS | ENT_COMPAT, NULL, 1 TSRMLS_CC);
 					}
 				}
 
@@ -439,7 +451,7 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 					proc.requests,
 					duration.tv_sec * 1000000UL + duration.tv_usec,
 					proc.request_method[0] != '\0' ? proc.request_method : "-",
-					proc.request_uri[0] != '\0' ? proc.request_uri : "-",
+					request_uri_str ? request_uri_str : "-",
 					query_string ? "?" : "",
 					query_string ? query_string : "",
 					proc.content_length,
@@ -454,6 +466,9 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 
 				if (len > 0 && query_string) {
 					efree(query_string);
+				}
+				if (uri_len > 0 && request_uri_str) {
+					efree(request_uri_str);
 				}
 			}
 
