@@ -489,6 +489,55 @@ class Tester
     }
 
     /**
+     * Get request params array.
+     *
+     * @param string $query
+     * @param array $headers
+     * @param string|null $uri
+     * @param string|null $address
+     * @param string|null $successMessage
+     * @param string|null $errorMessage
+     * @param bool $connKeepAlive
+     * @return array
+     */
+    private function getRequestParams(
+        string $query = '',
+        array $headers = [],
+        string $uri = null
+    ) {
+        if (is_null($uri)) {
+            $uri = $this->makeSourceFile();
+        }
+
+        $params = array_merge(
+            [
+                'GATEWAY_INTERFACE' => 'FastCGI/1.0',
+                'REQUEST_METHOD'    => 'GET',
+                'SCRIPT_FILENAME'   => $uri,
+                'SCRIPT_NAME'       => $uri,
+                'QUERY_STRING'      => $query,
+                'REQUEST_URI'       => $uri . ($query ? '?'.$query : ""),
+                'DOCUMENT_URI'      => $uri,
+                'SERVER_SOFTWARE'   => 'php/fcgiclient',
+                'REMOTE_ADDR'       => '127.0.0.1',
+                'REMOTE_PORT'       => '7777',
+                'SERVER_ADDR'       => '127.0.0.1',
+                'SERVER_PORT'       => '80',
+                'SERVER_NAME'       => php_uname('n'),
+                'SERVER_PROTOCOL'   => 'HTTP/1.1',
+                'DOCUMENT_ROOT'     => __DIR__,
+                'CONTENT_TYPE'      => '',
+                'CONTENT_LENGTH'    => 0
+            ],
+            $headers
+        );
+
+        return array_filter($params, function($value) {
+            return !is_null($value);
+        });
+    }
+
+    /**
      * Execute request.
      *
      * @param string $query
@@ -516,28 +565,8 @@ class Tester
             $uri = $this->makeSourceFile();
         }
 
-        $params = array_merge(
-            [
-                'GATEWAY_INTERFACE' => 'FastCGI/1.0',
-                'REQUEST_METHOD'    => 'GET',
-                'SCRIPT_FILENAME'   => $uri,
-                'SCRIPT_NAME'       => $uri,
-                'QUERY_STRING'      => $query,
-                'REQUEST_URI'       => $uri . ($query ? '?'.$query : ""),
-                'DOCUMENT_URI'      => $uri,
-                'SERVER_SOFTWARE'   => 'php/fcgiclient',
-                'REMOTE_ADDR'       => '127.0.0.1',
-                'REMOTE_PORT'       => '7777',
-                'SERVER_ADDR'       => '127.0.0.1',
-                'SERVER_PORT'       => '80',
-                'SERVER_NAME'       => php_uname('n'),
-                'SERVER_PROTOCOL'   => 'HTTP/1.1',
-                'DOCUMENT_ROOT'     => __DIR__,
-                'CONTENT_TYPE'      => '',
-                'CONTENT_LENGTH'    => 0
-            ],
-            $headers
-        );
+        $params = $this->getRequestParams($query, $headers, $uri);
+
         try {
             $this->response = new Response(
                 $this->getClient($address, $connKeepAlive)->request_data($params, false)
@@ -555,6 +584,66 @@ class Tester
             $this->response->debugOutput();
         }
         return $this->response;
+    }
+
+    /**
+     * Execute multiple requests in parallel.
+     *
+     * @param array|int $requests
+     * @param string|null $address
+     * @param string|null $successMessage
+     * @param string|null $errorMessage
+     * @param bool $connKeepAlive
+     * @return Response[]
+     * @throws \Exception
+     */
+    public function multiRequest(
+        $requests,
+        string $address = null,
+        string $successMessage = null,
+        string $errorMessage = null,
+        bool $connKeepAlive = false
+    ) {
+        if ($this->hasError()) {
+            return new Response(null, true);
+        }
+
+        if (is_numeric($requests)) {
+            $requests = array_fill(0, $requests, []);
+        } elseif (!is_array($requests)) {
+            throw new \Exception('Requests can be either numeric or array');
+        }
+
+        try {
+            $connections = array_map(function ($requestData) use ($address, $connKeepAlive) {
+                $client = $this->getClient($address, $connKeepAlive);
+                $params = $this->getRequestParams(
+                    $requestData['query'] ?? '',
+                    $requestData['headers'] ?? [],
+                    $requestData['uri'] ?? null
+                );
+                return [
+                    'client' => $client,
+                    'requestId' => $client->async_request($params, false),
+                ];
+            }, $requests);
+
+            $responses = array_map(function ($conn) {
+                $response = new Response($conn['client']->wait_for_response_data($conn['requestId']));
+                if ($this->debug) {
+                    $response->debugOutput();
+                }
+                return $response;
+            }, $connections);
+            $this->message($successMessage);
+            return $responses;
+        } catch (\Exception $exception) {
+            if ($errorMessage === null) {
+                $this->error("Request failed", $exception);
+            } else {
+                $this->message($errorMessage);
+            }
+        }
     }
 
     /**
