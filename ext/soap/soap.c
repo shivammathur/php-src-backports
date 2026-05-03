@@ -1832,7 +1832,10 @@ PHP_METHOD(SoapServer, handle)
 					php_output_discard(TSRMLS_C);
 					soap_server_fault_ex(function, &h->retval, h TSRMLS_CC);
 					efree(fn_name);
-					if (service->type == SOAP_CLASS && soap_obj) {zval_ptr_dtor(&soap_obj);}
+					if (service->type == SOAP_CLASS && soap_obj &&
+					    service->soap_class.persistance != SOAP_PERSISTENCE_SESSION) {
+						zval_ptr_dtor(&soap_obj);
+					}
 					goto fail;
 				} else if (EG(exception)) {
 					php_output_discard(TSRMLS_C);
@@ -1847,7 +1850,10 @@ PHP_METHOD(SoapServer, handle)
 						soap_server_fault_ex(function, EG(exception), h TSRMLS_CC);
 					}
 					efree(fn_name);
-					if (service->type == SOAP_CLASS && soap_obj) {zval_ptr_dtor(&soap_obj);}
+					if (service->type == SOAP_CLASS && soap_obj &&
+					    service->soap_class.persistance != SOAP_PERSISTENCE_SESSION) {
+						zval_ptr_dtor(&soap_obj);
+					}
 					goto fail;
 				}
 			} else if (h->mustUnderstand) {
