@@ -413,7 +413,7 @@ static int multipart_buffer_headers(multipart_buffer *self, zend_llist *header)
 		}
 
 		/* space in the beginning means same header */
-		if (!isspace(line[0])) {
+		if (!isspace((unsigned char)line[0])) {
 			value = strchr(line, ':');
 		}
 
@@ -429,7 +429,7 @@ static int multipart_buffer_headers(multipart_buffer *self, zend_llist *header)
 			}
 
 			*value = '\0';
-			do { value++; } while (isspace(*value));
+			do { value++; } while (isspace((unsigned char)*value));
 
 			key = estrdup(line);
 			smart_string_appends(&buf_value, value);
@@ -526,7 +526,7 @@ static char *substring_conf(char *start, int len, char quote)
 
 static char *php_ap_getword_conf(const zend_encoding *encoding, char *str)
 {
-	while (*str && isspace(*str)) {
+	while (*str && isspace((unsigned char)*str)) {
 		++str;
 	}
 
@@ -542,7 +542,7 @@ static char *php_ap_getword_conf(const zend_encoding *encoding, char *str)
 	} else {
 		char *strend = str;
 
-		while (*strend && !isspace(*strend)) {
+		while (*strend && !isspace((unsigned char)*strend)) {
 			++strend;
 		}
 		return substring_conf(str, strend - str, 0);
@@ -809,7 +809,7 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler) /* {{{ */
 				goto fileupload_done;
 			}
 
-			while (isspace(*cd)) {
+			while (isspace((unsigned char)*cd)) {
 				++cd;
 			}
 
@@ -817,7 +817,7 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler) /* {{{ */
 			{
 				char *key = NULL, *word = pair;
 
-				while (isspace(*cd)) {
+				while (isspace((unsigned char)*cd)) {
 					++cd;
 				}
 
