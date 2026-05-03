@@ -351,6 +351,7 @@ static zend_bool soap_check_xml_ref(zval **data, xmlNodePtr node TSRMLS_DC)
 				return 1;
 			}
 		} else {
+			(*data)->refcount++;
 			zend_hash_index_update(SOAP_GLOBAL(ref_map), (ulong)node, (void**)data, sizeof(zval*), NULL);
 		}
 	}
