@@ -863,9 +863,9 @@ PHPAPI int _php_math_basetozval(zval *arg, int base, zval *ret)
 	e = s + Z_STRLEN_P(arg);
 
 	/* Skip leading whitespace */
-	while (s < e && isspace(*s)) s++;
+	while (s < e && isspace((unsigned char)*s)) s++;
 	/* Skip trailing whitespace */
-	while (s < e && isspace(*(e-1))) e--;
+	while (s < e && isspace((unsigned char)e[-1])) e--;
 
 	if (e - s >= 2) {
 		if (base == 16 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) s += 2;
@@ -1160,7 +1160,7 @@ PHPAPI zend_string *_php_math_number_format_ex(double d, int dec, char *dec_poin
 	tmpbuf = strpprintf(0, "%.*F", dec, d);
 	if (tmpbuf == NULL) {
 		return NULL;
-	} else if (!isdigit((int)ZSTR_VAL(tmpbuf)[0])) {
+	} else if (!isdigit((unsigned char)ZSTR_VAL(tmpbuf)[0])) {
 		return tmpbuf;
 	}
 

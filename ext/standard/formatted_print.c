@@ -440,13 +440,13 @@ php_formatted_print(zval *z_format, zval *args, int argc)
 
 			PRINTF_DEBUG(("sprintf: first looking at '%c', inpos=%d\n",
 						  *format, format - Z_STRVAL_P(z_format)));
-			if (isalpha((int)*format)) {
+			if (isalpha((unsigned char)*format)) {
 				width = precision = 0;
 				argnum = currarg++;
 			} else {
 				/* first look for argnum */
 				temppos = format;
-				while (isdigit((int)*temppos)) temppos++;
+				while (isdigit((unsigned char)*temppos)) temppos++;
 				if (*temppos == '$') {
 					argnum = php_sprintf_getnumber(&format, &format_len);
 
@@ -489,7 +489,7 @@ php_formatted_print(zval *z_format, zval *args, int argc)
 
 
 				/* after modifiers comes width */
-				if (isdigit((int)*format)) {
+				if (isdigit((unsigned char)*format)) {
 					PRINTF_DEBUG(("sprintf: getting width\n"));
 					if ((width = php_sprintf_getnumber(&format, &format_len)) < 0) {
 						efree(result);
@@ -507,7 +507,7 @@ php_formatted_print(zval *z_format, zval *args, int argc)
 					format++;
 					format_len--;
 					PRINTF_DEBUG(("sprintf: getting precision\n"));
-					if (isdigit((int)*format)) {
+					if (isdigit((unsigned char)*format)) {
 						if ((precision = php_sprintf_getnumber(&format, &format_len)) < 0) {
 							efree(result);
 							php_error_docref(NULL, E_WARNING, "Precision must be greater than zero and less than %d", INT_MAX);

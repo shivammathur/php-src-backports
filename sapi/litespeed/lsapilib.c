@@ -2199,7 +2199,7 @@ static char * GetHeaderVar( LSAPI_Request * pReq, const char * name )
 
             while(( pKey < pKeyEnd )&&( *p ))
             {
-                char ch = toupper( *pKey );
+                char ch = toupper( (unsigned char)*pKey );
                 if ((ch != *p )||(( *p == '_' )&&( ch != '-')))
                     break;
                 ++p; ++pKey;
@@ -2383,7 +2383,7 @@ int LSAPI_ForeachHeader_r( LSAPI_Request * pReq,
                 if ( ch == '-' )
                     *p++ = '_';
                 else
-                    *p++ = toupper( ch );
+                    *p++ = toupper( (unsigned char)ch );
             }
             *p = 0;
             keyLen += 5;
@@ -2628,7 +2628,7 @@ int LSAPI_ParseSockAddr( const char * pBind, struct sockaddr * pAddr )
     if ( !pBind )
         return -1;
 
-    while( isspace( *pBind ) )
+    while(isspace( (unsigned char)*pBind ) )
         ++pBind;
 
     strncpy(achAddr, pBind, 255);
