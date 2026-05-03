@@ -1477,13 +1477,21 @@ PHP_METHOD(SoapServer, handle)
 					php_output_discard();
 					soap_server_fault_ex(function, &h->retval, h);
 					zend_string_release(fn_name);
-					if (service->type == SOAP_CLASS && soap_obj) {zval_ptr_dtor(soap_obj);}
+					if (service->type == SOAP_CLASS && soap_obj) {
+						if (service->soap_class.persistence != SOAP_PERSISTENCE_SESSION) {
+							zval_ptr_dtor(soap_obj);
+						}
+					}
 					goto fail;
 				} else if (EG(exception)) {
 					php_output_discard();
 					_soap_server_exception(service, function, ZEND_THIS);
 					zend_string_release(fn_name);
-					if (service->type == SOAP_CLASS && soap_obj) {zval_ptr_dtor(soap_obj);}
+					if (service->type == SOAP_CLASS && soap_obj) {
+						if (service->soap_class.persistence != SOAP_PERSISTENCE_SESSION) {
+							zval_ptr_dtor(soap_obj);
+						}
+					}
 					goto fail;
 				}
 			} else if (h->mustUnderstand) {
