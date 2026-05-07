@@ -1,6 +1,14 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+Backported from 8.2.31
+
+- SOAP:
+  . Fixed GHSA-m33r-qmcv-p97q (Use-after-free after header parsing failure with
+    SOAP_PERSISTENCE_SESSION). (CVE-2026-7261) (ilutov)
+  . Fixed GHSA-hmxp-6pc4-f3vv (Broken Apache map value NULL check).
+    (CVE-2026-7262) (ilutov)
+
 Backported from 8.1.31
 
 - CLI:
