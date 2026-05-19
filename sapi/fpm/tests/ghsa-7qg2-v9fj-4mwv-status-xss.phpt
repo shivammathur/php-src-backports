@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test status page
+FPM: GHSA-7qg2-v9fj-4mwv - status xss
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
