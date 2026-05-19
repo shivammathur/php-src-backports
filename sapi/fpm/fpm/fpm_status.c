@@ -384,8 +384,8 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 		/* no need to test the var 'full' */
 		if (full_syntax) {
 			int i, first;
-			size_t len;
-			char *query_string;
+			size_t len, len_uri;
+			char *query_string, *request_uri_string;
 			struct timeval duration, now;
 #ifdef HAVE_FPM_LQ
 			float cpu;
@@ -412,13 +412,22 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 					}
 				}
 
+				request_uri_string = NULL;
+				len_uri = 0;
+				if (proc.request_uri[0] != '\0') {
+					if (!encode) {
+						request_uri_string = proc.request_uri;
+					} else {
+						request_uri_string = php_escape_html_entities_ex((unsigned char *)proc.request_uri, strlen(proc.request_uri), &len_uri, 1, ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, 1 TSRMLS_CC);
+					}
+				}
 				query_string = NULL;
 				len = 0;
 				if (proc.query_string[0] != '\0') {
 					if (!encode) {
 						query_string = proc.query_string;
 					} else {
-						query_string = php_escape_html_entities_ex((unsigned char *)proc.query_string, strlen(proc.query_string), &len, 1, ENT_HTML_IGNORE_ERRORS & ENT_COMPAT, NULL, 1 TSRMLS_CC);
+						query_string = php_escape_html_entities_ex((unsigned char *)proc.query_string, strlen(proc.query_string), &len, 1, ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, 1 TSRMLS_CC);
 					}
 				}
 
@@ -445,7 +454,7 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 					proc.requests,
 					duration.tv_sec * 1000000UL + duration.tv_usec,
 					proc.request_method[0] != '\0' ? proc.request_method : "-",
-					proc.request_uri[0] != '\0' ? proc.request_uri : "-",
+					request_uri_string ? request_uri_string: "-",
 					query_string ? "?" : "",
 					query_string ? query_string : "",
 					proc.content_length,
@@ -460,6 +469,9 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
 
 				if (len > 0 && query_string) {
 					efree(query_string);
+				}
+				if (len_uri > 0 && request_uri_string) {
+					efree(request_uri_string);
 				}
 			}
 

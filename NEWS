@@ -3,6 +3,10 @@ PHP                                                                        NEWS
 
 Backported from 8.2.31
 
+- FPM:
+  . Fixed GHSA-7qg2-v9fj-4mwv (XSS within status endpoint). (CVE-2026-6735)
+    (Jakub Zelenka)
+
 - SOAP:
   . Fixed GHSA-m33r-qmcv-p97q (Use-after-free after header parsing failure with
     SOAP_PERSISTENCE_SESSION). (CVE-2026-7261) (ilutov)
