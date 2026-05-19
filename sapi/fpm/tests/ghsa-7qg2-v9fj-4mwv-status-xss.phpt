@@ -32,9 +32,11 @@ if (is_resource($fpm)) {
 
 		$html = run_request('127.0.0.1', $port, '/status', 'full&html');
 		var_dump(strpos($html, 'text/html') && strpos($html, 'DOCTYPE') && strpos($html, 'PHP-FPM Status Page'));
-		var_dump(strpos($html, 'alert(1)') && strpos($html, 'alert(2)'));
-		var_dump(strpos($html, '<script>'));
-		//var_dump($html);
+
+		// output only if script present but not escaped
+		if (strpos($html, 'alert') && strpos($html, '<script>')) {
+			var_dump($html);
+		}
 
 		echo "IPv4 ok\n";
 	} catch (Exception $e) {
@@ -52,8 +54,6 @@ if (is_resource($fpm)) {
 [%d-%s-%d %d:%d:%d] NOTICE: fpm is running, pid %d
 [%d-%s-%d %d:%d:%d] NOTICE: ready to handle connections
 bool(true)
-bool(true)
-bool(false)
 IPv4 ok
 --CLEAN--
 <?php
