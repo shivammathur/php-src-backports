@@ -4801,6 +4801,18 @@ PHP_FUNCTION(openssl_encrypt)
 	free_iv = php_openssl_validate_iv(&iv, &iv_len, max_iv_len TSRMLS_CC);
 
 	outlen = data_len + EVP_CIPHER_block_size(cipher_type);
+#ifdef EVP_CIPH_WRAP_MODE
+	if (EVP_CIPHER_mode(cipher_type) == EVP_CIPH_WRAP_MODE) {
+		/*
+		 * RFC 5649 key-wrap-with-padding rounds the input up to the cipher
+		 * block size and prepends an integrity block, so the ciphertext can
+		 * exceed data_len + one block. Reserve one extra block to avoid a
+		 * heap buffer overflow. See EVP_EncryptUpdate(3): wrap mode may write
+		 * up to inl + cipher_block_size bytes.
+		 */
+		outlen += EVP_CIPHER_block_size(cipher_type);
+	}
+#endif
 	outbuf = safe_emalloc(outlen, 1, 1);
 
 	EVP_EncryptInit(&cipher_ctx, cipher_type, NULL, NULL);
