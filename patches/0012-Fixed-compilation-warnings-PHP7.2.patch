@@ -1,0 +1,50 @@
+From a290f89f8a8a2bd1dce2e6264d8aac78d004c6ed Mon Sep 17 00:00:00 2001
+From: Dmitry Stogov <dmitry@zend.com>
+Date: Thu, 22 Feb 2018 11:33:26 +0300
+Subject: [PATCH] Fixed compilation warnings
+
+(cherry picked from commit d393199e1384cdd58948a35315c195300d5ad7fa)
+
+Backport note: on this branch the uninitialized ce read in
+zend_verify_arg_type() is not only a warning. Modern compilers
+(observed: AppleClang 17, -O2, arm64) treat it as undefined behavior
+and drop the scalar type-hint failure branch entirely, so a failed
+scalar coercion passes the raw value through instead of throwing
+TypeError, even under strict_types=1:
+
+  php -r 'function f(int $v) { var_dump($v); } f("nope");'
+  # expected: TypeError; broken build: string(4) "nope"
+
+  php -r 'declare(strict_types=1); function f(int $v) { var_dump($v); } f("12");'
+  # expected: TypeError; broken build: string(2) "12"
+
+PHP 7.3+ already contain this commit; PHP 7.0 is not affected
+(different error reporting path).
+---
+ Zend/zend_execute.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index ad438f6dea..01d09e5c40 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -883,6 +883,7 @@ static zend_always_inline int zend_verify_arg_type(zend_function *zf, uint32_t a
+ 		return 1;
+ 	}
+ 
++	ce = NULL;
+ 	if (UNEXPECTED(!zend_check_type(cur_arg_info->type, arg, &ce, cache_slot, default_value, zf->common.scope, 0))) {
+ 		zend_verify_arg_error(zf, cur_arg_info, arg_num, ce, arg);
+ 		return 0;
+@@ -1490,7 +1491,7 @@ static zend_always_inline HashTable *zend_get_target_symbol_table(int fetch_type
+ 
+ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht, const zval *dim, int dim_type, int type EXECUTE_DATA_DC)
+ {
+-	zval *retval;
++	zval *retval = NULL;
+ 	zend_string *offset_key;
+ 	zend_ulong hval;
+ 
+-- 
+2.50.1 (Apple Git-155)
+
