@@ -1,11 +1,9 @@
 From e6efde5554d72f8d9a7a96285e7723d1f6c355c2 Mon Sep 17 00:00:00 2001
 From: Niels Dossche <7771979+nielsdos@users.noreply.github.com>
 Date: Thu, 4 Jul 2024 06:29:50 -0700
-Subject: [PATCH] From: Niels Dossche
- <7771979+nielsdos@users.noreply.github.com> Date: Thu, 4 Jul 2024 06:29:50
- -0700 Subject: Backport 4fe82131: Backport libxml2 2.13.2 fixes (#14816)
+Subject: [PATCH] Backport 4fe82131: Backport libxml2 2.13.2 fixes (#14816)
 
-Backproted from https://github.com/php/php-src/pull/14789
+Backported from https://github.com/php/php-src/pull/14789
 
 (cherry picked from commit bb46b4b799b583528025a775af45308133bfd4c1)
 (cherry picked from commit 6cb68826aaf68ffe8c70c8782450c38970236040)
@@ -280,4 +278,3 @@ index aac3049b2f..24550cc415 100644
  			}
 -- 
 2.50.1 (Apple Git-155)
-
