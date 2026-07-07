@@ -1,6 +1,11 @@
 PHP                                                                        NEWS
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+Backported from 8.2.33
+
+- Date:
+  . Fixed leak on double DatePeriod::__construct() call. (ilutov)
+
 Backported from 8.2.32
 
 - OpenSSL:
