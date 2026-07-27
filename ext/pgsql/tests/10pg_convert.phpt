@@ -23,7 +23,7 @@ array(3) {
   [""num""]=>
   string(4) "1234"
   [""str""]=>
-  string(6) "E'AAA'"
+  string(5) "'AAA'"
   [""bin""]=>
-  string(6) "E'BBB'"
+  string(5) "'BBB'"
 }
