@@ -52,7 +52,7 @@ try {
 echo "Ok\n";
 ?>
 --EXPECTF--
-INSERT INTO "php_pgsql_test" ("num","str","bin") VALUES (1234,E'AAA',E'\\x424242');
+INSERT INTO "php_pgsql_test" ("num","str","bin") VALUES (1234,'AAA','\\x424242');
 INSERT INTO "php_pgsql_test" ("num","str","bin") VALUES ('1234','AAA','BBB');
 resource(%d) of type (pgsql result)
 Array of values must be an associative array with string keys
