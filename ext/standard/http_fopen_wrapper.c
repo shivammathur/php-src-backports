@@ -1097,7 +1097,7 @@ finish:
 			zend_bool same_origin;
 			int new_flags;
 
-			if (strlen(header_info.location) < 8 ||
+			if (header_info.location_len < 8 ||
 					(strncasecmp(header_info.location, "http://", sizeof("http://")-1) &&
 							strncasecmp(header_info.location, "https://", sizeof("https://")-1) &&
 							strncasecmp(header_info.location, "ftp://", sizeof("ftp://")-1) &&
@@ -1105,7 +1105,7 @@ finish:
 			{
 				char *loc_path = NULL;
 				if (*header_info.location != '/') {
-					if (*(header_info.location+1) != '\0' && resource->path) {
+					if (header_info.location_len > 1 && resource->path) {
 						char *s = strrchr(resource->path, '/');
 						if (!s) {
 							s = resource->path;
