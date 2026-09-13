@@ -138,8 +138,13 @@
 #define TAR_FILE    '0'
 #define TAR_LINK    '1'
 #define TAR_SYMLINK '2'
+#define TAR_CHAR    '3'
+#define TAR_BLOCK   '4'
 #define TAR_DIR     '5'
+#define TAR_FIFO    '6'
 #define TAR_NEW     '8'
+#define TAR_LONGLINK 'K'
+#define TAR_LONGNAME 'L'
 
 #define PHAR_MUNG_PHP_SELF			(1<<0)
 #define PHAR_MUNG_REQUEST_URI		(1<<1)
