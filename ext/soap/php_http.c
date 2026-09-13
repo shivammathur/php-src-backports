@@ -1050,7 +1050,7 @@ try_again:
 							char *t = phpurl->path;
 							char *p = strrchr(t, '/');
 							if (p) {
-								char *s = emalloc((p - t) + strlen(new_url->path) + 2);
+								char *s = safe_emalloc(1, p - t, strlen(new_url->path) + 2);
 								strncpy(s, t, (p - t) + 1);
 								s[(p - t) + 1] = 0;
 								strcat(s, new_url->path);
@@ -1311,10 +1311,16 @@ static char *get_http_header_value(char *headers, char *type)
 	return NULL;
 }
 
+/* The body is handed back through an int out_size and is always NUL terminated,
+ * so the accumulated length has to stay a positive int with room for that NUL.
+ * This is the local stand-in for upstream's ZSTR_MAX_LEN. */
+#define SOAP_HTTP_MAX_BODY_LEN ((size_t) INT_MAX - 1)
+
 static int get_http_body(php_stream *stream, int close, char *headers,  char **response, int *out_size TSRMLS_DC)
 {
 	char *header, *http_buf = NULL;
-	int header_close = close, header_chunked = 0, header_length = 0, http_buf_size = 0;
+	int header_close = close, header_chunked = 0, header_length = 0;
+	size_t http_buf_size = 0;
 
 	if (!close) {
 		header = get_http_header_value(headers, "Connection: ");
@@ -1348,15 +1354,17 @@ static int get_http_body(php_stream *stream, int close, char *headers,  char **r
 		done = FALSE;
 
 		while (!done) {
-			int buf_size = 0;
+			unsigned int buf_size = 0;
 
 			php_stream_gets(stream, headerbuf, sizeof(headerbuf));
 			if (sscanf(headerbuf, "%x", &buf_size) > 0 ) {
 				if (buf_size > 0) {
-					int len_size = 0;
+					size_t len_size = 0;
 
-					if (http_buf_size + buf_size + 1 < 0) {
-						efree(http_buf);
+					if (buf_size >= SOAP_HTTP_MAX_BODY_LEN - http_buf_size) {
+						if (http_buf) {
+							efree(http_buf);
+						}
 						return FALSE;
 					}
 					http_buf = erealloc(http_buf, http_buf_size + buf_size + 1);
@@ -1415,12 +1423,12 @@ static int get_http_body(php_stream *stream, int close, char *headers,  char **r
 		}
 
 	} else if (header_length) {
-		if (header_length < 0 || header_length >= INT_MAX) {
+		if (header_length < 0 || (size_t) header_length >= SOAP_HTTP_MAX_BODY_LEN) {
 			return FALSE;
 		}
 		http_buf = safe_emalloc(1, header_length, 1);
-		while (http_buf_size < header_length) {
-			int len_read = php_stream_read(stream, http_buf + http_buf_size, header_length - http_buf_size);
+		while (http_buf_size < (size_t) header_length) {
+			int len_read = php_stream_read(stream, http_buf + http_buf_size, (size_t) header_length - http_buf_size);
 			if (len_read <= 0) {
 				break;
 			}
@@ -1429,6 +1437,12 @@ static int get_http_body(php_stream *stream, int close, char *headers,  char **r
 	} else if (header_close) {
 		do {
 			int len_read;
+			if (http_buf_size >= SOAP_HTTP_MAX_BODY_LEN - 4096) {
+				if (http_buf) {
+					efree(http_buf);
+				}
+				return FALSE;
+			}
 			http_buf = erealloc(http_buf, http_buf_size + 4096 + 1);
 			len_read = php_stream_read(stream, http_buf + http_buf_size, 4096);
 			if (len_read > 0) {
@@ -1441,7 +1455,7 @@ static int get_http_body(php_stream *stream, int close, char *headers,  char **r
 
 	http_buf[http_buf_size] = '\0';
 	(*response) = http_buf;
-	(*out_size) = http_buf_size;
+	(*out_size) = (int) http_buf_size;
 	return TRUE;
 }
 
