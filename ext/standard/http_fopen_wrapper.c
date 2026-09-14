@@ -85,6 +85,76 @@
 
 #define HTTP_WRAPPER_HEADER_INIT    1
 #define HTTP_WRAPPER_REDIRECTED     2
+#define HTTP_WRAPPER_STRIP_AUTH     8
+
+static char *next_header_line(char *line)
+{
+	while (*line != '\0' && *line != '\r' && *line != '\n') {
+		line++;
+	}
+	if (*line == '\r') {
+		line++;
+	}
+	if (*line == '\n') {
+		line++;
+	}
+
+	return line;
+}
+
+/* Removes every line whose header name matches, along with the folded
+ * continuation lines carrying the rest of its value. Neither a repeated header
+ * nor an occurrence of the name inside another header's value may leave the real
+ * header behind, as that would defeat HTTP_WRAPPER_STRIP_AUTH. */
+static inline void strip_header(char *header_bag, char *lc_header_bag,
+		const char *lc_header_name)
+{
+	size_t name_len = strlen(lc_header_name);
+	char *lc_line = lc_header_bag;
+
+	while (*lc_line != '\0') {
+		const char *lc_colon;
+		char *lc_next, *line;
+		size_t tail_len;
+
+		if (strncmp(lc_line, lc_header_name, name_len) != 0) {
+			lc_line = next_header_line(lc_line);
+			continue;
+		}
+
+		/* the whitespace RFC 7230 forbids before the colon is tolerated by some
+		 * servers, so it must not hide the header from us either */
+		lc_colon = lc_line + name_len;
+		while (*lc_colon == ' ' || *lc_colon == '\t') {
+			lc_colon++;
+		}
+
+		if (*lc_colon != ':') {
+			lc_line = next_header_line(lc_line);
+			continue;
+		}
+
+		lc_next = next_header_line(lc_line);
+		while (*lc_next == ' ' || *lc_next == '\t') {
+			lc_next = next_header_line(lc_next);
+		}
+
+		if (*lc_next == '\0') {
+			/* drop the preceding line break too, or the one appended after the bag
+			 * would close the header block early */
+			while (lc_line > lc_header_bag
+					&& (*(lc_line - 1) == '\r' || *(lc_line - 1) == '\n')) {
+				--lc_line;
+			}
+		}
+
+		tail_len = strlen(lc_next) + 1;
+		line = header_bag + (lc_line - lc_header_bag);
+
+		memmove(line, header_bag + (lc_next - lc_header_bag), tail_len);
+		memmove(lc_line, lc_next, tail_len);
+	}
+}
 
 static ZEND_API char *zend_string_concat3(
 		const char *str1, size_t str1_len,
@@ -707,6 +777,22 @@ finish:
 
 			/* Make lowercase for easy comparison against 'standard' headers */
 			php_strtolower(tmp, strlen(tmp));
+
+			if (flags & HTTP_WRAPPER_STRIP_AUTH) {
+				strip_header(user_headers, tmp, "authorization");
+				strip_header(user_headers, tmp, "cookie");
+				if (!use_proxy) {
+					strip_header(user_headers, tmp, "proxy-authorization");
+				}
+			}
+
+			if (*user_headers == '\0') {
+				/* everything got stripped, keeping the empty bag would append a
+				 * stray CRLF and end the header block early */
+				efree(user_headers);
+				user_headers = NULL;
+			}
+
 			if ((s = strstr(tmp, "user-agent:")) && 
 			    (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || 
 			                 *(s-1) == '\t' || *(s-1) == ' ')) {
@@ -1048,6 +1134,10 @@ finish:
 		if (header_info.location != NULL) {
 
 			char *new_path = NULL;
+			php_url *new_resource;
+			int default_port;
+			zend_bool same_origin;
+			int new_flags;
 
 			if (strlen(header_info.location) < 8 ||
 					(strncasecmp(header_info.location, "http://", sizeof("http://")-1) &&
@@ -1094,13 +1184,21 @@ finish:
 				header_info.location = NULL;
 			}
 
-			php_url_free(resource);
-			/* check for invalid redirection URLs */
-			if ((resource = php_url_parse(new_path)) == NULL) {
+			new_resource = php_url_parse(new_path);
+			if (new_resource == NULL) {
 				php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, "Invalid redirect URL! %s", new_path);
 				efree(new_path);
 				goto out;
 			}
+
+			default_port = use_ssl ? 443 : 80;
+			same_origin = !strcasecmp(resource->scheme, new_resource->scheme)
+				&& !strcasecmp(resource->host, new_resource->host)
+				&& (resource->port ? resource->port : default_port)
+					== (new_resource->port ? new_resource->port : default_port);
+
+			php_url_free(resource);
+			resource = new_resource;
 
 #define CHECK_FOR_CNTRL_CHARS(val) { \
 	if (val) { \
@@ -1124,7 +1222,11 @@ finish:
 				CHECK_FOR_CNTRL_CHARS(resource->pass)
 				CHECK_FOR_CNTRL_CHARS(resource->path)
 			}
-			stream = php_stream_url_wrap_http_ex(wrapper, new_path, mode, options, opened_path, context, --redirect_max, HTTP_WRAPPER_REDIRECTED STREAMS_CC TSRMLS_CC);
+			new_flags = HTTP_WRAPPER_REDIRECTED | (flags & HTTP_WRAPPER_STRIP_AUTH);
+			if (!same_origin) {
+				new_flags |= HTTP_WRAPPER_STRIP_AUTH;
+			}
+			stream = php_stream_url_wrap_http_ex(wrapper, new_path, mode, options, opened_path, context, --redirect_max, new_flags STREAMS_CC TSRMLS_CC);
 			efree(new_path);
 		} else {
 			php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, "HTTP request failed! %s", tmp_line);
