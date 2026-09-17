@@ -149,6 +149,9 @@ struct _soapService {
 #define WSDL_CACHE_MEMORY   0x2
 #define WSDL_CACHE_BOTH     0x3
 
+#define SOAP_MAX_XML_DEPTH 2048
+#define SOAP_MAX_DECODE_DEPTH (SOAP_MAX_XML_DEPTH * 2)
+
 ZEND_BEGIN_MODULE_GLOBALS(soap)
 	HashTable  defEncNs;     /* mapping of default namespaces to prefixes */
 	HashTable  defEnc;
@@ -173,6 +176,7 @@ ZEND_BEGIN_MODULE_GLOBALS(soap)
 	HashTable  wsdl_cache;
 	int        cur_uniq_ref;
 	HashTable *ref_map;
+	unsigned int decode_depth;
 ZEND_END_MODULE_GLOBALS(soap)
 
 #ifdef ZTS
