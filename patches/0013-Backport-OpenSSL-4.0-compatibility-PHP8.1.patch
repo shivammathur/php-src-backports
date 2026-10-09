@@ -1,0 +1,164 @@
+From 19255f4b784cedf6dd4bb21e97def348d335dd69 Mon Sep 17 00:00:00 2001
+From: Ilija Tovilo <ilija.tovilo@me.com>
+Date: Sat, 2 May 2026 01:49:34 +0200
+Subject: [PATCH] PHP 8.1: backport OpenSSL 4 compatibility
+
+Backport the ASN1_STRING accessor and error-buffer changes from
+https://github.com/php/php-src/commit/19255f4b784cedf6dd4bb21e97def348d335dd69
+
+Backport notes:
+Add OpenSSL 4 SSLv3 guards and retain the ASN1 accessor fallback for
+older OpenSSL and LibreSSL versions.
+---
+
+diff --git a/ext/openssl/openssl.c b/ext/openssl/openssl.c
+--- a/ext/openssl/openssl.c
++++ b/ext/openssl/openssl.c
+@@ -464,9 +464,9 @@
+ 	errors = OPENSSL_G(errors);
+ 
+ 	do {
+-		errors->top = (errors->top + 1) % ERR_NUM_ERRORS;
++		errors->top = (errors->top + 1) % PHP_OPENSSL_ERR_BUFFER_SIZE;
+ 		if (errors->top == errors->bottom) {
+-			errors->bottom = (errors->bottom + 1) % ERR_NUM_ERRORS;
++			errors->bottom = (errors->bottom + 1) % PHP_OPENSSL_ERR_BUFFER_SIZE;
+ 		}
+ 		errors->buffer[errors->top] = error_code;
+ 	} while ((error_code = ERR_get_error()));
+@@ -705,7 +705,7 @@
+ 
+ static void php_openssl_add_assoc_asn1_string(zval * val, char * key, ASN1_STRING * str) /* {{{ */
+ {
+-	add_assoc_stringl(val, key, (char *)str->data, str->length);
++	add_assoc_stringl(val, key, (const char *)ASN1_STRING_get0_data(str), ASN1_STRING_length(str));
+ }
+ /* }}} */
+ 
+@@ -738,12 +738,12 @@
+ 	}
+ 
+ 	if (timestr_len < 13 && timestr_len != 11) {
+-		php_error_docref(NULL, E_WARNING, "Unable to parse time string %s correctly", timestr->data);
++		php_error_docref(NULL, E_WARNING, "Unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
+ 		return (time_t)-1;
+ 	}
+ 
+ 	if (ASN1_STRING_type(timestr) == V_ASN1_GENERALIZEDTIME && timestr_len < 15) {
+-		php_error_docref(NULL, E_WARNING, "Unable to parse time string %s correctly", timestr->data);
++		php_error_docref(NULL, E_WARNING, "Unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
+ 		return (time_t)-1;
+ 	}
+ 
+@@ -1385,7 +1385,7 @@
+ 	}
+ 
+ 	php_stream_xport_register("ssl", php_openssl_ssl_socket_factory);
+-#ifndef OPENSSL_NO_SSL3
++#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
+ 	php_stream_xport_register("sslv3", php_openssl_ssl_socket_factory);
+ #endif
+ 	php_stream_xport_register("tls", php_openssl_ssl_socket_factory);
+@@ -1457,7 +1457,7 @@
+ 	php_unregister_url_stream_wrapper("ftps");
+ 
+ 	php_stream_xport_unregister("ssl");
+-#ifndef OPENSSL_NO_SSL3
++#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
+ 	php_stream_xport_unregister("sslv3");
+ #endif
+ 	php_stream_xport_unregister("tls");
+@@ -2095,8 +2095,8 @@
+ 	}
+ 
+ 	extension_data = X509_EXTENSION_get_data(extension);
+-	p = extension_data->data;
+-	length = extension_data->length;
++	p = ASN1_STRING_get0_data(extension_data);
++	length = ASN1_STRING_length(extension_data);
+ 	if (method->it) {
+ 		names = (GENERAL_NAMES*) (ASN1_item_d2i(NULL, &p, length,
+ 			ASN1_ITEM_ptr(method->it)));
+@@ -6800,7 +6800,7 @@
+ 		RETURN_FALSE;
+ 	}
+ 
+-	OPENSSL_G(errors)->bottom = (OPENSSL_G(errors)->bottom + 1) % ERR_NUM_ERRORS;
++	OPENSSL_G(errors)->bottom = (OPENSSL_G(errors)->bottom + 1) % PHP_OPENSSL_ERR_BUFFER_SIZE;
+ 	val = OPENSSL_G(errors)->buffer[OPENSSL_G(errors)->bottom];
+ 
+ 	if (val) {
+diff --git a/ext/openssl/php_openssl.h b/ext/openssl/php_openssl.h
+--- a/ext/openssl/php_openssl.h
++++ b/ext/openssl/php_openssl.h
+@@ -44,6 +44,8 @@
+ #endif
+ #endif
+ 
++#define PHP_OPENSSL_ERR_BUFFER_SIZE 16
++
+ #define OPENSSL_RAW_DATA 1
+ #define OPENSSL_ZERO_PADDING 2
+ #define OPENSSL_DONT_ZERO_PAD_KEY 4
+@@ -73,7 +75,7 @@
+ #endif
+ 
+ struct php_openssl_errors {
+-	int buffer[ERR_NUM_ERRORS];
++	int buffer[PHP_OPENSSL_ERR_BUFFER_SIZE];
+ 	int top;
+ 	int bottom;
+ };
+diff --git a/ext/openssl/xp_ssl.c b/ext/openssl/xp_ssl.c
+--- a/ext/openssl/xp_ssl.c
++++ b/ext/openssl/xp_ssl.c
+@@ -33,6 +33,10 @@
+ #include <openssl/x509.h>
+ #include <openssl/x509v3.h>
+ #include <openssl/err.h>
++
++#if OPENSSL_VERSION_NUMBER < 0x10100000L || (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
++#define ASN1_STRING_get0_data ASN1_STRING_data
++#endif
+ #include <openssl/bn.h>
+ #include <openssl/dh.h>
+ 
+@@ -89,7 +93,7 @@
+ #define HAVE_SEC_LEVEL 1
+ #endif
+ 
+-#ifndef OPENSSL_NO_SSL3
++#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
+ #define HAVE_SSL3 1
+ #define PHP_OPENSSL_MIN_PROTO_VERSION STREAM_CRYPTO_METHOD_SSLv3
+ #else
+@@ -482,12 +486,12 @@
+ 			}
+ 			OPENSSL_free(cert_name);
+ 		} else if (san->type == GEN_IPADD) {
+-			if (san->d.iPAddress->length == 4) {
++			if (ASN1_STRING_length(san->d.iPAddress) == 4) {
+ 				sprintf(ipbuffer, "%d.%d.%d.%d",
+-					san->d.iPAddress->data[0],
+-					san->d.iPAddress->data[1],
+-					san->d.iPAddress->data[2],
+-					san->d.iPAddress->data[3]
++					ASN1_STRING_get0_data(san->d.iPAddress)[0],
++					ASN1_STRING_get0_data(san->d.iPAddress)[1],
++					ASN1_STRING_get0_data(san->d.iPAddress)[2],
++					ASN1_STRING_get0_data(san->d.iPAddress)[3]
+ 				);
+ 				if (strcasecmp(subject_name, (const char*)ipbuffer) == 0) {
+ 					sk_GENERAL_NAME_pop_free(alt_names, GENERAL_NAME_free);
+@@ -496,9 +500,9 @@
+ 				}
+ 			}
+ #ifdef HAVE_IPV6_SAN
+-			else if (san->d.ip->length == 16 && subject_name_is_ipv6) {
++			else if (ASN1_STRING_length(san->d.ip) == 16 && subject_name_is_ipv6) {
+ 				ipbuffer[0] = 0;
+-				EXPAND_IPV6_ADDRESS(ipbuffer, san->d.iPAddress->data);
++				EXPAND_IPV6_ADDRESS(ipbuffer, ASN1_STRING_get0_data(san->d.iPAddress));
+ 				if (strcasecmp((const char*)subject_name_ipv6_expanded, (const char*)ipbuffer) == 0) {
+ 					sk_GENERAL_NAME_pop_free(alt_names, GENERAL_NAME_free);
+ 

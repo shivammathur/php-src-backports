@@ -1,0 +1,162 @@
+From 19255f4b784cedf6dd4bb21e97def348d335dd69 Mon Sep 17 00:00:00 2001
+From: Ilija Tovilo <ilija.tovilo@me.com>
+Date: Sat, 2 May 2026 01:49:34 +0200
+Subject: [PATCH] PHP 7.0: backport OpenSSL 4 compatibility
+
+Backport the ASN1_STRING accessor and error-buffer changes from
+https://github.com/php/php-src/commit/19255f4b784cedf6dd4bb21e97def348d335dd69
+
+Backport notes:
+Add OpenSSL 4 SSLv3 guards and retain the ASN1 accessor fallback for
+older OpenSSL and LibreSSL versions.
+Replace removed fixed-version TLS methods with generic methods and
+explicit minimum and maximum protocol versions.
+This branch has no ERR_NUM_ERRORS-based error buffer to change.
+---
+
+diff --git a/ext/openssl/openssl.c b/ext/openssl/openssl.c
+--- a/ext/openssl/openssl.c
++++ b/ext/openssl/openssl.c
+@@ -877,7 +877,7 @@
+ 
+ static void add_assoc_asn1_string(zval * val, char * key, ASN1_STRING * str) /* {{{ */
+ {
+-	add_assoc_stringl(val, key, (char *)str->data, str->length);
++	add_assoc_stringl(val, key, (const char *)ASN1_STRING_get0_data(str), ASN1_STRING_length(str));
+ }
+ /* }}} */
+ 
+@@ -910,12 +910,12 @@
+ 	}
+ 
+ 	if (timestr_len < 13 && timestr_len != 11) {
+-		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", timestr->data);
++		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
+ 		return (time_t)-1;
+ 	}
+ 
+ 	if (ASN1_STRING_type(timestr) == V_ASN1_GENERALIZEDTIME && timestr_len < 15) {
+-		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", timestr->data);
++		php_error_docref(NULL, E_WARNING, "unable to parse time string %s correctly", ASN1_STRING_get0_data(timestr));
+ 		return (time_t)-1;
+ 	}
+ 
+@@ -1468,7 +1468,7 @@
+ 	}
+ 
+ 	php_stream_xport_register("ssl", php_openssl_ssl_socket_factory);
+-#ifndef OPENSSL_NO_SSL3
++#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
+ 	php_stream_xport_register("sslv3", php_openssl_ssl_socket_factory);
+ #endif
+ #ifndef OPENSSL_NO_SSL2
+@@ -1527,7 +1527,7 @@
+ #ifndef OPENSSL_NO_SSL2
+ 	php_stream_xport_unregister("sslv2");
+ #endif
+-#ifndef OPENSSL_NO_SSL3
++#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
+ 	php_stream_xport_unregister("sslv3");
+ #endif
+ 	php_stream_xport_unregister("tls");
+@@ -2115,8 +2115,8 @@
+ 	}
+ 
+ 	extension_data = X509_EXTENSION_get_data(extension);
+-	p = extension_data->data;
+-	length = extension_data->length;
++	p = ASN1_STRING_get0_data(extension_data);
++	length = ASN1_STRING_length(extension_data);
+ 	if (method->it) {
+ 		names = (GENERAL_NAMES*) (ASN1_item_d2i(NULL, &p, length,
+ 			ASN1_ITEM_ptr(method->it)));
+diff --git a/ext/openssl/xp_ssl.c b/ext/openssl/xp_ssl.c
+--- a/ext/openssl/xp_ssl.c
++++ b/ext/openssl/xp_ssl.c
+@@ -37,6 +37,10 @@
+ #include <openssl/x509v3.h>
+ #include <openssl/err.h>
+ 
++#if OPENSSL_VERSION_NUMBER < 0x10100000L || (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
++#define ASN1_STRING_get0_data ASN1_STRING_data
++#endif
++
+ #if OPENSSL_VERSION_NUMBER >= 0x10002000L
+ #include <openssl/bn.h>
+ #include <openssl/dh.h>
+@@ -61,7 +65,7 @@
+ #define HAVE_SSL2 1
+ #endif
+ 
+-#ifndef OPENSSL_NO_SSL3
++#if OPENSSL_VERSION_NUMBER < 0x40000000L && !defined(OPENSSL_NO_SSL3)
+ #define HAVE_SSL3 1
+ #endif
+ 
+@@ -431,12 +435,12 @@
+ 			}
+ 			OPENSSL_free(cert_name);
+ 		} else if (san->type == GEN_IPADD) {
+-			if (san->d.iPAddress->length == 4) {
++			if (ASN1_STRING_length(san->d.iPAddress) == 4) {
+ 				sprintf(ipbuffer, "%d.%d.%d.%d",
+-					san->d.iPAddress->data[0],
+-					san->d.iPAddress->data[1],
+-					san->d.iPAddress->data[2],
+-					san->d.iPAddress->data[3]
++					ASN1_STRING_get0_data(san->d.iPAddress)[0],
++					ASN1_STRING_get0_data(san->d.iPAddress)[1],
++					ASN1_STRING_get0_data(san->d.iPAddress)[2],
++					ASN1_STRING_get0_data(san->d.iPAddress)[3]
+ 				);
+ 				if (strcasecmp(subject_name, (const char*)ipbuffer) == 0) {
+ 					return 1;
+@@ -971,10 +975,18 @@
+ 		return NULL;
+ #endif
+ 	} else if (method_value == STREAM_CRYPTO_METHOD_TLSv1_0) {
++#if OPENSSL_VERSION_NUMBER >= 0x40000000L
++		return is_client ? TLS_client_method() : TLS_server_method();
++#else
+ 		return is_client ? TLSv1_client_method() : TLSv1_server_method();
++#endif
+ 	} else if (method_value == STREAM_CRYPTO_METHOD_TLSv1_1) {
+ #ifdef HAVE_TLS11
++#if OPENSSL_VERSION_NUMBER >= 0x40000000L
++		return is_client ? TLS_client_method() : TLS_server_method();
++#else
+ 		return is_client ? TLSv1_1_client_method() : TLSv1_1_server_method();
++#endif
+ #else
+ 		php_error_docref(NULL, E_WARNING,
+ 				"TLSv1.1 unavailable in the OpenSSL library against which PHP is linked");
+@@ -982,7 +994,11 @@
+ #endif
+ 	} else if (method_value == STREAM_CRYPTO_METHOD_TLSv1_2) {
+ #ifdef HAVE_TLS12
++#if OPENSSL_VERSION_NUMBER >= 0x40000000L
++		return is_client ? TLS_client_method() : TLS_server_method();
++#else
+ 		return is_client ? TLSv1_2_client_method() : TLSv1_2_server_method();
++#endif
+ #else
+ 		php_error_docref(NULL, E_WARNING,
+ 				"TLSv1.2 unavailable in the OpenSSL library against which PHP is linked");
+@@ -1558,6 +1574,17 @@
+ 		return FAILURE;
+ 	}
+ 
++#if OPENSSL_VERSION_NUMBER >= 0x40000000L
++	if ((method_flags & (method_flags - 1)) == 0) {
++		int version = method_flags == STREAM_CRYPTO_METHOD_TLSv1_0 ? TLS1_VERSION :
++			(method_flags == STREAM_CRYPTO_METHOD_TLSv1_1 ? TLS1_1_VERSION : TLS1_2_VERSION);
++		if (!SSL_CTX_set_min_proto_version(sslsock->ctx, version) ||
++			!SSL_CTX_set_max_proto_version(sslsock->ctx, version)) {
++			return FAILURE;
++		}
++	}
++#endif
++
+ #if OPENSSL_VERSION_NUMBER >= 0x0090806fL
+ 	if (GET_VER_OPT("no_ticket") && zend_is_true(val)) {
+ 		ssl_ctx_options |= SSL_OP_NO_TICKET;
