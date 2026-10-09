@@ -49,7 +49,7 @@ jobs:
             if [ "$branch" = "main" ]; then
               continue
             fi
-            php_version="$(echo $branch | cut -d'-' -f 2)"
+            php_version="$(echo "$branch" | cut -d'-' -f 2)"
             if ! [[ "${{ inputs.php-versions }}" == *"$php_version"* ]]; then
               continue
             fi
@@ -57,12 +57,14 @@ jobs:
             git checkout "$branch"
             git fetch up "$branch"
             git reset --hard up/"$branch"
-            tag="$(echo $branch | cut -d '-' -f 2)"
-            if [ -e /tmp/patches/"$tag" ]; then
-              while read patch; do
-                git am < /tmp/patches/"$patch"
-              done < /tmp/patches/"$tag"
-            fi
+            tag="$(echo "$branch" | cut -d '-' -f 2)"
+            for patch_list in "/tmp/patches/$tag" "/tmp/patches/$branch"; do
+              if [ -e "$patch_list" ]; then
+                while read -r patch; do
+                  git am < /tmp/patches/"$patch"
+                done < "$patch_list"
+              fi
+            done
             push_ref "$branch"
           done
           for tag in "${tags[@]}"; do
