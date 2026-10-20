@@ -185,6 +185,9 @@ zend_accel_hash_entry* zend_accel_hash_find_entry(zend_accel_hash *accel_hash, c
 	zend_ulong hash_value;
 	zend_ulong index;
 	zend_accel_hash_entry *entry;
+#ifndef ZEND_WIN32
+	TSRMLS_FETCH();
+#endif
 
 	hash_value = zend_inline_hash_func(key, key_length);
 #ifndef ZEND_WIN32
