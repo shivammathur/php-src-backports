@@ -1,0 +1,51 @@
+From 2741dbb742abb7fb233094d6f743ee452419e6af Mon Sep 17 00:00:00 2001
+From: David Caldwell <david@galvanix.com>
+Date: Thu, 25 May 2017 00:41:12 +0000
+Subject: [PATCH] ext/ldap: Allow default host from ldap.conf to work.
+
+This fixes an regression introduced in
+e7af0fe1eb89e40671e86a588aa1b78607b85461. Previously, calling
+ldap_connect() with no parameters would pass NULL to ldap_init(),
+which causes it to use the default host specified in
+/etc/ldap/ldap.conf (on Ubuntu).
+
+When the code changed to use ldap_initialize(), it initialized a uri,
+even if there were no parameters passed to ldap_connect(). Because of
+this, there's no way to pass a NULL into ldap_initialize(), making it
+impossible to use the default uri from ldap.conf.
+
+This commit bypasses the uri creation when there is no host argument,
+passing on a NULL to ldap_initialize() which restores the old PHP 5.5
+behavior.
+
+Backport php/php-src@747e93eabcc59646c24bfa99c5abe37f4fd11ee4 to PHP 5.6.
+Preserve the PHP 5.6 host:port handling and long integer formatting.
+---
+ ext/ldap/ldap.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/ext/ldap/ldap.c b/ext/ldap/ldap.c
+index 0b508e6e70..905c8ee898 100644
+--- a/ext/ldap/ldap.c
++++ b/ext/ldap/ldap.c
+@@ -364,7 +364,7 @@ PHP_FUNCTION(ldap_connect)
+ 	{
+ 		int rc = LDAP_SUCCESS;
+ 		char	*url = host;
+-		if (!ldap_is_ldap_url(url)) {
++		if (url && !ldap_is_ldap_url(url)) {
+ 			int	urllen = hostlen + sizeof( "ldap://:65535" );
+ 
+ 			if (port <= 0 || port > 65535) {
+@@ -378,7 +378,7 @@ PHP_FUNCTION(ldap_connect)
+ 				/* Legacy support for host:port */
+ 				snprintf( url, urllen, "ldap://%s", host );
+ 			} else {
+-				snprintf( url, urllen, "ldap://%s:%ld", host ? host : "", port );
++				snprintf( url, urllen, "ldap://%s:%ld", host, port );
+ 			}
+ 		}
+ 
+-- 
+2.54.0 (Apple Git-156)
+
