@@ -257,6 +257,9 @@ PS_OPEN_FUNC(files)
 	if (*save_path == '\0') {
 		/* if save path is an empty string, determine the temporary dir */
 		save_path = php_get_temporary_directory();
+		if (save_path == NULL) {
+			return FAILURE;
+		}
 
 		if (PG(safe_mode) && (!php_checkuid(save_path, NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
 			return FAILURE;
