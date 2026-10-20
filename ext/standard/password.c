@@ -324,7 +324,7 @@ PHP_FUNCTION(password_hash)
 			long cost = PHP_PASSWORD_BCRYPT_COST;
 	
             if (memchr(password, '\0', password_len)) {
-				php_error_docref(NULL, E_WARNING, "Bcrypt password must not contain null character");
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Bcrypt password must not contain null character");
 				RETURN_NULL();
 			}
 

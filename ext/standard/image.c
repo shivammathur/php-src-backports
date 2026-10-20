@@ -1400,7 +1400,7 @@ static void php_getimagesize_from_any(INTERNAL_FUNCTION_PARAMETERS, int mode) { 
 	}
 
 	if (mode == FROM_PATH && CHECK_NULL_PATH(input, input_len)) {
-		php_error_docref(NULL, E_WARNING, "Invalid path");
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid path");
 		return;
 	}
 
