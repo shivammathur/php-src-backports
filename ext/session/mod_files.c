@@ -278,6 +278,9 @@ PS_OPEN_FUNC(files)
 	if (*save_path == '\0') {
 		/* if save path is an empty string, determine the temporary dir */
 		save_path = php_get_temporary_directory();
+		if (save_path == NULL) {
+			return FAILURE;
+		}
 
 		if (php_check_open_basedir(save_path TSRMLS_CC)) {
 			return FAILURE;
