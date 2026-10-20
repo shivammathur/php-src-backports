@@ -147,6 +147,10 @@ encodePtr get_encoder(sdlPtr sdl, const char *ns, const char *type)
 			memcpy(new_enc, enc, sizeof(encode));
 			if (sdl->is_persistent) {
 				new_enc->details.ns = zend_strndup(ns, ns_len);
+				if (new_enc->details.ns == NULL) {
+					efree(nscat);
+					return NULL;
+				}
 				new_enc->details.type_str = strdup(new_enc->details.type_str);
 			} else {
 				new_enc->details.ns = estrndup(ns, ns_len);
