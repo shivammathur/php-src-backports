@@ -6187,6 +6187,7 @@ static inline int build_tablename(smart_str *querystr, PGconn *pg_link, const ch
 	char *table_copy, *escaped, *tmp;
 	const char *token;
 	size_t len;
+	TSRMLS_FETCH();
 
 	/* schame.table should be "schame"."table" */
 	table_copy = estrdup(table);
