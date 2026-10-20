@@ -1130,10 +1130,10 @@ static int php_plain_files_rename(php_stream_wrapper *wrapper, char *url_from, c
 						VCWD_UNLINK(url_from);
 					}
 				} else {
-					php_error_docref2(NULL, url_from, url_to, E_WARNING, "%s", strerror(errno));
+					php_error_docref2(NULL TSRMLS_CC, url_from, url_to, E_WARNING, "%s", strerror(errno));
 				}
 			} else {
-				php_error_docref2(NULL, url_from, url_to, E_WARNING, "%s", strerror(errno));
+				php_error_docref2(NULL TSRMLS_CC, url_from, url_to, E_WARNING, "%s", strerror(errno));
 			}
 #  if !defined(ZTS) && !defined(TSRM_WIN32) && !defined(NETWARE)
 			umask(oldmask);
