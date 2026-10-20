@@ -1304,7 +1304,7 @@ PHP_FUNCTION(getimagesize)
 	}
 	
 	if(strlen(arg1) != arg1_len) {
-		php_error_docref(NULL, E_WARNING, "Invalid path");
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid path");
 		return;
 	}
 
