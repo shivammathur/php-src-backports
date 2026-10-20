@@ -1969,7 +1969,7 @@ static int php_sqlite3_authorizer(void *autharg, int access_type, const char *ar
 					if (!arg3[5]) {
 						return SQLITE_DENY;
 					}
-					if (php_check_open_basedir(arg3 + 5)) {
+					if (php_check_open_basedir(arg3 + 5 TSRMLS_CC)) {
 						return SQLITE_DENY;
 					}
 				}

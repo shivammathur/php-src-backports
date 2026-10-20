@@ -508,7 +508,7 @@ mysqlnd_query_read_result_set_header(MYSQLND *conn, MYSQLND_STMT * s TSRMLS_DC)
 				if (FAIL == (ret = result->m.read_result_metadata(result, conn TSRMLS_CC))) {
 					/* For PS, we leave them in Prepared state */
 					if (!stmt && conn->current_result) {
-						conn->current_result->m.free_result(conn->current_result, TRUE);
+						conn->current_result->m.free_result(conn->current_result, TRUE TSRMLS_CC);
 						conn->current_result = NULL;
 					}
 					DBG_ERR("Error ocurred while reading metadata");

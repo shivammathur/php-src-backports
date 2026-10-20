@@ -236,6 +236,7 @@ static char *php_stream_http_response_headers_parse(php_stream_wrapper *wrapper,
 	char *last_header_value;
 	zend_bool store_header = 1;
 	zval **tmpzval = NULL;
+	TSRMLS_FETCH();
 	if(!last_header_line_len)
 		return NULL;
 	last_header_line_length = *last_header_line_len;
@@ -285,7 +286,7 @@ static char *php_stream_http_response_headers_parse(php_stream_wrapper *wrapper,
 		while (last_header_name < last_header_value) {
 			if (*last_header_name == ' ' || *last_header_name == '\t') {
 				header_info->error = 1;
-				php_stream_wrapper_log_error(wrapper, options,
+				php_stream_wrapper_log_error(wrapper, options TSRMLS_CC,
 					"HTTP invalid response format (space in header name)!");
 				efree(last_header_line_str);
 				return NULL;
@@ -303,7 +304,7 @@ static char *php_stream_http_response_headers_parse(php_stream_wrapper *wrapper,
 	} else {
 		/* There is no colon which means invalid response so error. */
 		header_info->error = 1;
-		php_stream_wrapper_log_error(wrapper, options,
+		php_stream_wrapper_log_error(wrapper, options TSRMLS_CC,
 				"HTTP invalid response format (no colon in header line)!");
 		efree(last_header_line_str);
 		return NULL;
@@ -326,7 +327,7 @@ static char *php_stream_http_response_headers_parse(php_stream_wrapper *wrapper,
 		last_header_value_len = strlen(last_header_value);
 		if (last_header_value_len > HTTP_HEADER_MAX_LOCATION_SIZE) {
 			header_info->error = 1;
-			php_stream_wrapper_log_error(wrapper, options,
+			php_stream_wrapper_log_error(wrapper, options TSRMLS_CC,
 					"HTTP Location header size is over the limit of %d bytes",
 					HTTP_HEADER_MAX_LOCATION_SIZE);
 			efree(last_header_line_str);
@@ -369,10 +370,10 @@ static char *php_stream_http_response_headers_parse(php_stream_wrapper *wrapper,
 			if (decode) {
 				if (header_info->transfer_encoding != NULL) {
 					/* Prevent a memory leak in case there are more transfer-encoding headers. */
-					php_stream_filter_free(header_info->transfer_encoding);
+					php_stream_filter_free(header_info->transfer_encoding TSRMLS_CC);
 				}
 				header_info->transfer_encoding = php_stream_filter_create(
-						"dechunk", NULL, php_stream_is_persistent(stream));
+						"dechunk", NULL, php_stream_is_persistent(stream) TSRMLS_CC);
 				if (header_info->transfer_encoding != NULL) {
 					/* Do not store transfer-encoding header. */
 					store_header = 0;
@@ -1054,7 +1055,7 @@ finish:
 				if (http_header_line[1] != '\n') {
 					php_stream_close(stream);
 					stream = NULL;
-					php_stream_wrapper_log_error(wrapper, options,
+					php_stream_wrapper_log_error(wrapper, options TSRMLS_CC,
 							"HTTP invalid header name (cannot start with CR character)!");
 					goto out;
 				}
@@ -1086,7 +1087,7 @@ finish:
 				if (*http_header_line == ' ' || *http_header_line == '\t') {
 					php_stream_close(stream);
 					stream = NULL;
-					php_stream_wrapper_log_error(wrapper, options,
+					php_stream_wrapper_log_error(wrapper, options TSRMLS_CC,
 							"HTTP invalid response format (folding header at the start)!");
 					goto out;
 				}
@@ -1127,7 +1128,7 @@ finish:
 		stream = NULL;
 
 		if (header_info.transfer_encoding) {
-			php_stream_filter_free(header_info.transfer_encoding);
+			php_stream_filter_free(header_info.transfer_encoding TSRMLS_CC);
 			header_info.transfer_encoding = NULL;
 		}
 
