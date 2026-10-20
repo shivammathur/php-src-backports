@@ -27,6 +27,12 @@
 #include "../TSRM/TSRM.h"
 #include "zend.h"
 
+#ifdef ZEND_WIN32
+# include <process.h>
+#elif defined(HAVE_UNISTD_H)
+# include <unistd.h>
+#endif
+
 #ifndef ZEND_MM_ALIGNMENT
 # define ZEND_MM_ALIGNMENT 8
 # define ZEND_MM_ALIGNMENT_LOG2 3
@@ -97,7 +103,7 @@ inline static void * __zend_malloc(size_t len)
 		return tmp;
 	}
 	fprintf(stderr, "Out of memory\n");
-	exit(1);
+	_exit(1);
 }
 
 inline static void * __zend_calloc(size_t nmemb, size_t len)
@@ -114,7 +120,7 @@ inline static void * __zend_realloc(void *p, size_t len)
 		return p;
 	}
 	fprintf(stderr, "Out of memory\n");
-	exit(1);
+	_exit(1);
 }
 
 
@@ -158,6 +164,12 @@ void zend_debug_alloc_output(char *format, ...);
 
 ZEND_API size_t zend_memory_usage(int real_usage TSRMLS_DC);
 ZEND_API size_t zend_memory_peak_usage(int real_usage TSRMLS_DC);
+
+#if defined(__GNUC__) && __GNUC__ >= 3 && !defined(__INTEL_COMPILER) && !defined(DARWIN) && !defined(__hpux) && !defined(_AIX) && !defined(__osf__)
+ZEND_API void zend_mm_safe_error_ex(const char *format, ...) __attribute__ ((noreturn));
+#else
+ZEND_API void zend_mm_safe_error_ex(const char *format, ...);
+#endif
 
 END_EXTERN_C()
 
