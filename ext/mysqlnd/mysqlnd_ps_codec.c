@@ -54,7 +54,8 @@ struct st_mysqlnd_perm_bind mysqlnd_ps_fetch_functions[MYSQL_TYPE_LAST + 1];
 
 static inline void ps_fetch_over_read_error(zend_uchar ** row)
 {
-	php_error_docref(NULL, E_WARNING, "Malformed server packet. Field length pointing after the end of packet");
+	TSRMLS_FETCH();
+	php_error_docref(NULL TSRMLS_CC, E_WARNING, "Malformed server packet. Field length pointing after the end of packet");
 	*row = NULL;
 }
 

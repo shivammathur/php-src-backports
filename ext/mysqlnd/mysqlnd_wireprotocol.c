@@ -649,7 +649,7 @@ php_mysqlnd_auth_response_read(void * _packet, MYSQLND_CONN_DATA * conn TSRMLS_D
 			 * and after that it can be checked that the net_len is not greater than the packet size */
 			if ((p - buf) > packet->header.size || packet->header.size - (p - buf) < net_len) {
 				DBG_ERR_FMT("OK packet message length is past the packet size");
-				php_error_docref(NULL, E_WARNING, "OK packet message length is past the packet size");
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "OK packet message length is past the packet size");
 				DBG_RETURN(FAIL);
 			}
 			packet->message_len = net_len;
@@ -1069,7 +1069,7 @@ php_mysqlnd_rset_header_read(void * _packet, MYSQLND_CONN_DATA * conn TSRMLS_DC)
 						size_t local_file_name_over_read = ((p - buf) - packet->header.size) + len;
 						DBG_ERR_FMT("RSET_HEADER packet additional data length is past %zu bytes the packet size",
 							local_file_name_over_read);
-						php_error_docref(NULL, E_WARNING,
+						php_error_docref(NULL TSRMLS_CC, E_WARNING,
 							"RSET_HEADER packet additional data length is past %zu bytes the packet size",
 							local_file_name_over_read);
 						DBG_RETURN(FAIL);
@@ -1254,7 +1254,7 @@ php_mysqlnd_rset_field_read(void * _packet, MYSQLND_CONN_DATA * conn TSRMLS_DC)
 		size_t current_offset = p - buf;
 		if (len > packet->header.size - current_offset) {
 			DBG_ERR_FMT("Def field length is past the packet size");
-			php_error_docref(NULL, E_WARNING, "Def field length is past the packet size");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Def field length is past the packet size");
 			DBG_RETURN(FAIL);
 		}
 
@@ -1493,7 +1493,7 @@ php_mysqlnd_rowp_read_binary_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zv
 				for (j = 0, current_field = start_field; j < i; current_field++, j++) {
 					zval_ptr_dtor(current_field);
 				}
-				php_error_docref(NULL, E_WARNING, "Malformed server packet. No packet space left for the field");
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Malformed server packet. No packet space left for the field");
 				DBG_RETURN(FAIL);
 			}
 			mysqlnd_ps_fetch_functions[type].func(*current_field, &fields_metadata[i], rbs - row_position, &p, as_unicode TSRMLS_CC);
@@ -1591,7 +1591,7 @@ php_mysqlnd_rowp_read_text_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zval
 		const unsigned long len = php_mysqlnd_net_field_length(&p);
 
 		if (len != MYSQLND_NULL_LENGTH  && (p > packet_end || len > packet_end - p)) {
-			php_error_docref(NULL, E_WARNING, "Malformed server packet. Field length pointing after end of packet");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Malformed server packet. Field length pointing after end of packet");
 			DBG_RETURN(FAIL);
 		}
 		if (current_field > start_field && last_field_was_string) {
