@@ -463,6 +463,7 @@ static inline int object_common2(UNSERIALIZE_PARAMETER, long elements)
 	    /* We've got partially constructed object on our hands here. Wipe it. */
 	    if(Z_TYPE_PP(rval) == IS_OBJECT) {
 	       zend_hash_clean(Z_OBJPROP_PP(rval));
+	       zend_object_store_ctor_failed(*rval TSRMLS_CC);
 	    }
 	    ZVAL_NULL(*rval);
 		return 0;
@@ -676,6 +677,7 @@ use_double:
 	long elements = parse_iv(start + 2);
 	/* use iv() not uiv() in order to check data range */
 	*p = YYCURSOR;
+	if (!var_hash) return 0;
 
 	if (elements < 0) {
 		return 0;
@@ -719,6 +721,8 @@ object ":" uiv ":" ["]	{
 	zval *retval_ptr;
 	zval **args[1];
 	zval *arg_func_name;
+
+	if (!var_hash) return 0;
 
 	if (*start == 'C') {
 		custom_object = 1;
