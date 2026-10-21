@@ -16,6 +16,8 @@ $ctxt = stream_context_create([
  $conn = stream_socket_accept($server);
 
  phpt_notify("server-accepted");
+ while (($request_line = fgets($conn)) !== false && rtrim($request_line, "\r\n") !== '') {
+ }
 
  $loc = str_repeat("y", 9000);
  fwrite($conn, "HTTP/1.0 301 Ok\r\nContent-Type: text/html;\r\nLocation: $loc\r\n\r\nbody\r\n");
