@@ -18,6 +18,6 @@ $result = $doc->loadHTMLFile("text.html\0something");
 assert('$result === null');
 ?>
 --EXPECTF--
-%r(PHP ){0,1}%rWarning: DOMDocument::loadHTMLFile(): Empty string supplied as input %s
+Warning: DOMDocument::loadHTMLFile(): Empty string supplied as input %s
 
-%r(PHP ){0,1}%rWarning: DOMDocument::loadHTMLFile() expects parameter 1 to be a valid path, string given %s
+Warning: DOMDocument::loadHTMLFile() expects parameter 1 to be valid path, string given %s
