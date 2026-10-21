@@ -2607,7 +2607,7 @@ SPL_METHOD(CachingIterator, __toString)
 
 	SPL_FETCH_AND_CHECK_DUAL_IT(intern, getThis());
 
-	if (!spl_caching_it_valid(intern TSRMLS_CC)) {
+	if (spl_caching_it_valid(intern TSRMLS_CC) != SUCCESS) {
 		RETURN_EMPTY_STRING();
 	}
 
