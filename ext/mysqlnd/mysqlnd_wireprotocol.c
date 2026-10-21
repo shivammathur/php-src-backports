@@ -1535,6 +1535,7 @@ php_mysqlnd_rowp_read_binary_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zv
 		if (!*current_field) {
 			DBG_RETURN(FAIL);
 		}
+		ZVAL_NULL(*current_field);
 	}
 
 	for (i = 0, current_field = start_field; current_field < end_field; current_field++, i++) {
@@ -1553,16 +1554,18 @@ php_mysqlnd_rowp_read_binary_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zv
 			enum_mysqlnd_field_types type = fields_metadata[i].type;
 			size_t row_position = p - rbp;
 			if (rbs <= row_position) {
-				for (j = 0, current_field = start_field; j < i; current_field++, j++) {
+				for (j = 0, current_field = start_field; j < field_count; current_field++, j++) {
 					zval_ptr_dtor(current_field);
+					*current_field = NULL;
 				}
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Malformed server packet. No packet space left for the field");
 				DBG_RETURN(FAIL);
 			}
 			mysqlnd_ps_fetch_functions[type].func(*current_field, &fields_metadata[i], rbs - row_position, &p TSRMLS_CC);
 			if (p == NULL) {
-				for (j = 0, current_field = start_field; j < i; current_field++, j++) {
+				for (j = 0, current_field = start_field; j < field_count; current_field++, j++) {
 					zval_ptr_dtor(current_field);
+					*current_field = NULL;
 				}
 				DBG_RETURN(FAIL);
 			}
@@ -1644,6 +1647,7 @@ php_mysqlnd_rowp_read_text_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zval
 		if (!*current_field) {
 			DBG_RETURN(FAIL);
 		}
+		ZVAL_NULL(*current_field);
 	}
 
 	for (i = 0, current_field = start_field; current_field < end_field; current_field++, i++) {
@@ -1654,6 +1658,12 @@ php_mysqlnd_rowp_read_text_protocol(MYSQLND_MEMORY_POOL_CHUNK * row_buffer, zval
 
 		if (len != MYSQLND_NULL_LENGTH  && (p > packet_end || len > packet_end - p)) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Malformed server packet. Field length pointing after end of packet");
+			/* Text strings borrow the row buffer; release only their zvals. */
+			for (current_field = start_field; current_field < end_field; current_field++) {
+				ZVAL_NULL(*current_field);
+				zval_ptr_dtor(current_field);
+				*current_field = NULL;
+			}
 			DBG_RETURN(FAIL);
 		}
 		if (current_field > start_field && last_field_was_string) {
