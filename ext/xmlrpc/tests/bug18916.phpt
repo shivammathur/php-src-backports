@@ -2,7 +2,6 @@
 Bug #18916 (xmlrpc_set_type() not working)
 --INI--
 date.timezone="America/Sao_Paulo"
-extension=xmlrpc.so
 error_reporting = E_ALL | E_STRICT
 --FILE--
 <?php

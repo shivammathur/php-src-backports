@@ -1,7 +1,5 @@
 --TEST--
 Bug #51288 (CVE-2010-0397, NULL pointer deref when no <methodName> in request)
---INI--
-extension=xmlrpc.so
 --FILE--
 <?php
 $method = NULL;

@@ -2,7 +2,6 @@
 Bug #45226 (xmlrpc_set_type() segfaults with valid ISO8601 date string)
 --INI--
 date.timezone="America/Sao_Paulo"
-extension=xmlrpc.so
 error_reporting = E_ALL | E_STRICT
 --FILE--
 <?php

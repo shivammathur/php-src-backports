@@ -5,7 +5,7 @@ Bug #80672 Null Dereference in SoapClient
 --FILE--
 <?php
 try {
-    $client = new SoapClient(__DIR__ . "/bug80672.xml");
+    $client = new SoapClient(dirname(__FILE__) . "/bug80672.xml");
     $query = $soap->query(array('sXML' => 'something'));
 } catch(SoapFault $e) {
     print $e->getMessage();
