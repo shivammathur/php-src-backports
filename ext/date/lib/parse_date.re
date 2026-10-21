@@ -670,7 +670,7 @@ static long timelib_lookup_zone(char **ptr, int *dst, char **tz_abbr, int *found
 	return value;
 }
 
-static long timelib_get_zone(char **ptr, int *dst, timelib_time *t, int *tz_not_found, timelib_tzdb *tzdb)
+static long timelib_get_zone(char **ptr, int *dst, timelib_time *t, int *tz_not_found, timelib_tzdb *tzdb, timelib_tz_get_wrapper tz_get_wrapper)
 {
 	timelib_tzinfo *res;
 	long            retval = 0;
@@ -716,7 +716,7 @@ static long timelib_get_zone(char **ptr, int *dst, timelib_time *t, int *tz_not_
 #endif
 		/* If we have a TimeZone identifier to start with, use it */
 		if (strstr(tz_abbr, "/")) {
-			if ((res = timelib_parse_tzfile(tz_abbr, tzdb)) != NULL) {
+			if ((res = tz_get_wrapper(tz_abbr, tzdb)) != NULL) {
 				t->tz_info = res;
 				t->zone_type = TIMELIB_ZONETYPE_ID;
 				found++;
@@ -1020,7 +1020,7 @@ relativetext = reltextnumber space? reltextunit;
 				s->time->h = timelib_get_nr((char **) &ptr, 2);
 				s->time->i = timelib_get_nr((char **) &ptr, 2);
 				s->time->s = 0;
-				s->time->z = timelib_get_zone((char **) &ptr, &s->time->dst, s->time, s->tzdb, tz_get_wrapper);
+				s->time->z = timelib_get_zone((char **) &ptr, &s->time->dst, s->time, &tz_not_found, s->tzdb, tz_get_wrapper);
 				break;
 			case 1:
 				s->time->y = timelib_get_nr((char **) &ptr, 4);
@@ -1446,7 +1446,7 @@ relativetext = reltextnumber space? reltextunit;
 
 /*!max:re2c */
 
-timelib_time* timelib_strtotime(char *s, int len, struct timelib_error_container **errors, timelib_tzdb *tzdb)
+timelib_time* timelib_strtotime(char *s, int len, struct timelib_error_container **errors, timelib_tzdb *tzdb, timelib_tz_get_wrapper tz_get_wrapper)
 {
 	Scanner in;
 	int t;
