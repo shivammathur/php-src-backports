@@ -34,14 +34,12 @@ print "done!";
 [*] Server started
 [*] Connection established
 [*] Sending - Server Greeting: 580000000a352e352e352d31302e352e31382d4d6172696144420003000000473e3f6047257c6700fef7080200ff81150000000000000f0000006c6b55463f49335f686c6431006d7973716c5f6e61746976655f70617373776f7264
-[*] Received: 3d0000018da20e00000000c0080000000000000000000000000000000000000000000000726f6f740000006d7973716c5f6e61746976655f70617373776f726400
+[*] Received: 270000018da20600000000c0080000000000000000000000000000000000000000000000726f6f74000000
 [*] Sending - Malicious OK Auth Response [Extract heap through buffer over-read]: 0900000200000002000000fcff
 
 Warning: mysqli::mysqli(): OK packet message length is past the packet size in %s on line %d
 
-Warning: mysqli::mysqli(): [2002]  (trying to connect via %s) in %s on line %d
-
-Warning: mysqli::mysqli(): (HY000/2002):  in %s on line %d
+Warning: mysqli::mysqli(): (00000/0):  in %s on line %d
 
 Warning: mysqli_info(): Couldn't fetch mysqli in %s on line %d
 NULL

@@ -16,6 +16,8 @@ $serverCode = <<<'CODE'
     $conn = stream_socket_accept($server);
 
     phpt_notify("server-accepted");
+    while (($request_line = fgets($conn)) !== false && rtrim($request_line, "\r\n") !== '') {
+    }
 
     fwrite($conn, "HTTP/1.0 200 Ok\r\nContent-Type: text/html;\r\nCustom-Header: somevalue;\r\n  param1=value1; \r\n    param2=value2\r\n\r\nbody\r\n");
 CODE;

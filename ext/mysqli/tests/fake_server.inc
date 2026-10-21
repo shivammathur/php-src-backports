@@ -6,12 +6,12 @@ function my_mysqli_data_fields()
         'intval' => array(
             'type' => '03',
             'charset' => '3f00',
-            'length' => '0',
+            'length' => '0b000000',
             'flags' => '0110',
             'decimal' => '00',
             'query_data_packet_length' => '080000',
             'query_data_value' => '023134',
-            'stmt_data_packet_length' => '0',
+            'stmt_data_packet_length' => '0b0000',
             'stmt_data_value' => '0e000000'
         ),
         'fltval' => array(
@@ -22,7 +22,7 @@ function my_mysqli_data_fields()
             'decimal' => '1f',
             'query_data_packet_length' => '090000',
             'query_data_value' => '03322e33',
-            'stmt_data_packet_length' => '0',
+            'stmt_data_packet_length' => '0b0000',
             'stmt_data_value' => '33331340',
         ),
         'dblval' => array(
@@ -228,7 +228,7 @@ class my_mysqli_fake_packet_generator
         $qr2->original_n = "0164";
         $qr2->canary = "0c";
         $qr2->charset = "3f00";
-        $qr2->length = "0";
+        $qr2->length = "0b000000";
         $qr2->type = "03";
         $qr2->flags = "0350";
         $qr2->decimals = "000000";
