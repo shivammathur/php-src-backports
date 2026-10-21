@@ -475,10 +475,6 @@ PHP_FUNCTION(readline_completion_function)
 	zval_copy_ctor(_readline_completion);
 
 	rl_attempted_completion_function = _readline_completion_cb;
-	if (rl_attempted_completion_function == NULL) {
-		efree(name);
-		RETURN_FALSE;
-	}
 	RETURN_TRUE;
 }
 
