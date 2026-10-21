@@ -194,11 +194,16 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 			if (!index) {
 				MAKE_STD_ZVAL(gpc_element);
 				array_init(gpc_element);
-				zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p);
+				if (zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p) == FAILURE) {
+					zval_ptr_dtor(&gpc_element);
+					zval_dtor(val);
+					free_alloca(var_orig);
+					return;
+				}
 			} else {
                 if (php_is_forbidden_variable_name(index, index_len, var_name)) {
                     zval_dtor(val);
-                    efree(var_orig);
+                    free_alloca(var_orig);
                     return;
                 }
 				if (PG(magic_quotes_gpc) && (index != var)) {
@@ -221,7 +226,7 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 							efree(escaped_index);
 						}
 						zval_dtor(val);
-						efree(var_orig);
+						free_alloca(var_orig);
 						return;
 					}
 				}
@@ -248,11 +253,13 @@ plain_var:
 		gpc_element->value = val->value;
 		Z_TYPE_P(gpc_element) = Z_TYPE_P(val);
 		if (!index) {
-			zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p);
+			if (zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p) == FAILURE) {
+				zval_ptr_dtor(&gpc_element);
+			}
 		} else {
             if (php_is_forbidden_variable_name(index, index_len, var_name)) {
-                zval_dtor(val);
-                efree(var_orig);
+                zval_ptr_dtor(&gpc_element);
+                free_alloca(var_orig);
                 return;
             }
 			if (PG(magic_quotes_gpc)) {
