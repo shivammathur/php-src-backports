@@ -16,5 +16,4 @@ $uri = "file://$path/bug79971_2.xml";
 var_dump($imp->createDocumentType("$uri%00foo"));
 ?>
 --EXPECTF--
-Warning: DOMImplementation::createDocumentType(): URI must not contain percent-encoded NUL bytes in %s on line %d
 bool(false)

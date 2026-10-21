@@ -18,6 +18,11 @@ function test($boundaryLen) {
         getenv('TEST_PHP_CGI_EXECUTABLE'),
         '-C',
         '-n',
+        '-d', 'display_errors=1',
+        '-d', 'display_startup_errors=1',
+        '-d', 'html_errors=1',
+        '-d', 'error_reporting=-1',
+        '-d', 'default_charset=UTF-8',
         __DIR__ . '/GHSA-9pqp-7h25-4f32.inc',
     ];
 
