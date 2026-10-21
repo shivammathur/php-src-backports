@@ -3,11 +3,11 @@ GHSA-pcmh-g36c-qc44: Header parser of http stream wrapper does not verify header
 --FILE--
 <?php
 $serverCode = <<<'CODE'
-   $ctxt = stream_context_create([
-        "socket" => [
+   $ctxt = stream_context_create(array(
+        "socket" => array(
             "tcp_nodelay" => true
-        ]
-    ]);
+        )
+    ));
 
     $server = stream_socket_server(
         "tcp://127.0.0.1:0", $errno, $errstr, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $ctxt);

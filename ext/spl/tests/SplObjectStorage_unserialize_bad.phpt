@@ -24,11 +24,20 @@ Error at offset 6 of 34 bytes
 Error at offset 46 of 89 bytes
 object(SplObjectStorage)#2 (1) {
   ["storage":"SplObjectStorage":private]=>
-  array(2) {
+  array(3) {
     ["%s"]=>
     array(2) {
       ["obj"]=>
       object(stdClass)#3 (0) {
+      }
+      ["inf"]=>
+      object(stdClass)#4 (0) {
+      }
+    }
+    ["%s"]=>
+    array(2) {
+      ["obj"]=>
+      object(stdClass)#4 (0) {
       }
       ["inf"]=>
       int(1)

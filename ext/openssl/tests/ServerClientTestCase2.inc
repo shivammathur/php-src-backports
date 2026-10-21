@@ -32,7 +32,7 @@ function phpt_has_sslv3() {
 }
 
 function phpt_extract_tls_records($rawData) {
-    $records = [];
+    $records = array();
     $offset = 0;
     $dataLength = strlen($rawData);
 
@@ -43,7 +43,8 @@ function phpt_extract_tls_records($rawData) {
         }
 
         // Extract the length of the current record.
-        $length = unpack("n", substr($rawData, $offset + 3, 2))[1];
+        $length_data = unpack("n", substr($rawData, $offset + 3, 2));
+        $length = $length_data[1];
 
         // Check if the total length is within the bounds of the rawData.
         if ($offset + 5 + $length > $dataLength) {
@@ -68,11 +69,11 @@ class ServerClientTestCase
 {
     private $isWorker = false;
 
-    private $workerHandle = [];
+    private $workerHandle = array();
 
-    private $workerStdIn = [];
+    private $workerStdIn = array();
 
-    private $workerStdOut = [];
+    private $workerStdOut = array();
     
     private $in = null;
     private $out = null;
@@ -104,14 +105,14 @@ class ServerClientTestCase
             $ini = php_ini_loaded_file();
             $cmd = sprintf(
                 '%s %s "%s" %s',
-                PHP_BINARY, $ini ? "-n -c $ini" : "",
+                getenv('TEST_PHP_EXECUTABLE'), $ini ? "-n -c $ini" : "",
                 __FILE__,
                 WORKER_ARGV_VALUE
             );
         } else {
             $cmd = sprintf(
                 '%s %s "%s" %s %s',
-                PHP_BINARY,
+                getenv('TEST_PHP_EXECUTABLE'),
                 getenv('TEST_PHP_EXTRA_ARGS'),
                 __FILE__,
                 WORKER_ARGV_VALUE,
@@ -179,7 +180,7 @@ class ServerClientTestCase
     public function run($clientCode, $workerCode, $ephemeral = true)
     {
         if (!is_array($workerCode)) {
-            $workerCode = [WORKER_DEFAULT_NAME => $workerCode];
+            $workerCode = array(WORKER_DEFAULT_NAME => $workerCode);
         }
         reset($workerCode);
         $code = current($workerCode);
@@ -236,7 +237,7 @@ class ServerClientTestCase
         }
 
         stream_set_blocking($handle, false);
-        $read = [$handle];
+        $read = array($handle);
         $result = stream_select($read, $write, $except, $timeout);
         if (!$result) {
             return null;

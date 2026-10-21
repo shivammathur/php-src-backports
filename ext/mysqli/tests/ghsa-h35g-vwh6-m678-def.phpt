@@ -26,7 +26,8 @@ $result = $conn->query("SELECT * from users");
 if ($result) {
     $all_fields = $result->fetch_fields();
     var_dump($result->fetch_all(MYSQLI_ASSOC));
-    var_dump(get_object_vars($all_fields[0])["def"]);
+    $field_vars = get_object_vars($all_fields[0]);
+    var_dump($field_vars["def"]);
 }
 
 $conn->close();

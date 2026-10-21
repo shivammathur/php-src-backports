@@ -15,7 +15,7 @@ php_cli_server_start($serverCode);
 
 $host = PHP_CLI_SERVER_ADDRESS;
 $userinput = "index.php HTTP/1.1\r\nHost: $host\r\n\r\nGET /index2.php HTTP/1.1\r\nHost: $host\r\n\r\nGET /index.php";
-$context = stream_context_create(['http' => ['proxy' => 'tcp://' . $host, 'request_fulluri' => true]]);
+$context = stream_context_create(array('http' => array('proxy' => 'tcp://' . $host, 'request_fulluri' => true)));
 echo file_get_contents("http://$host/$userinput", false, $context);
 ?>
 --EXPECTF--

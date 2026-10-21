@@ -2616,10 +2616,10 @@ SPL_METHOD(CachingIterator, __toString)
 		return;
 	}
 	if (intern->u.caching.flags & CIT_TOSTRING_USE_KEY) {
-		if (!intern->current.str_key) {
-			RETURN_EMPTY_STRING();
-		}
 		if (intern->current.key_type == HASH_KEY_IS_STRING) {
+			if (!intern->current.str_key) {
+				RETURN_EMPTY_STRING();
+			}
 			RETURN_STRINGL(intern->current.str_key, intern->current.str_key_len-1, 1);
 		} else {
 			RETVAL_LONG(intern->current.int_key);

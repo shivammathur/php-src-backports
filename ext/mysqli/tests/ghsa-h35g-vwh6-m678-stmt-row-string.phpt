@@ -54,6 +54,6 @@ print "done!";
 Warning: mysqli_result::fetch_assoc(): Malformed server packet. Field length pointing after the end of packet in %s on line %d
 
 Warning: mysqli_result::fetch_assoc(): Error while reading a row in %s on line %d
-[*] Received: 0500000019010000000100000001
+[*] Received: 050000001901000000%r(?:0100000001)?%r
 [*] Server finished
 done!

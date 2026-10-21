@@ -3,11 +3,11 @@ GHSA-52jp-hrpf-2jff: HTTP stream wrapper truncate redirect location to 1024 byte
 --FILE--
 <?php
 $serverCode = <<<'CODE'
-$ctxt = stream_context_create([
-     "socket" => [
+$ctxt = stream_context_create(array(
+     "socket" => array(
          "tcp_nodelay" => true
-     ]
- ]);
+     )
+ ));
 
  $server = stream_socket_server(
      "tcp://127.0.0.1:0", $errno, $errstr, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $ctxt);
