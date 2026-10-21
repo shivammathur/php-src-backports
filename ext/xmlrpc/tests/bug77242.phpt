@@ -6,5 +6,5 @@ Bug #77242 (heap out of bounds read in xmlrpc_decode())
 <?php
 var_dump(xmlrpc_decode(base64_decode("PD94bWwgdmVyc2lvbmVuY29kaW5nPSJJU084ODU5NyKkpKSkpKSkpKSkpKSkpKSkpKSkpKSk")));
 ?>
---EXPECTF--
-%A NULL
+--EXPECTREGEX--
+.* NULL

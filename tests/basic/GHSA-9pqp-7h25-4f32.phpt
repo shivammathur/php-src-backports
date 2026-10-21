@@ -44,7 +44,7 @@ function test($boundaryLen) {
 
     $spec = array(
         0 => array('pipe', 'r'),
-        1 => STDOUT,
+        1 => array('pipe', 'w'),
         2 => STDOUT,
     );
 
@@ -57,7 +57,11 @@ function test($boundaryLen) {
     fwrite($pipes[0], $body);
 
     fclose($pipes[0]);
+    $response = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
     $status = proc_close($handle);
+    $start = strpos($response, "Hello world");
+    echo $start === false ? "Missing CGI response\n" : substr($response, $start);
 
     print "\n";
 }
@@ -70,9 +74,6 @@ for ($offset = -1; $offset <= 1; $offset++) {
 --EXPECTF--
 Boundary len: 5115
 Starting...
-X-Powered-By: %s
-Content-type: text/html; charset=UTF-8
-
 Hello world
 array(1) {
   ["koko"]=>
@@ -82,9 +83,6 @@ array(1) {
 
 Boundary len: 5116
 Starting...
-X-Powered-By: %s
-Content-type: text/html; charset=UTF-8
-
 Hello world
 array(1) {
   ["koko"]=>
@@ -94,11 +92,6 @@ array(1) {
 
 Boundary len: 5117
 Starting...
-X-Powered-By: %s
-Content-type: text/html; charset=UTF-8
-
-<br />
-<b>Warning</b>:  Boundary too large in multipart/form-data POST data in <b>Unknown</b> on line <b>0</b><br />
 Hello world
 array(0) {
 }

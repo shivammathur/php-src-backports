@@ -10,8 +10,8 @@ echo unserialize($data);
 
 ?>
 ==DONE==
---EXPECTF--
-SoapFault exception: [4298448493] 4298448543 in %S:0
+--EXPECTREGEX--
+SoapFault exception: \[4298448493\] 4298448543 in [^\r\n]*:0
 Stack trace:
-#0 %sbug73452.php(4): unserialize('O:9:"SoapFault"...')
-#1 {main}==DONE==
+\#0 [^\r\n]+bug73452\.php\(4\): unserialize\('O:9:"SoapFault"\.\.\.'\)
+\#1 \{main\}==DONE==

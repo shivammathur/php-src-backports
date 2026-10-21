@@ -15,7 +15,9 @@ $uri = "file://$path/bug79971_1.xml";
 var_dump(simplexml_load_file("$uri%00foo"));
 
 $sxe = simplexml_load_file($uri);
-var_dump($sxe->asXML("$uri.out%00foo"));
+$sxe->asXML("$uri.out%00foo");
+// Rejected output must not create the path truncated at the encoded NUL.
+var_dump(file_exists("$path/bug79971_1.xml.out"));
 ?>
 --EXPECTF--
 
