@@ -408,12 +408,19 @@ Balloc
 	int x;
 	Bigint *rv;
 
+	if (k > Kmax) {
+		zend_mm_safe_error_ex("Balloc() allocation exceeds list boundary");
+	}
+
 	if ((rv = freelist[k])) {
 		freelist[k] = rv->next;
 		}
 	else {
 		x = 1 << k;
 		rv = (Bigint *)MALLOC(sizeof(Bigint) + (x-1)*sizeof(Long));
+		if (!rv) {
+			zend_mm_safe_error_ex("Balloc() failed to allocate memory");
+		}
 		rv->k = k;
 		rv->maxwds = x;
 		}

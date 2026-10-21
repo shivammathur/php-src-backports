@@ -24,6 +24,12 @@
 
 #include <stdio.h>
 
+#ifdef ZEND_WIN32
+# include <process.h>
+#elif defined(HAVE_UNISTD_H)
+# include <unistd.h>
+#endif
+
 #include "../TSRM/TSRM.h"
 #include "zend_globals_macros.h"
 
@@ -74,6 +80,12 @@ typedef union _align_test {
 
 
 BEGIN_EXTERN_C()
+
+#if defined(__GNUC__) && __GNUC__ >= 3 && !defined(__INTEL_COMPILER) && !defined(DARWIN) && !defined(__hpux) && !defined(_AIX) && !defined(__osf__)
+ZEND_API void zend_mm_safe_error_ex(const char *format, ...) __attribute__ ((noreturn));
+#else
+ZEND_API void zend_mm_safe_error_ex(const char *format, ...);
+#endif
 
 ZEND_API char *zend_strndup(const char *s, unsigned int length) ZEND_ATTRIBUTE_MALLOC;
 

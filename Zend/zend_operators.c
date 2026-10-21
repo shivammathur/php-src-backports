@@ -1118,8 +1118,11 @@ ZEND_API int shift_right_function(zval *result, zval *op1, zval *op2 TSRMLS_DC)
 /* must support result==op1 */
 ZEND_API int add_char_to_string(zval *result, zval *op1, zval *op2)
 {
+	if (Z_STRLEN_P(op1) < 0 || Z_STRLEN_P(op1) == INT_MAX) {
+		zend_mm_safe_error_ex("String size overflow");
+	}
 	result->value.str.len = op1->value.str.len + 1;
-	result->value.str.val = (char *) erealloc(op1->value.str.val, result->value.str.len+1);
+	result->value.str.val = (char *) erealloc(op1->value.str.val, (size_t)result->value.str.len + 1);
     result->value.str.val[result->value.str.len - 1] = (char) op2->value.lval;
 	result->value.str.val[result->value.str.len] = 0;
 	result->type = IS_STRING;
@@ -1130,11 +1133,17 @@ ZEND_API int add_char_to_string(zval *result, zval *op1, zval *op2)
 /* must support result==op1 */
 ZEND_API int add_string_to_string(zval *result, zval *op1, zval *op2)
 {
-	int length = op1->value.str.len + op2->value.str.len;
+	int length;
+
+	if (Z_STRLEN_P(op1) < 0 || Z_STRLEN_P(op2) < 0 ||
+			Z_STRLEN_P(op1) > INT_MAX - Z_STRLEN_P(op2)) {
+		zend_mm_safe_error_ex("String size overflow");
+	}
+	length = op1->value.str.len + op2->value.str.len;
 	if (op1->value.str.val == empty_string) {
-		result->value.str.val = (char *) emalloc(length+1);
+		result->value.str.val = (char *) emalloc((size_t)length + 1);
 	} else {
-		result->value.str.val = (char *) erealloc(op1->value.str.val, length+1);
+		result->value.str.val = (char *) erealloc(op1->value.str.val, (size_t)length + 1);
 	}
     memcpy(result->value.str.val+op1->value.str.len, op2->value.str.val, op2->value.str.len);
     result->value.str.val[length] = 0;
@@ -1165,21 +1174,25 @@ ZEND_API int concat_function(zval *result, zval *op1, zval *op2 TSRMLS_DC)
 	if (use_copy2) {
 		op2 = &op2_copy;
 	}
+	if (Z_STRLEN_P(op1) < 0 || Z_STRLEN_P(op2) < 0 ||
+			Z_STRLEN_P(op1) > INT_MAX - Z_STRLEN_P(op2)) {
+		zend_mm_safe_error_ex("String size overflow");
+	}
 	if (result==op1) {	/* special case, perform operations on result */
 		uint res_len = op1->value.str.len + op2->value.str.len;
 		
 		if (result->value.str.len == 0) { /* handle empty_string */
 			STR_FREE(result->value.str.val);
-			result->value.str.val = emalloc(res_len+1);
+			result->value.str.val = emalloc((size_t)res_len + 1);
 		} else {
-			result->value.str.val = erealloc(result->value.str.val, res_len+1);
+			result->value.str.val = erealloc(result->value.str.val, (size_t)res_len + 1);
 		}
 		memcpy(result->value.str.val+result->value.str.len, op2->value.str.val, op2->value.str.len);
 		result->value.str.val[res_len]=0;
 		result->value.str.len = res_len;
 	} else {
 		result->value.str.len = op1->value.str.len + op2->value.str.len;
-		result->value.str.val = (char *) emalloc(result->value.str.len + 1);
+		result->value.str.val = (char *) safe_emalloc(result->value.str.len, 1, 1);
 		memcpy(result->value.str.val, op1->value.str.val, op1->value.str.len);
 		memcpy(result->value.str.val+op1->value.str.len, op2->value.str.val, op2->value.str.len);
 		result->value.str.val[result->value.str.len] = 0;
