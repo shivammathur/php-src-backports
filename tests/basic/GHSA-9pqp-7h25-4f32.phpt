@@ -9,17 +9,17 @@ if (!getenv('TEST_PHP_CGI_EXECUTABLE')) {
 --FILE--
 <?php
 
-const FILLUNIT = 5 * 1024;
+define('FILLUNIT', 5 * 1024);
 
 function test($boundaryLen) {
     printf("Boundary len: %d\n", $boundaryLen);
 
-    $cmd = [
+    $cmd = array(
         getenv('TEST_PHP_CGI_EXECUTABLE'),
         '-C',
         '-n',
         __DIR__ . '/GHSA-9pqp-7h25-4f32.inc',
-    ];
+    );
 
     $boundary = str_repeat('A', $boundaryLen);
     $body = ""
@@ -30,25 +30,25 @@ function test($boundaryLen) {
         . "--$boundary--\r\n"
         ;
 
-    $env = array_merge($_ENV, [
+    $env = array_merge($_ENV, array(
         'REDIRECT_STATUS' => '1',
         'CONTENT_TYPE' => "multipart/form-data; boundary=$boundary",
         'CONTENT_LENGTH' => strlen($body),
         'REQUEST_METHOD' => 'POST',
         'SCRIPT_FILENAME' => __DIR__ . '/GHSA-9pqp-7h25-4f32.inc',
-    ]);
+    ));
 
-    $spec = [
-        0 => ['pipe', 'r'],
+    $spec = array(
+        0 => array('pipe', 'r'),
         1 => STDOUT,
         2 => STDOUT,
-    ];
+    );
 
-    $pipes = [];
+    $pipes = array();
 
     print "Starting...\n";
 
-    $handle = proc_open($cmd, $spec, $pipes, getcwd(), $env);
+    $handle = proc_open(implode(' ', array_map('escapeshellarg', $cmd)), $spec, $pipes, getcwd(), $env);
 
     fwrite($pipes[0], $body);
 
