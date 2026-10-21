@@ -7,6 +7,10 @@ include_path=.:/usr/share/pear:/usr/share/php
 <?php
 $dir = dirname(__FILE__);
 $file = basename(__FILE__);
+function test_link_target($path) {
+    $target = @readlink($path);
+    return $target === false ? false : basename($target);
+}
 
 echo "-- error_log --\n";
 echo "test.log: ";
@@ -307,9 +311,9 @@ echo "$file\\0extra: ";
 var_dump(file_exists(__FILE__."\0extra"));
 
 echo "-- readlink --\n";
-symlink($file, "$dir/testlink");
+symlink(__FILE__, "$dir/testlink");
 echo "testlink: ";
-var_dump(readlink("$dir/testlink"));
+var_dump(test_link_target("$dir/testlink"));
 echo "testlink\\0extra: ";
 var_dump(readlink("$dir/testlink\0extra"));
 unlink("$dir/testlink");
@@ -320,19 +324,19 @@ $cwd = getcwd();
 chdir("$dir/testdir");
 touch("target");
 echo "link -> target: ";
-var_dump(symlink("target", "link"));
+var_dump(symlink("$dir/testdir/target", "$dir/testdir/link"));
 echo " link exists? "; var_dump(file_exists("link"));
-echo " link target: "; var_dump(@readlink("link"));
+echo " link target: "; var_dump(test_link_target("$dir/testdir/link"));
 @unlink("link");
 echo "link\\0extra -> target: ";
-var_dump(symlink("target", "link\0extra"));
+var_dump(symlink("$dir/testdir/target", "$dir/testdir/link\0extra"));
 echo " link exists? "; var_dump(file_exists("link"));
-echo " link target: "; var_dump(@readlink("link"));
+echo " link target: "; var_dump(test_link_target("$dir/testdir/link"));
 @unlink("link");
 echo "link -> target\\0extra: ";
-var_dump(symlink("target\0extra", "link"));
+var_dump(symlink("$dir/testdir/target\0extra", "$dir/testdir/link"));
 echo " link exists? "; var_dump(file_exists("link"));
-echo " link target: "; var_dump(@readlink("link"));
+echo " link target: "; var_dump(test_link_target("$dir/testdir/link"));
 @unlink("link");
 @unlink("target");
 chdir($cwd);

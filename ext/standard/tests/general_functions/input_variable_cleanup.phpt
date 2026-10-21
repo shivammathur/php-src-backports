@@ -14,14 +14,16 @@ var_dump(count($result['root']) <= 101);
 parse_str('..Host-test=value&outer[__Secure-test]=value&outer[__Secure-test][child]=value', $result);
 var_dump(count($result));
 var_dump(count($result['outer']));
-// Failed append at the maximum integer index must not reuse a stale pointer.
-parse_str('x[' . PHP_INT_MAX . ']=value&x[]=discard&x[][child]=discard', $result);
-var_dump(count($result['x']));
+// Appending near the maximum index must leave earlier entries intact.
+parse_str('x[' . (PHP_INT_MAX - 1) . ']=value&x[]=kept&x[][child]=discard', $result);
+var_dump($result['x'][PHP_INT_MAX - 1] === 'value');
+var_dump($result['x'][PHP_INT_MAX] === 'kept');
 echo "Done\n";
 ?>
 --EXPECT--
 bool(true)
 int(1)
 int(0)
-int(1)
+bool(true)
+bool(true)
 Done
