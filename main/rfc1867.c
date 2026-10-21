@@ -460,6 +460,14 @@ static int find_boundary(multipart_buffer *self, char *boundary TSRMLS_DC)
 	return 0;
 }
 
+static zend_bool php_mime_should_save_hdr(const char *name)
+{
+	return !strcasecmp(name, "Content-Disposition")
+		|| !strcasecmp(name, "Content-Type");
+}
+
+static char *php_mime_get_hdr_value(zend_llist header, char *key);
+
 /* parse headers */
 static int multipart_buffer_headers(multipart_buffer *self, zend_llist *header TSRMLS_DC)
 {
@@ -497,10 +505,15 @@ static int multipart_buffer_headers(multipart_buffer *self, zend_llist *header T
 			}
 
 			*value = '\0';
-			do { value++; } while(isspace(*value));
-
-			key = estrdup(line);
-			smart_str_appends(&buf_value, value);
+			/* Keep only headers we use, and ignore duplicates. */
+			if (!php_mime_should_save_hdr(line)
+					|| php_mime_get_hdr_value(*header, line)) {
+				key = NULL;
+			} else {
+				key = estrdup(line);
+				do { value++; } while (isspace((unsigned char)*value));
+				smart_str_appends(&buf_value, value);
+			}
 		} else if (buf_value.c) { /* If no ':' on the line, add to previous line */
 			smart_str_appends(&buf_value, line);
 		} else {
@@ -574,11 +587,11 @@ static char *php_ap_getword(char **line, char stop)
 	return res;
 }
 
-static char *substring_conf(char *start, int len, char quote TSRMLS_DC)
+static char *substring_conf(char *start, size_t len, char quote TSRMLS_DC)
 {
 	char *result = emalloc(len + 2);
 	char *resp = result;
-	int i;
+	size_t i;
 
 	for (i = 0; i < len; ++i) {
 		if (start[i] == '\\' && (start[i + 1] == '\\' || (quote && start[i + 1] == quote))) {
@@ -654,7 +667,7 @@ look_for_quote:
 		while (*strend && !isspace(*strend)) {
 			++strend;
 		}
-		res = substring_conf(str, strend - str, 0 TSRMLS_CC);
+		res = substring_conf(str, (size_t)(strend - str), 0 TSRMLS_CC);
 	}
 
 	while (*strend && isspace(*strend)) {
