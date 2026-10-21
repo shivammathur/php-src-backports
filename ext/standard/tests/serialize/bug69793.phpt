@@ -11,7 +11,6 @@ Notice: Undefined property: Exception::$message in %s/bug69793.php on line %d
 
 Notice: Undefined property: Exception::$file in %s/bug69793.php on line %d
 
-Notice: Undefined property: Exception::$previous in %s/bug69793.php on line %d
 string(53) "exception 'Exception' in :1337
 Stack trace:
 #0 {main}"
