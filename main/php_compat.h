@@ -327,6 +327,7 @@
 #define gdFontCacheSetup php_gd_gdFontCacheSetup
 #define gdFontCacheShutdown php_gd_gdFontCacheShutdown
 #define gdFreeFontCache php_gd_gdFreeFontCache
+#define overflow2 php_gd_overflow2
 #endif /* HAVE_GD_BUNDLED */
 
 /* Define to specify how much context to retain around the current parse
