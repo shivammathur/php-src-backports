@@ -34,7 +34,7 @@ array(7) {
   ["stream_type"]=>
   string(5) "STDIO"
   ["mode"]=>
-  string(2) "rb"
+  string(1) "r"
   ["unread_bytes"]=>
   int(0)
   ["seekable"]=>

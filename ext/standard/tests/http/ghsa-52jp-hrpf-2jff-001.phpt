@@ -14,6 +14,7 @@ $serverCode = "
  phpt_notify_server_start(\$server);
 
  \$conn = stream_socket_accept(\$server);
+    while ((\$line = fgets(\$conn)) !== false && trim(\$line) !== '') {}
 
  phpt_notify(\"server-accepted\");
 
