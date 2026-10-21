@@ -46,16 +46,16 @@ array(9) {
   bool(true)
   ["uri"]=>
   string(%i) "File://%sstream_get_meta_data_file_variation4.php.tmp"
+}
+
+Change to file's directory and open with a relative path:
+array(9) {
   ["timed_out"]=>
   bool(false)
   ["blocked"]=>
   bool(true)
   ["eof"]=>
   bool(false)
-}
-
-Change to file's directory and open with a relative path:
-array(9) {
   ["wrapper_type"]=>
   string(9) "plainfile"
   ["stream_type"]=>

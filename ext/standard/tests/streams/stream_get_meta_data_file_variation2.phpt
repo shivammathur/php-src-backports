@@ -86,17 +86,17 @@ array(9) {
   bool(true)
   ["uri"]=>
   string(%i) "%s.tmp"
+}
+
+
+Read 20 bytes from the file:
+array(9) {
   ["timed_out"]=>
   bool(false)
   ["blocked"]=>
   bool(true)
   ["eof"]=>
   bool(false)
-}
-
-
-Read 20 bytes from the file:
-array(9) {
   ["wrapper_type"]=>
   string(9) "plainfile"
   ["stream_type"]=>

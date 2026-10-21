@@ -51,17 +51,17 @@ array(7) {
   int(%i)
   ["seekable"]=>
   bool(false)
+}
+
+
+Read a line from the client:
+array(7) {
   ["timed_out"]=>
   bool(false)
   ["blocked"]=>
   bool(true)
   ["eof"]=>
   bool(false)
-}
-
-
-Read a line from the client:
-array(7) {
   ["stream_type"]=>
   string(%d) "tcp_socke%s"
   ["mode"]=>

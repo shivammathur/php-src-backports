@@ -12,6 +12,6 @@ echo "Height ".$height."\n";
 DONE
 --EXPECTF--
 %A
-Width 42
-Height 42
+Width 0
+Height 0
 DONE

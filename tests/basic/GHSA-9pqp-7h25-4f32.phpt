@@ -9,7 +9,7 @@ if (!getenv('TEST_PHP_CGI_EXECUTABLE')) {
 --FILE--
 <?php
 
-const FILLUNIT = 5 * 1024;
+define('FILLUNIT', 5 * 1024);
 
 function test($boundaryLen) {
     printf("Boundary len: %d\n", $boundaryLen);
@@ -48,7 +48,7 @@ function test($boundaryLen) {
 
     print "Starting...\n";
 
-    $handle = proc_open($cmd, $spec, $pipes, getcwd(), $env);
+    $handle = proc_open(implode(' ', array_map('escapeshellarg', $cmd)), $spec, $pipes, getcwd(), $env);
 
     fwrite($pipes[0], $body);
 
