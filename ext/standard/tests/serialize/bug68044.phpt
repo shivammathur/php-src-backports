@@ -6,7 +6,7 @@ Bug #68044 Integer overflow in unserialize() (32-bits only)
 ?>
 ===DONE==
 --EXPECTF--
-Warning: Insufficient data for unserializing - %d required, 1 present in %s/bug68044.php on line 2
+Warning: Class __PHP_Incomplete_Class has no unserializer in %s/bug68044.php on line 2
 
 Notice: unserialize(): Error at offset %d of 33 bytes in %s/bug68044.php on line %d
 ===DONE==

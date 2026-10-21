@@ -1,4 +1,4 @@
---TEST--                                 
+--TEST--
 Bug #77153 (imap_open allows to run arbitrary shell commands via mailbox parameter)
 --SKIPIF--
 <?php
@@ -8,7 +8,6 @@ Bug #77153 (imap_open allows to run arbitrary shell commands via mailbox paramet
 ?>
 --FILE--
 <?php
-define('dirname(__FILE__)', realpath(dirname(__FILE__)));
 $payload = "echo 'BUG'> " . dirname(__FILE__) . '/__bug';
 $payloadb64 = base64_encode($payload);
 $server = "x -oProxyCommand=echo\t$payloadb64|base64\t-d|sh}";
@@ -21,6 +20,5 @@ var_dump(file_exists(dirname(__FILE__) . '/__bug'));
 bool(false)
 --CLEAN--
 <?php
-define('dirname(__FILE__)', realpath(dirname(__FILE__)));
 if(file_exists(dirname(__FILE__) . '/__bug')) unlink(dirname(__FILE__) . '/__bug');
 ?>

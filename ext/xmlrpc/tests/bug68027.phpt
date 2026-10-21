@@ -18,7 +18,7 @@ print_r($obj);
 
 echo "Done\n";
 ?>
---EXPECTF--	
+--EXPECTF--
 object(stdClass)#1 (3) {
   ["scalar"]=>
   string(16) "6-01-01 20:00:00"

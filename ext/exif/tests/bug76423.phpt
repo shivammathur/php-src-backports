@@ -6,7 +6,6 @@ if (!extension_loaded('exif')) die('skip exif extension not available');
 ?>
 --FILE--
 <?php
-define('dirname(__FILE__)', realpath(dirname(__FILE__)));
 exif_read_data(dirname(__FILE__) . '/bug76423.jpg', 0, true, true);
 ?>
 ===DONE===
