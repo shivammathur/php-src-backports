@@ -468,6 +468,8 @@ PS_SERIALIZER_DECODE_FUNC(php_binary)
 					php_set_session_var(name, namelen, current, &var_hash  TSRMLS_CC);
 				}
 			} else {
+				var_push_dtor_no_addref(&var_hash, &current);
+				efree(name);
 				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 				return FAILURE;
 			}
