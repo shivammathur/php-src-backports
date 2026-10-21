@@ -193,7 +193,7 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 
 			if (!index) {
 				MAKE_STD_ZVAL(gpc_element);
-				array_init(gpc_element);
+				array_init_singleton(gpc_element);
 				if (zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p) == FAILURE) {
 					zval_ptr_dtor(&gpc_element);
 					zval_dtor(val);
@@ -219,7 +219,7 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 							php_error_docref(NULL TSRMLS_CC, E_WARNING, "Input variables exceeded %ld. To increase the limit change max_input_vars in php.ini.", PG(max_input_vars));
 						}
 						MAKE_STD_ZVAL(gpc_element);
-						array_init(gpc_element);
+						array_init_singleton(gpc_element);
 						zend_symtable_update(symtable1, escaped_index, index_len + 1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p);
 					} else {
 						if (index != escaped_index) {
@@ -345,7 +345,7 @@ SAPI_API SAPI_TREAT_DATA_FUNC(php_default_treat_data)
 		case PARSE_GET:
 		case PARSE_COOKIE:
 			ALLOC_ZVAL(array_ptr);
-			array_init(array_ptr);
+			array_init_singleton(array_ptr);
 			INIT_PZVAL(array_ptr);
 			switch (arg) {
 				case PARSE_POST:

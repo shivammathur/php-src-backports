@@ -21,6 +21,7 @@
 
 #include "zend.h"
 #include "zend_alloc.h"
+#include "zend_execute.h"
 #include "zend_globals.h"
 #include "zend_fast_cache.h"
 #ifdef HAVE_SIGNAL_H
@@ -65,6 +66,36 @@ static long mem_block_end_magic = MEM_BLOCK_END_MAGIC;
 #endif
 
 
+ZEND_API void zend_mm_safe_error_ex(const char *format, ...)
+{
+	const char *script_filename = NULL;
+	uint script_lineno = 0;
+	va_list args;
+	char buf[1024];
+	TSRMLS_FETCH();
+
+	if (zend_is_compiling(TSRMLS_C)) {
+		script_filename = zend_get_compiled_filename(TSRMLS_C);
+		script_lineno = zend_get_compiled_lineno(TSRMLS_C);
+	} else if (EG(in_execution)) {
+		script_filename = EG(active_op_array) ? EG(active_op_array)->filename : NULL;
+		script_lineno = EG(opline_ptr) ? (*EG(opline_ptr))->lineno : 0;
+	}
+
+	va_start(args, format);
+	vsnprintf(buf, sizeof(buf), format, args);
+	buf[sizeof(buf) - 1] = '\0';
+	va_end(args);
+	fprintf(stderr, "\nFatal error: %s in %s on line %d\n",
+			buf, script_filename ? script_filename : "Unknown", script_lineno);
+
+	/* See http://support.microsoft.com/kb/190351 */
+#ifdef PHP_WIN32
+	fflush(stderr);
+#endif
+	_exit(1);
+}
+
 # if MEMORY_LIMIT
 #  if ZEND_DEBUG
 #define CHECK_MEMORY_LIMIT(s, rs) _CHECK_MEMORY_LIMIT(s, rs, __zend_filename, __zend_lineno)
@@ -72,35 +103,19 @@ static long mem_block_end_magic = MEM_BLOCK_END_MAGIC;
 #define CHECK_MEMORY_LIMIT(s, rs)	_CHECK_MEMORY_LIMIT(s, rs, NULL, 0)
 #  endif
 
-#define _CHECK_MEMORY_LIMIT(s, rs, file, lineno) { if ((ssize_t)(rs) > (ssize_t)(INT_MAX - AG(allocated_memory))) { \
-									if (file) { \
-										fprintf(stderr, "Integer overflow in memory_limit check detected at %s:%d\n", file, lineno); \
-									} else { \
-										fprintf(stderr, "Integer overflow in memory_limit check detected\n"); \
-									} \
-									exit(1); \
-								} \
-								AG(allocated_memory) += rs;\
-								if (AG(memory_limit)<AG(allocated_memory)) {\
-									int php_mem_limit = AG(memory_limit); \
-									AG(allocated_memory) -= rs; \
-									if (EG(in_execution) && AG(memory_limit)+1048576 > AG(allocated_memory)) { \
-										AG(memory_limit) = AG(allocated_memory) + 1048576; \
-										if (file) { \
-											zend_error(E_ERROR,"Allowed memory size of %d bytes exhausted at %s:%d (tried to allocate %d bytes)", php_mem_limit, file, lineno, s); \
-										} else { \
-											zend_error(E_ERROR,"Allowed memory size of %d bytes exhausted (tried to allocate %d bytes)", php_mem_limit, s); \
-										} \
-									} else { \
-										if (file) { \
-											fprintf(stderr, "Allowed memory size of %d bytes exhausted at %s:%d (tried to allocate %d bytes)\n", php_mem_limit, file, lineno, s); \
-										} else { \
-											fprintf(stderr, "Allowed memory size of %d bytes exhausted (tried to allocate %d bytes)\n", php_mem_limit, s); \
-										} \
-										exit(1); \
-									} \
-								} \
-							}
+#define _CHECK_MEMORY_LIMIT(s, rs, file, lineno) do { \
+	if ((ssize_t)(rs) > (ssize_t)(INT_MAX - AG(allocated_memory))) { \
+		zend_mm_safe_error_ex("Integer overflow in memory_limit check detected"); \
+	} \
+	AG(allocated_memory) += rs; \
+	if (AG(memory_limit) < AG(allocated_memory)) { \
+		if (file) { \
+			zend_mm_safe_error_ex("Allowed memory size of %u bytes exhausted at %s:%u (tried to allocate %lu bytes)", AG(memory_limit), file, (uint) (lineno), (unsigned long) (s)); \
+		} else { \
+			zend_mm_safe_error_ex("Allowed memory size of %u bytes exhausted (tried to allocate %lu bytes)", AG(memory_limit), (unsigned long) (s)); \
+		} \
+	} \
+} while (0)
 # endif
 
 #ifndef CHECK_MEMORY_LIMIT
@@ -204,9 +219,8 @@ emalloc_error:
 		fprintf(stderr,"FATAL:  emalloc():  Unable to allocate %ld bytes\n", (long) size);
 #if ZEND_DEBUG && defined(HAVE_KILL) && defined(HAVE_GETPID)
 		kill(getpid(), SIGSEGV);
-#else
-		exit(1);
 #endif
+		_exit(1);
 		HANDLE_UNBLOCK_INTERRUPTIONS();
 		return (void *)p;
 	}
@@ -252,7 +266,7 @@ ZEND_API void *_safe_emalloc(size_t nmemb, size_t size, size_t offset ZEND_FILE_
 		}
 	}
 
-	zend_error(E_ERROR, "Possible integer overflow in memory allocation (%zd * %zd + %zd)", nmemb, size, offset);
+	zend_mm_safe_error_ex("Possible integer overflow in memory allocation (%zd * %zd + %zd)", nmemb, size, offset);
 	return 0;
 }
 
@@ -277,7 +291,7 @@ ZEND_API void *_safe_malloc(size_t nmemb, size_t size, size_t offset)
 		}
 	}
 
-	zend_error(E_ERROR, "Possible integer overflow in memory allocation (%zd * %zd + %zd)", nmemb, size, offset);
+	zend_mm_safe_error_ex("Possible integer overflow in memory allocation (%zd * %zd + %zd)", nmemb, size, offset);
 	return 0;
 }
 
@@ -391,9 +405,8 @@ erealloc_error:
 			fprintf(stderr,"FATAL:  erealloc():  Unable to allocate %ld bytes\n", (long) size);
 #if ZEND_DEBUG && HAVE_KILL && HAVE_GETPID
 			kill(getpid(), SIGSEGV);
-#else
-			exit(1);
 #endif
+			_exit(1);
 		}
 		ADD_POINTER_TO_LIST(orig);
 		HANDLE_UNBLOCK_INTERRUPTIONS();

@@ -775,6 +775,16 @@ ZEND_API int _array_init(zval *arg ZEND_FILE_LINE_DC)
 	return SUCCESS;
 }
 
+ZEND_API int _array_init_singleton(zval *arg ZEND_FILE_LINE_DC)
+{
+	_array_init(arg ZEND_FILE_LINE_RELAY_CC);
+	/* Buckets are allocated eagerly in these branches; shrink the storage and mask. */
+	Z_ARRVAL_P(arg)->arBuckets = (Bucket **) erealloc_rel(Z_ARRVAL_P(arg)->arBuckets, 2 * sizeof(Bucket *));
+	Z_ARRVAL_P(arg)->nTableSize = 2;
+	Z_ARRVAL_P(arg)->nTableMask = 1;
+	return SUCCESS;
+}
+
 
 static int zend_merge_property(zval **value, int num_args, va_list args, zend_hash_key *hash_key)
 {
