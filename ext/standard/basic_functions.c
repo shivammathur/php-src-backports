@@ -6348,6 +6348,9 @@ PHP_FUNCTION(parse_ini_file)
 	}
 
 	convert_to_string_ex(filename);
+	if (strlen(Z_STRVAL_PP(filename)) != Z_STRLEN_PP(filename)) {
+		RETURN_FALSE;
+	}
 
 	memset(&fh, 0, sizeof(fh));
 	fh.filename = Z_STRVAL_PP(filename);
