@@ -69,6 +69,13 @@
 
 #include "php_fopen_wrappers.h"
 
+typedef struct _php_ftp_dirstream_data {
+	php_stream *datastream;
+	php_stream *controlstream;
+	php_stream *dirstream;
+} php_ftp_dirstream_data;
+
+
 #define FTPS_ENCRYPT_DATA 1
 #define GET_FTP_RESULT(stream)	get_ftp_result((stream), tmp_line, sizeof(tmp_line) TSRMLS_CC)
 
@@ -177,11 +184,6 @@ static php_stream *php_ftp_fopen_connect(php_stream_wrapper *wrapper, char *path
 		} else {
 			/* encrypt data etc */
 
-typedef struct _php_ftp_dirstream_data {
-	php_stream *datastream;
-	php_stream *controlstream;
-	php_stream *dirstream;
-} php_ftp_dirstream_data;
 
 		}
 
