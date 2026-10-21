@@ -493,7 +493,7 @@ bug39863_paths.php\0extra: boolean
 bug39863_paths.php: bool(true)
 bug39863_paths.php\0extra: bool(false)
 -- readlink --
-testlink: string(12) "bug39863_paths.php"
+testlink: string(18) "bug39863_paths.php"
 testlink\0extra: bool(false)
 -- symlink --
 link -> target: bool(true)
