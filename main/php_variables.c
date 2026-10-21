@@ -481,7 +481,7 @@ void _php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	int magic_quotes_gpc = PG(magic_quotes_gpc);
 
 	if (magic_quotes_gpc) {
-		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1);
 	}
 
 	for (env = environ; env != NULL && *env != NULL; env++) {
@@ -503,7 +503,7 @@ void _php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	}
 
 	if (magic_quotes_gpc) {
-		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "1", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "1", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1);
 	}
 }
 
@@ -629,7 +629,7 @@ static inline void php_register_server_variables(TSRMLS_D)
 	}
 	PG(http_globals)[TRACK_VARS_SERVER] = array_ptr;
 	if (magic_quotes_gpc) {
-		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1);
 	}
 
 	/* Server variables */
@@ -656,7 +656,7 @@ static inline void php_register_server_variables(TSRMLS_D)
 	}
 
 	if (magic_quotes_gpc) {
-		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "1", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+		zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "1", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1);
 	}
 }
 /* }}} */

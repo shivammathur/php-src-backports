@@ -612,7 +612,7 @@ void cgi_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 
 		/* turn off magic_quotes while importing environment variables */
 		if (magic_quotes_gpc) {
-			zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+			zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1);
 		}
 		for (zend_hash_internal_pointer_reset_ex(&request->env, &pos);
 		     zend_hash_get_current_key_ex(&request->env, &var, &var_len, &idx, 0, &pos) == HASH_KEY_IS_STRING &&
@@ -624,7 +624,7 @@ void cgi_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 			}
 		}
 		if (magic_quotes_gpc) {
-			zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "1", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1 TSRMLS_CC);
+			zend_alter_ini_entry_ex("magic_quotes_gpc", sizeof("magic_quotes_gpc"), "1", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE, 1);
 		}
 	}
 }
@@ -1320,6 +1320,9 @@ static zend_module_entry cgi_module_entry = {
  */
 int main(int argc, char *argv[])
 {
+	char *query_string;
+	char *decoded_query_string;
+	int skip_getopt = 0;
 	int free_query_string = 0;
 	int exit_status = SUCCESS;
 	int cgi = 0, c, i, len;
@@ -1356,9 +1359,6 @@ int main(int argc, char *argv[])
 #ifndef PHP_WIN32
 	int status = 0;
 #endif
-	char *query_string;
-	char *decoded_query_string;
-	int skip_getopt = 0;
 #endif /* PHP_FASTCGI */
 
 #if 0 && defined(PHP_DEBUG)
