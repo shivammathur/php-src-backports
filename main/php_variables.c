@@ -198,6 +198,7 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 				if (zend_hash_next_index_insert(symtable1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p) == FAILURE) {
 					zval_ptr_dtor(&gpc_element);
 					zval_dtor(val);
+					efree(var_orig);
 					return;
 				}
 			} else {
@@ -222,7 +223,7 @@ PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars
 					zend_symtable_update(symtable1, escaped_index, index_len + 1, &gpc_element, sizeof(zval *), (void **) &gpc_element_p);
 					} else {
 						if (index != escaped_index) {
-							efree(var_orig);
+							efree(escaped_index);
 						}
 						zval_dtor(val);
 						efree(var_orig);
@@ -257,7 +258,7 @@ plain_var:
 			}
 		} else {
             if (php_is_forbidden_variable_name(index, index_len, var_name)) {
-                zval_dtor(val);
+                zval_ptr_dtor(&gpc_element);
                 efree(var_orig);
                 return;
             }
