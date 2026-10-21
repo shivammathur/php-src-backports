@@ -59,7 +59,7 @@ PHPAPI void var_push_dtor(php_unserialize_data_t *var_hashx, zval **rval)
 {
 	var_entries *var_hash, *prev = NULL;
 
-	if (!var_hash) {
+	if (!var_hashx) {
 		return;
 	}
 
