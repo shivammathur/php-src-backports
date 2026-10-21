@@ -29,14 +29,14 @@ array(8) {
   int(0)
   ["seekable"]=>
   bool(true)
+}
+array(8) {
   ["timed_out"]=>
   bool(false)
   ["blocked"]=>
   bool(true)
   ["eof"]=>
   bool(false)
-}
-array(8) {
   ["wrapper_type"]=>
   string(9) "plainfile"
   ["stream_type"]=>

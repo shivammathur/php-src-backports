@@ -12,8 +12,8 @@ if (!extension_loaded('exif')) die('skip exif extension not available');
 ?>
 --FILE--
 <?php
-exif_read_data(__DIR__ . '/bug76130_1.jpg');
-exif_read_data(__DIR__ . '/bug76130_2.jpg');
+exif_read_data(dirname(__FILE__) . '/bug76130_1.jpg');
+exif_read_data(dirname(__FILE__) . '/bug76130_2.jpg');
 ?>
 ===DONE===
 --EXPECT--
