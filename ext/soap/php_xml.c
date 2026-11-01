@@ -55,6 +55,9 @@ static void cleanup_xml_node(xmlNodePtr node)
 			if (is_blank(trav->content)) {
 				del = trav;
 			}
+		} else if (trav->type == XML_DTD_NODE) {
+			/* Attribute-value entity references can share content with the DTD.
+			 * Keep it alive until the document itself is freed. */
 		} else if ((trav->type != XML_ELEMENT_NODE) &&
 		           (trav->type != XML_CDATA_SECTION_NODE)) {
 			del = trav;
