@@ -1,7 +1,7 @@
 # php-src-backports
 <p>
   <a href="https://github.com/shivammathur/php-src-backports" title="php-src-backports">
-    <img alt="PHP Versions Supported" src="https://img.shields.io/badge/php-5.0%20to%208.1-777bb3.svg?logo=php&logoColor=white&labelColor=555555">
+    <img alt="PHP Versions Supported" src="https://img.shields.io/badge/php-5.3%20to%208.1-777bb3.svg?logo=php&logoColor=white&labelColor=555555">
   </a>
 <p>
 
@@ -20,9 +20,6 @@ This is a fork of `php/php-src` with security patches backported from maintained
 |5.5|[PHP-5.5-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.5-security-backports)|—|
 |5.4|[PHP-5.4-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.4-security-backports)|—|
 |5.3|[PHP-5.3-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.3-security-backports)|—|
-|5.2|[PHP-5.2-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.2-security-backports)|—|
-|5.1|[PHP-5.1-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.1-security-backports)|—|
-|5.0|[PHP-5.0-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.0-security-backports)|—|
 
 
 ## License
