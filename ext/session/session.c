@@ -82,6 +82,12 @@ zend_class_entry *php_session_update_timestamp_iface_entry;
 #define IF_SESSION_VARS() \
 	if (Z_ISREF_P(&PS(http_session_vars)) && Z_TYPE_P(Z_REFVAL(PS(http_session_vars))) == IS_ARRAY)
 
+#define SESSION_CHECK_UPLOAD_PROGRESS_STATE \
+	if (PS(rfc1867_enabled) && stage == ZEND_INI_STAGE_RUNTIME) { \
+		zend_throw_error(NULL, "Session ini settings cannot be changed at runtime when session.upload_progress.enabled is On"); \
+		return FAILURE; \
+	}
+
 #define SESSION_CHECK_ACTIVE_STATE	\
 	if (PS(session_status) == php_session_active) {	\
 		php_error_docref(NULL, E_WARNING, "Session ini settings cannot be changed when a session is active");	\
@@ -538,6 +544,7 @@ static PHP_INI_MH(OnUpdateSaveHandler) /* {{{ */
 	const ps_module *tmp;
 	int err_type = E_ERROR;
 
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 
@@ -573,6 +580,7 @@ static PHP_INI_MH(OnUpdateSerializer) /* {{{ */
 {
 	const ps_serializer *tmp;
 
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 
@@ -601,6 +609,7 @@ static PHP_INI_MH(OnUpdateSerializer) /* {{{ */
 
 static PHP_INI_MH(OnUpdateTransSid) /* {{{ */
 {
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 
@@ -617,6 +626,7 @@ static PHP_INI_MH(OnUpdateTransSid) /* {{{ */
 
 static PHP_INI_MH(OnUpdateSaveDir) /* {{{ */
 {
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 
@@ -651,6 +661,7 @@ static PHP_INI_MH(OnUpdateSaveDir) /* {{{ */
 
 static PHP_INI_MH(OnUpdateName) /* {{{ */
 {
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 
@@ -678,6 +689,7 @@ static PHP_INI_MH(OnUpdateName) /* {{{ */
 
 static PHP_INI_MH(OnUpdateCookieLifetime) /* {{{ */
 {
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 	if (atol(ZSTR_VAL(new_value)) < 0) {
@@ -691,6 +703,7 @@ static PHP_INI_MH(OnUpdateCookieLifetime) /* {{{ */
 
 static PHP_INI_MH(OnUpdateSessionLong) /* {{{ */
 {
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 	return OnUpdateLong(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
@@ -700,8 +713,17 @@ static PHP_INI_MH(OnUpdateSessionLong) /* {{{ */
 
 static PHP_INI_MH(OnUpdateSessionString) /* {{{ */
 {
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
+	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
+}
+/* }}} */
+
+
+static PHP_INI_MH(OnUpdateSessionCookieSameSite) /* {{{ */
+{
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
 }
 /* }}} */
@@ -710,6 +732,7 @@ static PHP_INI_MH(OnUpdateSessionString) /* {{{ */
 static PHP_INI_MH(OnUpdateSessionBool) /* {{{ */
 {
 	SESSION_CHECK_OUTPUT_STATE;
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	return OnUpdateBool(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
 }
@@ -722,6 +745,7 @@ static PHP_INI_MH(OnUpdateSidLength) /* {{{ */
 	char *endptr = NULL;
 
 	SESSION_CHECK_OUTPUT_STATE;
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	val = ZEND_STRTOL(ZSTR_VAL(new_value), &endptr, 10);
 	if (endptr && (*endptr == '\0')
@@ -742,6 +766,7 @@ static PHP_INI_MH(OnUpdateSidBits) /* {{{ */
 	char *endptr = NULL;
 
 	SESSION_CHECK_OUTPUT_STATE;
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	val = ZEND_STRTOL(ZSTR_VAL(new_value), &endptr, 10);
 	if (endptr && (*endptr == '\0')
@@ -759,6 +784,7 @@ static PHP_INI_MH(OnUpdateSidBits) /* {{{ */
 
 static PHP_INI_MH(OnUpdateLazyWrite) /* {{{ */
 {
+	SESSION_CHECK_UPLOAD_PROGRESS_STATE;
 	SESSION_CHECK_ACTIVE_STATE;
 	SESSION_CHECK_OUTPUT_STATE;
 	return OnUpdateBool(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
@@ -802,7 +828,7 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("session.cookie_domain",      "",          PHP_INI_ALL, OnUpdateSessionString, cookie_domain,      php_ps_globals,    ps_globals)
 	STD_PHP_INI_ENTRY("session.cookie_secure",      "0",         PHP_INI_ALL, OnUpdateSessionBool,   cookie_secure,      php_ps_globals,    ps_globals)
 	STD_PHP_INI_ENTRY("session.cookie_httponly",    "0",         PHP_INI_ALL, OnUpdateSessionBool,   cookie_httponly,    php_ps_globals,    ps_globals)
-	STD_PHP_INI_ENTRY("session.cookie_samesite",    "",          PHP_INI_ALL, OnUpdateString,        cookie_samesite,    php_ps_globals,    ps_globals)
+	STD_PHP_INI_ENTRY("session.cookie_samesite",    "",          PHP_INI_ALL, OnUpdateSessionCookieSameSite, cookie_samesite, php_ps_globals, ps_globals)
 	STD_PHP_INI_ENTRY("session.use_cookies",        "1",         PHP_INI_ALL, OnUpdateSessionBool,   use_cookies,        php_ps_globals,    ps_globals)
 	STD_PHP_INI_ENTRY("session.use_only_cookies",   "1",         PHP_INI_ALL, OnUpdateSessionBool,   use_only_cookies,   php_ps_globals,    ps_globals)
 	STD_PHP_INI_ENTRY("session.use_strict_mode",    "0",         PHP_INI_ALL, OnUpdateSessionBool,   use_strict_mode,    php_ps_globals,    ps_globals)
