@@ -3,8 +3,6 @@ sni_server
 --SKIPIF--
 <?php
 if (!extension_loaded("openssl")) die("skip openssl not loaded");
---XFAIL--
-Known to fail with OpenSSL 1.1
 --FILE--
 <?php
 $serverCode = <<<'CODE'

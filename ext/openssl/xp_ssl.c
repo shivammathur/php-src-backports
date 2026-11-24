@@ -595,11 +595,6 @@ static int win_cert_verify_callback(X509_STORE_CTX *x509_store_ctx, void *arg) /
 {
 	PCCERT_CONTEXT cert_ctx = NULL;
 	PCCERT_CHAIN_CONTEXT cert_chain_ctx = NULL;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	X509 *cert = x509_store_ctx->cert;
-#else
-	X509 *cert = X509_STORE_CTX_get0_cert(x509_store_ctx);
-#endif
 
 	php_stream *stream;
 	php_openssl_netstream_data_t *sslsock;
@@ -615,7 +610,7 @@ static int win_cert_verify_callback(X509_STORE_CTX *x509_store_ctx, void *arg) /
 		unsigned char *der_buf = NULL;
 		int der_len;
 
-		der_len = i2d_X509(cert, &der_buf);
+		der_len = i2d_X509(x509_store_ctx->cert, &der_buf);
 		if (der_len < 0) {
 			unsigned long err_code, e;
 			char err_buf[512];
@@ -692,7 +687,7 @@ static int win_cert_verify_callback(X509_STORE_CTX *x509_store_ctx, void *arg) /
 			int index, cert_name_utf8_len;
 			DWORD num_wchars;
 
-			cert_name = X509_get_subject_name(cert);
+			cert_name = X509_get_subject_name(x509_store_ctx->cert);
 			index = X509_NAME_get_index_by_NID(cert_name, NID_commonName, -1);
 			if (index < 0) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to locate certificate CN");
@@ -962,9 +957,13 @@ static int set_local_cert(SSL_CTX *ctx, php_stream *stream TSRMLS_DC) /* {{{ */
 static const SSL_METHOD *php_select_crypto_method(long method_value, int is_client TSRMLS_DC) /* {{{ */
 {
 	if (method_value == STREAM_CRYPTO_METHOD_SSLv2) {
+#ifndef OPENSSL_NO_SSL2
+		return is_client ? SSLv2_client_method() : SSLv2_server_method();
+#else
 		php_error_docref(NULL TSRMLS_CC, E_WARNING,
 				"SSLv2 support is not compiled into the OpenSSL library PHP is linked against");
 		return NULL;
+#endif
 	} else if (method_value == STREAM_CRYPTO_METHOD_SSLv3) {
 #ifndef OPENSSL_NO_SSL3
 		return is_client ? SSLv3_client_method() : SSLv3_server_method();
@@ -1003,6 +1002,11 @@ static long php_get_crypto_method_ctx_flags(long method_flags TSRMLS_DC) /* {{{ 
 {
 	long ssl_ctx_options = SSL_OP_ALL;
 
+#ifndef OPENSSL_NO_SSL2
+	if (!(method_flags & STREAM_CRYPTO_METHOD_SSLv2)) {
+		ssl_ctx_options |= SSL_OP_NO_SSLv2;
+	}
+#endif
 #ifndef OPENSSL_NO_SSL3
 	if (!(method_flags & STREAM_CRYPTO_METHOD_SSLv3)) {
 		ssl_ctx_options |= SSL_OP_NO_SSLv3;
@@ -1625,6 +1629,7 @@ static zval *capture_session_meta(SSL *ssl_handle) /* {{{ */
 #endif
 		case TLS1_VERSION: proto_str = "TLSv1"; break;
 		case SSL3_VERSION: proto_str = "SSLv3"; break;
+		case SSL2_VERSION: proto_str = "SSLv2"; break;
 		default: proto_str = "UNKNOWN";
 	}
 
@@ -2438,8 +2443,13 @@ php_stream *php_openssl_ssl_socket_factory(const char *proto, size_t protolen,
 		sslsock->enable_on_connect = 1;
 		sslsock->method = get_crypto_method(context, STREAM_CRYPTO_METHOD_ANY_CLIENT);
 	} else if (strncmp(proto, "sslv2", protolen) == 0) {
+#ifdef OPENSSL_NO_SSL2
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SSLv2 support is not compiled into the OpenSSL library PHP is linked against");
 		return NULL;
+#else
+		sslsock->enable_on_connect = 1;
+		sslsock->method = STREAM_CRYPTO_METHOD_SSLv2_CLIENT;
+#endif
 	} else if (strncmp(proto, "sslv3", protolen) == 0) {
 #ifdef OPENSSL_NO_SSL3
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SSLv3 support is not compiled into the OpenSSL library PHP is linked against");
