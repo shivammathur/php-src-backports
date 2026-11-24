@@ -1,0 +1,20 @@
+From df5a47670fdd6505078d7ebeb2b35f729933de6e Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:02 +0530
+Subject: [PATCH] Use an explicit IPv4 loopback address for the SOAP server
+ test
+
+
+diff --git a/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt b/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt
+index 59cb5bf8c5..47ff349faa 100644
+--- a/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt
++++ b/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt
+@@ -69,7 +69,7 @@ $headers =
+  * lower and the test no longer thrashes on slower machines. */
+ function heavy_soap_server($wsdl, $headers)
+ {
+-    $server = stream_socket_server('tcp://localhost:0', $errno, $errstr);
++    $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+     if (!$server) {
+         return false;
+     }

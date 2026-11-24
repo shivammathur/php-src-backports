@@ -1,0 +1,36 @@
+From c126b3fe7edfdc5565dcad2f4bfaa77692251385 Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:01 +0530
+Subject: [PATCH] Bound DNS CAA values to the record data length
+
+
+diff --git a/ext/standard/dns.c b/ext/standard/dns.c
+index f30d9ba309..0d8d913e7d 100644
+--- a/ext/standard/dns.c
++++ b/ext/standard/dns.c
+@@ -459,6 +459,10 @@ static u_char *php_parserr(u_char *cp, u_char *end, querybuf *answer, int type_t
+ 	GETLONG(ttl, cp);
+ 	GETSHORT(dlen, cp);
+ 	CHECKCP(dlen);
++	if (dlen == 0) {
++		/* No data in the response - nothing to do */
++		return NULL;
++	}
+ 	if (type_to_fetch != T_ANY && type != type_to_fetch) {
+ 		cp += dlen;
+ 		return cp;
+@@ -549,7 +553,13 @@ static u_char *php_parserr(u_char *cp, u_char *end, querybuf *answer, int type_t
+ 			CHECKCP(n);
+ 			add_assoc_stringl(subarray, "tag", (char*)cp, n);
+ 			cp += n;
+-			add_assoc_string(subarray, "value", (char*)cp);
++			if ( (size_t) dlen < ((size_t)n) + 2 ) {
++				return NULL;
++			}
++			n = dlen - n - 2;
++			CHECKCP(n);
++			add_assoc_stringl(subarray, "value", (char*)cp, n);
++			cp += n;
+ 			break;
+ 		case DNS_T_TXT:
+ 			{

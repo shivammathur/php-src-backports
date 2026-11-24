@@ -1,0 +1,20 @@
+From a78ec010074d7a52145d5848d1608632a461a44f Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:02 +0530
+Subject: [PATCH] Use an explicit IPv4 loopback address for the SOAP server
+ test
+
+
+diff --git a/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt b/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt
+index dc17ce31e8..d97ec662d0 100644
+--- a/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt
++++ b/ext/soap/tests/bugs/GHSA-cj93-vc83-wgqv.phpt
+@@ -10,7 +10,7 @@ all
+ --SKIPIF--
+ <?php
+ require __DIR__.'/../../../standard/tests/http/server.inc';
+-http_server_skipif("tcp://127.0.0.1:12342");
++http_server_skipif();
+ if (getenv("SKIP_SLOW_TESTS")) die('skip slow test');
+ if (!getenv("SOAP_RUN_RESOURCE_HEAVY_TESTS")) die("skip SOAP resource-heavy test");
+ if (PHP_INT_SIZE == 4) die('skip not for 32-bit systems due to memory constraints');

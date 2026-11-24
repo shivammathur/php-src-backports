@@ -1,0 +1,120 @@
+From 4b331984fa769d667c0ba4678a1e5813d33c3f61 Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:00 +0530
+Subject: [PATCH] Escape FPM status fields in JSON output
+
+
+diff --git a/sapi/fpm/fpm/fpm_status.c b/sapi/fpm/fpm/fpm_status.c
+index b29c17391c..17e0ab7dba 100644
+--- a/sapi/fpm/fpm/fpm_status.c
++++ b/sapi/fpm/fpm/fpm_status.c
+@@ -14,6 +14,8 @@
+ #include "fpm_conf.h"
+ #include "fpm_php.h"
+ #include <ext/standard/html.h>
++#include "ext/json/php_json.h"
++#include "zend_smart_str.h"
+ 
+ static char *fpm_status_uri = NULL;
+ static char *fpm_status_ping_uri = NULL;
+@@ -44,17 +46,34 @@ int fpm_status_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
+ }
+ /* }}} */
+ 
+-static char *fpm_status_escape(const char *str, bool encode, zend_string **tmp)
++static char *fpm_status_escape(const char *str, zend_bool encode_html, zend_bool encode_json, zend_string **tmp)
+ {
++	char *escaped;
++
+ 	*tmp = NULL;
+ 	if (str[0] == '\0') {
+ 		return NULL;
+ 	}
+-	if (encode) {
+-		*tmp = php_escape_html_entities_ex((const unsigned char *) str, strlen(str), 1,
+-				ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, /* double_encode */ 1, /* quiet */ 0);
++	if (encode_html) {
++		*tmp = php_escape_html_entities_ex((unsigned char *) str, strlen(str), 1,
++				ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, 1, 0);
+ 		return ZSTR_VAL(*tmp);
+ 	}
++	if (encode_json) {
++		smart_str buf = {0};
++		zval value;
++
++		ZVAL_STRING(&value, str);
++		php_json_encode(&buf, &value, PHP_JSON_INVALID_UTF8_IGNORE);
++		zval_ptr_dtor(&value);
++		*tmp = smart_str_extract(&buf);
++		escaped = ZSTR_VAL(*tmp);
++		if (ZSTR_LEN(*tmp) >= 2) {
++			escaped[ZSTR_LEN(*tmp) - 1] = '\0';
++			++escaped;
++		}
++		return escaped;
++	}
+ 	return (char *) str;
+ }
+ 
+@@ -154,7 +173,7 @@ int fpm_status_handle_request(void) /* {{{ */
+ 	struct fpm_scoreboard_proc_s *proc;
+ 	char *buffer, *time_format, time_buffer[64];
+ 	time_t now_epoch;
+-	int full, encode;
++	int full, encode_html, encode_json;
+ 	char *short_syntax, *short_post;
+ 	char *full_pre, *full_syntax, *full_post, *full_separator;
+ 	zend_string *_GET_str;
+@@ -189,7 +208,8 @@ int fpm_status_handle_request(void) /* {{{ */
+ 		full = (fpm_php_get_string_from_table(_GET_str, "full") != NULL);
+ 		short_syntax = short_post = NULL;
+ 		full_separator = full_pre = full_syntax = full_post = NULL;
+-		encode = 0;
++		encode_html = 0;
++		encode_json = 0;
+ 
+ 		scoreboard_p = fpm_scoreboard_get();
+ 		if (scoreboard_p) {
+@@ -231,7 +251,7 @@ int fpm_status_handle_request(void) /* {{{ */
+ 		if (fpm_php_get_string_from_table(_GET_str, "html")) {
+ 			sapi_add_header_ex(ZEND_STRL("Content-Type: text/html"), 1, 1);
+ 			time_format = "%d/%b/%Y:%H:%M:%S %z";
+-			encode = 1;
++			encode_html = 1;
+ 
+ 			short_syntax =
+ 				"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
+@@ -300,7 +320,7 @@ int fpm_status_handle_request(void) /* {{{ */
+ 		} else if (fpm_php_get_string_from_table(_GET_str, "xml")) {
+ 			sapi_add_header_ex(ZEND_STRL("Content-Type: text/xml"), 1, 1);
+ 			time_format = "%s";
+-			encode = 1;
++			encode_html = 1;
+ 
+ 			short_syntax =
+ 				"<?xml version=\"1.0\" ?>\n"
+@@ -347,6 +367,7 @@ int fpm_status_handle_request(void) /* {{{ */
+ 			/* JSON */
+ 		} else if (fpm_php_get_string_from_table(_GET_str, "json")) {
+ 			sapi_add_header_ex(ZEND_STRL("Content-Type: application/json"), 1, 1);
++			encode_json = 1;
+ 			time_format = "%s";
+ 
+ 			short_syntax =
+@@ -490,11 +511,11 @@ int fpm_status_handle_request(void) /* {{{ */
+ 					}
+ 				}
+ 
+-				request_method_string = fpm_status_escape(proc->request_method, encode, &tmp_request_method_string);
+-				request_uri_string = fpm_status_escape(proc->request_uri, encode, &tmp_request_uri_string);
+-				query_string = fpm_status_escape(proc->query_string, encode, &tmp_query_string);
+-				auth_user_string = fpm_status_escape(proc->auth_user, encode, &tmp_auth_user_string);
+-				script_filename_string = fpm_status_escape(proc->script_filename, encode, &tmp_script_filename_string);
++				request_method_string = fpm_status_escape(proc->request_method, encode_html, encode_json, &tmp_request_method_string);
++				request_uri_string = fpm_status_escape(proc->request_uri, encode_html, encode_json, &tmp_request_uri_string);
++				query_string = fpm_status_escape(proc->query_string, encode_html, encode_json, &tmp_query_string);
++				auth_user_string = fpm_status_escape(proc->auth_user, encode_html, encode_json, &tmp_auth_user_string);
++				script_filename_string = fpm_status_escape(proc->script_filename, encode_html, encode_json, &tmp_script_filename_string);
+ 
+ 				/* prevent NaN */
+ 				if (proc->cpu_duration.tv_sec == 0 && proc->cpu_duration.tv_usec == 0) {

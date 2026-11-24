@@ -1,0 +1,23 @@
+From 134e472ddac26240bf74892119480fc0134ae727 Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:02 +0530
+Subject: [PATCH] Fix GH-12705 when PHP 7.3 cannot acquire the FPM scoreboard
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Apply the same null-scoreboard logging fix as the PHP 7.4 backport in Remi’s 0855d6b67e.
+
+diff --git a/sapi/fpm/fpm/fpm_status.c b/sapi/fpm/fpm/fpm_status.c
+index 7f89e0edd5..9996b9011c 100644
+--- a/sapi/fpm/fpm/fpm_status.c
++++ b/sapi/fpm/fpm/fpm_status.c
+@@ -108,7 +108,7 @@ int fpm_status_export_to_zval(zval *status)
+ 
+ 	scoreboard_p = fpm_scoreboard_acquire(NULL, 1);
+ 	if (!scoreboard_p) {
+-		zlog(ZLOG_NOTICE, "[pool %s] status: scoreboard already in use.", scoreboard_p->pool);
++		zlog(ZLOG_NOTICE, "[pool (unknown)] status: scoreboard already in use.");
+ 		return -1;
+ 	}
+ 

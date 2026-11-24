@@ -1,0 +1,58 @@
+From eb3429baf16e2951df8f554c38f1b83f5eb95535 Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:01 +0530
+Subject: [PATCH] Preserve the PHP 7.2 singleton initializer and support debug
+ builds
+
+Keep the exported _array_init_singleton entry point and its integer-returning macro for existing extensions. Use zend_hash_init in the upstream allocator so debug builds also pass the source location.
+
+diff --git a/Zend/zend_API.c b/Zend/zend_API.c
+index 604450e927..738266cfbd 100644
+--- a/Zend/zend_API.c
++++ b/Zend/zend_API.c
+@@ -1093,6 +1093,14 @@ ZEND_API int _array_init(zval *arg, uint32_t size ZEND_FILE_LINE_DC) /* {{{ */
+ }
+ /* }}} */
+ 
++ZEND_API int _array_init_singleton(zval *arg ZEND_FILE_LINE_DC) /* {{{ */
++{
++	_array_init(arg, 0 ZEND_FILE_LINE_RELAY_CC);
++	Z_ARRVAL_P(arg)->nTableSize = 1;
++	return SUCCESS;
++}
++/* }}} */
++
+ /* This function should be called after the constructor has been called
+  * because it may call __set from the uninitialized object otherwise. */
+ ZEND_API void zend_merge_properties(zval *obj, HashTable *properties) /* {{{ */
+diff --git a/Zend/zend_API.h b/Zend/zend_API.h
+index 6bdb5e8663..763c64ab99 100644
+--- a/Zend/zend_API.h
++++ b/Zend/zend_API.h
+@@ -392,11 +392,12 @@ ZEND_API char *zend_get_type_by_const(int type);
+ 
+ #define array_init(arg)			_array_init((arg), 0 ZEND_FILE_LINE_CC)
+ #define array_init_size(arg, size) _array_init((arg), (size) ZEND_FILE_LINE_CC)
+-#define array_init_singleton(arg)	ZVAL_ARR((arg), zend_new_array_singleton())
++#define array_init_singleton(arg)	_array_init_singleton((arg) ZEND_FILE_LINE_CC)
+ #define object_init(arg)		_object_init((arg) ZEND_FILE_LINE_CC)
+ #define object_init_ex(arg, ce)	_object_init_ex((arg), (ce) ZEND_FILE_LINE_CC)
+ #define object_and_properties_init(arg, ce, properties)	_object_and_properties_init((arg), (ce), (properties) ZEND_FILE_LINE_CC)
+ ZEND_API int _array_init(zval *arg, uint32_t size ZEND_FILE_LINE_DC);
++ZEND_API int _array_init_singleton(zval *arg ZEND_FILE_LINE_DC);
+ ZEND_API int _object_init(zval *arg ZEND_FILE_LINE_DC);
+ ZEND_API int _object_init_ex(zval *arg, zend_class_entry *ce ZEND_FILE_LINE_DC);
+ ZEND_API int _object_and_properties_init(zval *arg, zend_class_entry *ce, HashTable *properties ZEND_FILE_LINE_DC);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 876ec52594..1a14b71d09 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -188,7 +188,7 @@ ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_
+ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+ {
+ 	HashTable *ht = emalloc(sizeof(HashTable));
+-	_zend_hash_init(ht, HT_MIN_SIZE, ZVAL_PTR_DTOR, 0);
++	zend_hash_init(ht, HT_MIN_SIZE, NULL, ZVAL_PTR_DTOR, 0);
+ 	return ht;
+ }
+ 

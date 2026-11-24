@@ -1,0 +1,89 @@
+From 3d016c24bf5192e682431db1e2c9274dd90fe78a Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:01 +0530
+Subject: [PATCH] Read complete JPEG application markers across stream chunks
+
+
+diff --git a/ext/standard/image.c b/ext/standard/image.c
+index fc4d6bdc7b..06f0a00d6f 100644
+--- a/ext/standard/image.c
++++ b/ext/standard/image.c
+@@ -434,8 +434,22 @@ static int php_skip_variable(php_stream * stream)
+ }
+ /* }}} */
+ 
+-/* {{{ php_read_APP
+- */
++static size_t php_read_stream_all_chunks(php_stream *stream, char *buffer, size_t length)
++{
++	size_t read_total = 0;
++	do {
++		ssize_t read_now = php_stream_read(stream, buffer, length - read_total);
++		read_total += read_now;
++		if (read_now < stream->chunk_size && read_total != length) {
++			return 0;
++		}
++		buffer += read_now;
++	} while (read_total < length);
++
++	return read_total;
++}
++
++/* {{{ php_read_APP */
+ static int php_read_APP(php_stream * stream, unsigned int marker, zval *info)
+ {
+ 	unsigned short length;
+@@ -451,7 +465,7 @@ static int php_read_APP(php_stream * stream, unsigned int marker, zval *info)
+ 
+ 	buffer = emalloc(length);
+ 
+-	if (php_stream_read(stream, buffer, (zend_long) length) != length) {
++	if (php_read_stream_all_chunks(stream, buffer, length) != length) {
+ 		efree(buffer);
+ 		return 0;
+ 	}
+diff --git a/ext/standard/tests/image/gh20584.phpt b/ext/standard/tests/image/gh20584.phpt
+new file mode 100644
+index 0000000000..d117f21820
+--- /dev/null
++++ b/ext/standard/tests/image/gh20584.phpt
+@@ -0,0 +1,39 @@
++--TEST--
++GH-20584 (Information Leak of Memory)
++--CREDITS--
++Nikita Sveshnikov (Positive Technologies)
++--FILE--
++<?php
++// Minimal PoC: corruption/uninitialized memory leak when reading APP1 via php://filter
++$file = __DIR__ . '/gh20584.jpg';
++
++// Make APP1 large enough so it is read in multiple chunks
++$chunk = 8192;
++$tail = 123;
++$payload = str_repeat('A', $chunk) . str_repeat('B', $chunk) . str_repeat('Z',
++$tail);
++$app1Len = 2 + strlen($payload);
++
++// Minimal JPEG: SOI + APP1 + SOF0(1x1) + EOI
++$sof = "\xFF\xC0" . pack('n', 11) . "\x08" . pack('n',1) . pack('n',1) .
++"\x01\x11\x00";
++$jpeg = "\xFF\xD8" . "\xFF\xE1" . pack('n', $app1Len) . $payload . $sof .
++"\xFF\xD9";
++file_put_contents($file, $jpeg);
++
++// Read through a filter to enforce multiple reads
++$src = 'php://filter/read=string.rot13|string.rot13/resource=' . $file;
++$info = null;
++@getimagesize($src, $info);
++$exp = $payload;
++$ret = $info['APP1'];
++
++var_dump($ret === $exp);
++
++?>
++--CLEAN--
++<?php
++@unlink(__DIR__ . '/gh20584.jpg');
++?>
++--EXPECT--
++bool(true)

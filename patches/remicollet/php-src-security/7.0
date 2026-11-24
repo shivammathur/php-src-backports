@@ -1,0 +1,6 @@
+0016-Guard-session-settings-during-upload-progress-PHP7.0.patch
+0017-Restrict-SOAP-element-lookups-PHP7.0-8.1.patch
+0018-Escape-FPM-JSON-status-fields-PHP7.0-7.2.patch
+0021-Release-failed-PostgreSQL-conversions-PHP7.0-7.3.patch
+0022-Bound-DNS-CAA-records-PHP7.0.patch
+0025-Use-IPv4-loopback-in-SOAP-test-PHP7.0-7.3.patch

@@ -1,0 +1,38 @@
+From 85bfc5ae40d7f6db785e2f447c06955e1fd1b9f3 Mon Sep 17 00:00:00 2001
+From: Shivam Mathur <shivam_jpr@hotmail.com>
+Date: Tue, 24 Nov 2026 15:37:02 +0530
+Subject: [PATCH] Retain the PDO PostgreSQL quoting regression test
+
+
+diff --git a/ext/pdo_pgsql/tests/ghsa-8xr5-qppj-gvwj.phpt b/ext/pdo_pgsql/tests/ghsa-8xr5-qppj-gvwj.phpt
+new file mode 100644
+index 0000000000..019a02c2c1
+--- /dev/null
++++ b/ext/pdo_pgsql/tests/ghsa-8xr5-qppj-gvwj.phpt
+@@ -0,0 +1,26 @@
++--TEST--
++#GHSA-8xr5-qppj-gvwj: NULL Pointer Derefernce for failed user input quoting
++--SKIPIF--
++<?php
++if (!extension_loaded('pdo') || !extension_loaded('pdo_pgsql')) die('skip not loaded');
++require_once dirname(__FILE__) . '/../../../ext/pdo/tests/pdo_test.inc';
++require_once dirname(__FILE__) . '/config.inc';
++PDOTest::skip();
++?>
++--FILE--
++<?php
++require_once dirname(__FILE__) . '/../../../ext/pdo/tests/pdo_test.inc';
++require_once dirname(__FILE__) . '/config.inc';
++$db = PDOTest::test_factory(dirname(__FILE__) . '/common.phpt');
++$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
++$db->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
++
++$sql = "SELECT * FROM users where username = :username";
++$stmt = $db->prepare($sql);
++
++$p1 = "alice\x99";
++var_dump($stmt->execute(['username' => $p1]));
++
++?>
++--EXPECT--
++bool(false)
