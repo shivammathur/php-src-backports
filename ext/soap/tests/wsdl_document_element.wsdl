@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE definitions>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:service"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" targetNamespace="urn:service">
+  <types>
+    <schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:service">
+      <import namespace="urn:types" schemaLocation="wsdl_document_element.xsd"/>
+    </schema>
+  </types>
+  <portType name="PortType"/>
+  <binding name="Binding" type="tns:PortType">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+  </binding>
+  <service name="Service">
+    <port name="Port" binding="tns:Binding"><soap:address location="http://example.invalid/"/></port>
+  </service>
+</definitions>
