@@ -188,7 +188,7 @@ ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_
 ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
 {
 	HashTable *ht = emalloc(sizeof(HashTable));
-	_zend_hash_init(ht, HT_MIN_SIZE, ZVAL_PTR_DTOR, 0);
+	zend_hash_init(ht, HT_MIN_SIZE, NULL, ZVAL_PTR_DTOR, 0);
 	return ht;
 }
 
