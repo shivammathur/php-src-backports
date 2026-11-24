@@ -27,58 +27,76 @@ jobs:
   sync:
     name: sync
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.TOKEN || github.token }}
       - name: Update tags and branches
+        env:
+          UPSTREAM: ${{ inputs.upstream }}
+          PHP_VERSIONS: ${{ inputs.php-versions }}
+        shell: bash
         run: |
-          push_ref() {
-            ref=$1
-            git push -f https://${{ github.repository_owner }}:${{ secrets.TOKEN }}@github.com/${{ github.repository }}.git "$ref" || true
-          }
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git remote add up https://github.com/${{ github.event.inputs.upstream }}
-          git remote add php https://github.com/php/php-src
-          mapfile -t branches < <(git branch -r | sed 's/ *origin\///g')
-          mapfile -t tags < <(git tag --sort=-refname | awk 'match($0, /^[0-9]+\.[0-9]+\.[0-9]+/)')
-          cp -r patches /tmp
-          for branch in "${branches[@]}"; do            
-            if [ "$branch" = "main" ]; then
-              continue
+          set -euo pipefail
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git remote add up "https://github.com/$UPSTREAM"
+          patch_dir="$RUNNER_TEMP/patches"
+          cp -R patches "$patch_dir"
+
+          selected_versions=" ${PHP_VERSIONS//,/ } "
+          mapfile -t branches < <(git for-each-ref --format='%(refname:lstrip=3)' 'refs/remotes/origin/PHP-*')
+          mapfile -t tags < <(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$')
+          declare -A release_branches
+          refs=()
+          leases=()
+          for branch in "${branches[@]}"; do
+            version=${branch#PHP-}
+            version=${version%%-*}
+            [[ $selected_versions == *" $version "* ]] || continue
+            source_branch=$branch
+            if [[ $UPSTREAM == remicollet/php-src-security && $version == 5.6 ]]; then
+              source_branch=PHP-5.6-security-backports-openssl11
             fi
-            php_version="$(echo "$branch" | cut -d'-' -f 2)"
-            if ! [[ "${{ inputs.php-versions }}" == *"$php_version"* ]]; then
-              continue
+            upstream_ref="refs/remotes/up/$source_branch"
+            if ! git show-ref --verify --quiet "$upstream_ref"; then
+              git fetch --no-tags up "refs/heads/$source_branch:$upstream_ref"
             fi
-            echo "---- $branch ----"
-            git checkout "$branch"
-            git fetch up "$branch"
-            git reset --hard up/"$branch"
-            tag="$(echo "$branch" | cut -d '-' -f 2)"
-            for patch_list in "/tmp/patches/$tag" "/tmp/patches/$branch"; do
-              if [ -e "$patch_list" ]; then
-                while read -r patch; do
-                  git am < /tmp/patches/"$patch"
-                done < "$patch_list"
-              fi
+            git checkout -B "$branch" "$upstream_ref"
+            for list in "$version" "$branch" "$UPSTREAM/$version" "$UPSTREAM/$branch"; do
+              [[ -f $patch_dir/$list ]] || continue
+              while IFS= read -r patch; do
+                git am --keep-cr --committer-date-is-author-date "$patch_dir/$patch"
+              done < "$patch_dir/$list"
             done
-            push_ref "$branch"
-          done
-          for tag in "${tags[@]}"; do
-            if ! [[ "${{ inputs.php-versions }}" == *"${tag%.*}"* ]]; then
-              continue
+            ref="refs/heads/$branch"
+            refs+=("$ref:$ref")
+            leases+=("--force-with-lease=$ref:$(git rev-parse "refs/remotes/origin/$branch")")
+            if [[ $version != 5.6 || $branch == PHP-5.6-security-backports-openssl11 ]]; then
+              release_branches[$version]=$branch
             fi
-            echo "---- $tag ----"
-            git checkout "$tag"
-            suffix=""
-            [ "${tag%.*}" = "5.6" ] && suffix="openssl11"
-            git reset --hard "$(echo "${branches[@]}" | grep -Po "PHP-${tag%.*}-[a-zA-Z-]+$suffix" | head -n 1)"
-            git tag -fa "$tag" -m "Update $tag tag"
-            push_ref "$tag"
           done
-          if [ '${{ github.event.inputs.run_build }}' = 'true' ]; then
-            GITHUB_TOKEN=${{ secrets.TOKEN }} gh workflow run build.yml -R shivammathur/homebrew-php
+
+          if (( ${#refs[@]} == 0 )); then
+            echo "No branches matched PHP versions: $PHP_VERSIONS" >&2
+            exit 1
           fi
+          for tag in "${tags[@]}"; do
+            version=${tag%.*}
+            [[ $selected_versions == *" $version "* ]] || continue
+            branch=${release_branches[$version]}
+            ref="refs/tags/$tag"
+            leases+=("--force-with-lease=$ref:$(git rev-parse "$ref")")
+            GIT_COMMITTER_DATE="$(git log -1 --format=%cI "$branch")" git tag -fa "$tag" "$branch" -m "Update $tag tag"
+            refs+=("$ref:$ref")
+          done
+          git push --atomic "${leases[@]}" origin "${refs[@]}"
+      - name: Trigger Homebrew build
+        if: inputs.run_build == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN }}
+        run: gh workflow run build.yml -R shivammathur/homebrew-php
