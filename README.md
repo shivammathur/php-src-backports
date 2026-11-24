@@ -16,7 +16,7 @@ This is a fork of `php/php-src` with security patches backported from maintained
 |7.2|[PHP-7.2-Security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.2-Security-backports)|[7.2.34](https://github.com/shivammathur/php-src-backports/archive/7.2.34.tar.gz)|
 |7.1|[PHP-7.1-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.1-security-backports)|[7.1.33](https://github.com/shivammathur/php-src-backports/archive/7.1.33.tar.gz)|
 |7.0|[PHP-7.0-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-7.0-security-backports)|[7.0.33](https://github.com/shivammathur/php-src-backports/archive/7.0.33.tar.gz)|
-|5.6|[PHP-5.6-security-backports-openssl11](https://github.com/shivammathur/php-src-backports/tree/PHP-5.6-security-backports)|[5.6.40](https://github.com/shivammathur/php-src-backports/archive/5.6.40.tar.gz)|
+|5.6|[PHP-5.6-security-backports-openssl11](https://github.com/shivammathur/php-src-backports/tree/PHP-5.6-security-backports-openssl11)|[5.6.40](https://github.com/shivammathur/php-src-backports/archive/5.6.40.tar.gz)|
 |5.5|[PHP-5.5-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.5-security-backports)|—|
 |5.4|[PHP-5.4-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.4-security-backports)|—|
 |5.3|[PHP-5.3-security-backports](https://github.com/shivammathur/php-src-backports/tree/PHP-5.3-security-backports)|—|

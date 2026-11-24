@@ -1,3 +1,4 @@
 0016-Guard-session-settings-during-upload-progress-PHP8.0-8.1.patch
 0017-Restrict-SOAP-element-lookups-PHP7.0-8.1.patch
 0018-Escape-FPM-JSON-status-fields-PHP8.0.patch
+0028-Fix-GH-24509-HTTP-Location-buffer-leak-PHP8.0-8.1.patch

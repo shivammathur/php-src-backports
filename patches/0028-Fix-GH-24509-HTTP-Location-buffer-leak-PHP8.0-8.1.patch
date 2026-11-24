@@ -1,0 +1,50 @@
+From f9ae4ddb060e2258cd236bc6ca09d9d4ead5995f Mon Sep 17 00:00:00 2001
+From: berce <75228263+bercedev@users.noreply.github.com>
+Date: Wed, 21 Oct 2026 21:36:45 +0000
+Subject: [PATCH] Fix GH-24509: HTTP wrapper leaks Location buffer on empty
+ Location header
+
+location_len == 0 was used to mean that no buffer was allocated yet, but an empty Location header allocates a 1-byte buffer and leaves location_len at 0. A second Location header then allocated a new buffer and leaked the first. Check the pointer instead.
+
+Backported from php/php-src@ad7ad7c425ae816426ed88f2540b0be3626f4222.
+
+diff --git a/ext/standard/http_fopen_wrapper.c b/ext/standard/http_fopen_wrapper.c
+index 96cddd6..92a3f30 100644
+--- a/ext/standard/http_fopen_wrapper.c
++++ b/ext/standard/http_fopen_wrapper.c
+@@ -303,7 +303,7 @@ static bool php_stream_http_response_headers_parse(php_stream_wrapper *wrapper,
+ 			zend_string_efree(last_header_line_str);
+ 			return false;
+ 		}
+-		if (header_info->location_len == 0) {
++		if (header_info->location == NULL) {
+ 			header_info->location = emalloc(last_header_value_len + 1);
+ 		} else if (header_info->location_len <= last_header_value_len) {
+ 			header_info->location = erealloc(header_info->location, last_header_value_len + 1);
+diff --git a/ext/standard/tests/http/gh24509.phpt b/ext/standard/tests/http/gh24509.phpt
+new file mode 100644
+index 0000000..0de807a
+--- /dev/null
++++ b/ext/standard/tests/http/gh24509.phpt
+@@ -0,0 +1,21 @@
++--TEST--
++GH-24509 (HTTP wrapper leaks the Location buffer when an empty Location header is followed by another)
++--INI--
++allow_url_fopen=1
++--SKIPIF--
++<?php require 'server.inc'; http_server_skipif(); ?>
++--FILE--
++<?php
++require 'server.inc';
++
++['pid' => $pid, 'uri' => $uri] = http_server([
++    "data://text/plain,HTTP/1.1 302 Found\r\nLocation:\r\nLocation: /abcdefghijklmno\r\nContent-Length: 0\r\n\r\n",
++    "data://text/plain,HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK",
++]);
++
++var_dump(file_get_contents($uri));
++
++http_server_kill($pid);
++?>
++--EXPECT--
++string(2) "OK"
