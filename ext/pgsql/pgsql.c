@@ -6118,6 +6118,7 @@ PHP_PGSQL_API int php_pgsql_convert(PGconn *pg_link, const char *table_name, con
 							str = zend_string_alloc(Z_STRLEN_P(val) * 2, 0);
 							ZSTR_LEN(str) = PQescapeStringConn(pg_link, ZSTR_VAL(str), Z_STRVAL_P(val), Z_STRLEN_P(val), &escape_err);
 							if (escape_err) {
+								zend_string_release(str);
 								err = 1;
 							} else {
 								str = zend_string_truncate(str, ZSTR_LEN(str), 0);
