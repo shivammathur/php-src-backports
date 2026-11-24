@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!DOCTYPE schema>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:types">
+  <complexType name="Record">
+    <sequence><element name="value" type="string"/></sequence>
+  </complexType>
+</schema>
