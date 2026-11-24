@@ -1437,7 +1437,8 @@ static int phar_call_openssl_signverify(int is_sign, php_stream *fp, off_t end, 
 {
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
-	zval *zdata, *zsig, *zkey, *retval_ptr, **zp[3], *openssl;
+	zval *zdata, *zsig, *zkey, *retval_ptr = NULL, **zp[3], *openssl;
+	int result = FAILURE;
 
 	MAKE_STD_ZVAL(zdata);
 	MAKE_STD_ZVAL(openssl);
@@ -1518,30 +1519,22 @@ static int phar_call_openssl_signverify(int is_sign, php_stream *fp, off_t end, 
 	zval_dtor(zkey);
 	efree(zkey);
 
-	switch (Z_TYPE_P(retval_ptr)) {
-		default:
-		case IS_LONG:
-			zval_dtor(zsig);
-			efree(zsig);
-			if (1 == Z_LVAL_P(retval_ptr)) {
-				efree(retval_ptr);
-				return SUCCESS;
-			}
-			efree(retval_ptr);
-			return FAILURE;
-		case IS_BOOL:
-			efree(retval_ptr);
-			if (Z_BVAL_P(retval_ptr)) {
+	/* Signing returns a boolean; verification succeeds only with integer 1. */
+	if (retval_ptr) {
+		if (is_sign) {
+			if (Z_TYPE_P(retval_ptr) == IS_BOOL && Z_BVAL_P(retval_ptr) && Z_TYPE_P(zsig) == IS_STRING) {
 				*signature = estrndup(Z_STRVAL_P(zsig), Z_STRLEN_P(zsig));
 				*signature_len = Z_STRLEN_P(zsig);
-				zval_dtor(zsig);
-				efree(zsig);
-				return SUCCESS;
+				result = SUCCESS;
 			}
-			zval_dtor(zsig);
-			efree(zsig);
-			return FAILURE;
+		} else if (Z_TYPE_P(retval_ptr) == IS_LONG && Z_LVAL_P(retval_ptr) == 1) {
+			result = SUCCESS;
+		}
+		zval_ptr_dtor(&retval_ptr);
 	}
+	zval_dtor(zsig);
+	efree(zsig);
+	return result;
 }
 /* }}} */
 #endif /* #ifndef PHAR_HAVE_OPENSSL */
