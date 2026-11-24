@@ -46,18 +46,56 @@ int fpm_status_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-static char *fpm_status_escape(char *str, int encode, zend_string **tmp)
+static char *fpm_status_escape(const char *str, zend_bool encode_html, zend_bool encode_json, zend_string **tmp)
 {
 	*tmp = NULL;
 	if (str[0] == '\0') {
 		return NULL;
 	}
-	if (encode) {
+	if (encode_html) {
 		*tmp = php_escape_html_entities_ex((unsigned char *) str, strlen(str), 1,
-				ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, /* double_encode */ 1);
+				ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, 1);
 		return ZSTR_VAL(*tmp);
 	}
-	return str;
+	if (encode_json) {
+		const unsigned char *p = (const unsigned char *) str;
+		const unsigned char *end = p + strlen(str);
+		char *out;
+		static const char hex[] = "0123456789abcdef";
+
+		*tmp = zend_string_alloc(6 * strlen(str), 0);
+		out = ZSTR_VAL(*tmp);
+		while (*p) {
+			if (*p >= 0x80) {
+				size_t len = 0;
+				int status;
+
+				php_next_utf8_char(p, end - p, &len, &status);
+				if (status == SUCCESS) {
+					memcpy(out, p, len);
+					out += len;
+				}
+				p += len;
+				continue;
+			}
+			if (*p == '"' || *p == '\\') {
+				*out++ = '\\';
+				*out++ = *p;
+			} else if (*p < 0x20) {
+				memcpy(out, "\\u00", 4);
+				out += 4;
+				*out++ = hex[*p >> 4];
+				*out++ = hex[*p & 15];
+			} else {
+				*out++ = *p;
+			}
+			++p;
+		}
+		*out = '\0';
+		ZSTR_LEN(*tmp) = out - ZSTR_VAL(*tmp);
+		return ZSTR_VAL(*tmp);
+	}
+	return (char *) str;
 }
 
 int fpm_status_handle_request(void) /* {{{ */
@@ -66,7 +104,7 @@ int fpm_status_handle_request(void) /* {{{ */
 	struct fpm_scoreboard_proc_s proc;
 	char *buffer, *time_format, time_buffer[64];
 	time_t now_epoch;
-	int full, encode;
+	int full, encode_html, encode_json;
 	char *short_syntax, *short_post;
 	char *full_pre, *full_syntax, *full_post, *full_separator;
 	zend_string *_GET_str;
@@ -145,13 +183,14 @@ int fpm_status_handle_request(void) /* {{{ */
 		full = (fpm_php_get_string_from_table(_GET_str, "full") != NULL);
 		short_syntax = short_post = NULL;
 		full_separator = full_pre = full_syntax = full_post = NULL;
-		encode = 0;
+		encode_html = 0;
+		encode_json = 0;
 
 		/* HTML */
 		if (fpm_php_get_string_from_table(_GET_str, "html")) {
 			sapi_add_header_ex(ZEND_STRL("Content-Type: text/html"), 1, 1);
 			time_format = "%d/%b/%Y:%H:%M:%S %z";
-			encode = 1;
+			encode_html = 1;
 
 			short_syntax =
 				"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
@@ -226,7 +265,7 @@ int fpm_status_handle_request(void) /* {{{ */
 		} else if (fpm_php_get_string_from_table(_GET_str, "xml")) {
 			sapi_add_header_ex(ZEND_STRL("Content-Type: text/xml"), 1, 1);
 			time_format = "%s";
-			encode = 1;
+			encode_html = 1;
 
 			short_syntax =
 				"<?xml version=\"1.0\" ?>\n"
@@ -277,6 +316,7 @@ int fpm_status_handle_request(void) /* {{{ */
 			/* JSON */
 		} else if (fpm_php_get_string_from_table(_GET_str, "json")) {
 			sapi_add_header_ex(ZEND_STRL("Content-Type: application/json"), 1, 1);
+			encode_json = 1;
 			time_format = "%s";
 
 			short_syntax =
@@ -432,11 +472,11 @@ int fpm_status_handle_request(void) /* {{{ */
 					}
 				}
 
-				request_method_string = fpm_status_escape(proc.request_method, encode, &tmp_request_method_string);
-				request_uri_string = fpm_status_escape(proc.request_uri, encode, &tmp_request_uri_string);
-				query_string = fpm_status_escape(proc.query_string, encode, &tmp_query_string);
-				auth_user_string = fpm_status_escape(proc.auth_user, encode, &tmp_auth_user_string);
-				script_filename_string = fpm_status_escape(proc.script_filename, encode, &tmp_script_filename_string);
+				request_method_string = fpm_status_escape(proc.request_method, encode_html, encode_json, &tmp_request_method_string);
+				request_uri_string = fpm_status_escape(proc.request_uri, encode_html, encode_json, &tmp_request_uri_string);
+				query_string = fpm_status_escape(proc.query_string, encode_html, encode_json, &tmp_query_string);
+				auth_user_string = fpm_status_escape(proc.auth_user, encode_html, encode_json, &tmp_auth_user_string);
+				script_filename_string = fpm_status_escape(proc.script_filename, encode_html, encode_json, &tmp_script_filename_string);
 
 #ifdef HAVE_FPM_LQ
 				/* prevent NaN */
