@@ -69,7 +69,7 @@ $headers =
  * lower and the test no longer thrashes on slower machines. */
 function heavy_soap_server($wsdl, $headers)
 {
-    $server = stream_socket_server('tcp://localhost:0', $errno, $errstr);
+    $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
     if (!$server) {
         return false;
     }
